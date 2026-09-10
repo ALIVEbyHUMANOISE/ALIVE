@@ -1,0 +1,120 @@
+﻿package com.projectego.app.service
+
+import android.accessibilityservice.AccessibilityService
+import android.content.Intent
+import android.os.SystemClock
+import android.view.accessibility.AccessibilityEvent
+import com.projectego.app.data.FocusSessionManager
+import com.projectego.app.data.LockStateManager
+import com.projectego.app.data.TimeBankRepository
+import com.projectego.app.domain.AppClassifier
+import com.projectego.app.domain.FocusAppPolicy
+import com.projectego.app.domain.UsageTracker
+import com.projectego.app.model.AppCategory
+import com.projectego.app.ui.LockActivity
+
+class EgoAccessibilityService : AccessibilityService() {
+
+    private lateinit var usageTracker: UsageTracker
+    private lateinit var lockStateManager: LockStateManager
+    private lateinit var focusSessionManager: FocusSessionManager
+
+    private var lastInterceptionTime = 0L
+    private var lastForegroundPackage: String? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        usageTracker = UsageTracker(this)
+        lockStateManager = LockStateManager(this)
+        val timeBankRepository = TimeBankRepository(this)
+        focusSessionManager = FocusSessionManager(this, timeBankRepository)
+    }
+
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        if (event == null || event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            return
+        }
+
+        val packageName = event.packageName?.toString() ?: return
+
+        // Ignore self
+        if (packageName == applicationContext.packageName) {
+            return
+        }
+
+        lastForegroundPackage = packageName
+
+        // Check 1: FOCUS MODE ENFORCEMENT
+        val activeFocusSession = focusSessionManager.getFocusSession()
+        if (activeFocusSession != null && activeFocusSession.isActive) {
+            val allowed = FocusAppPolicy.isPackageAllowedDuringFocus(
+                this,
+                packageName,
+                activeFocusSession.activityType
+            )
+
+            if (!allowed) {
+                enforceFocusLock(packageName, activeFocusSession.activityType.displayName)
+                return
+            }
+            // App is allowed during Focus (Essential or Curated Productivity)
+            return
+        }
+
+        // Check 2: NORMAL SCREEN TIME ENFORCEMENT (Phase 0/1)
+        val category = AppClassifier.categorize(this, packageName)
+        if (category != AppCategory.ENTERTAINMENT) {
+            return
+        }
+
+        // Recalculate usage report and enforce limit if exceeded
+        val usageReport = usageTracker.calculateTodayEntertainmentUsage()
+
+        if (usageReport.isLimitExceeded) {
+            enforceNormalLock(packageName)
+        }
+    }
+
+    private fun enforceFocusLock(blockedPackage: String, activityName: String) {
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastInterceptionTime < 500) {
+            return
+        }
+        lastInterceptionTime = now
+
+        performGlobalAction(GLOBAL_ACTION_HOME)
+
+        val lockIntent = Intent(this, LockActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
+            putExtra("EXTRA_BLOCKED_PACKAGE", blockedPackage)
+            putExtra("EXTRA_LOCK_REASON", "FOCUS_SESSION")
+            putExtra("EXTRA_FOCUS_ACTIVITY", activityName)
+        }
+        startActivity(lockIntent)
+    }
+
+    private fun enforceNormalLock(blockedPackage: String) {
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastInterceptionTime < 500) {
+            return
+        }
+        lastInterceptionTime = now
+
+        performGlobalAction(GLOBAL_ACTION_HOME)
+
+        val lockIntent = Intent(this, LockActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
+            putExtra("EXTRA_BLOCKED_PACKAGE", blockedPackage)
+            putExtra("EXTRA_LOCK_REASON", "ENTERTAINMENT_EXCEEDED")
+        }
+        startActivity(lockIntent)
+    }
+
+    override fun onInterrupt() {
+        // Required callback
+    }
+}

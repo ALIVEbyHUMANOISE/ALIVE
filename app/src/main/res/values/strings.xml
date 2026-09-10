@@ -1,0 +1,4 @@
+﻿<resources>
+    <string name="app_name">Project EGO</string>
+    <string name="accessibility_service_description">Project EGO uses this service solely to detect foreground applications to enforce daily screen time limits and prevent bypass.</string>
+</resources>
