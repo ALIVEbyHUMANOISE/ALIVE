@@ -566,25 +566,6 @@ class MainActivity : AppCompatActivity() {
             }
             activeCard.addView(questDetails)
 
-            val completeBtn = Button(this).apply {
-                text = "DEV: COMPLETE QUEST (+${activeQuest.rewardMinutes} MIN)"
-                setBackgroundColor(0xFF2E7D32.toInt())
-                setTextColor(Color.WHITE)
-                setOnClickListener {
-                    val reward = questRepository.completeActiveQuest(activeQuest.id)
-                    if (reward != null) {
-                        Toast.makeText(
-                            this@MainActivity,
-                            "✓ QUEST COMPLETE! +$reward Menit masuk ke Time Bank",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    } else {
-                        Toast.makeText(this@MainActivity, "Gagal menyelesaikan quest atau sudah selesai.", Toast.LENGTH_SHORT).show()
-                    }
-                    renderDashboard()
-                }
-            }
-            activeCard.addView(completeBtn)
             statusContainer.addView(activeCard)
         } else {
             val noActiveText = TextView(this).apply {
@@ -771,5 +752,36 @@ class MainActivity : AppCompatActivity() {
             }
         }
         statusContainer.addView(simulateFailRolloverBtn)
+
+        val devCompleteActiveQuestBtn = Button(this).apply {
+            val activeQuestForDev = questRepository.getActiveQuest()
+            text = if (activeQuestForDev != null) {
+                "DEV: COMPLETE ACTIVE QUEST (+${activeQuestForDev.rewardMinutes} MIN)"
+            } else {
+                "DEV: COMPLETE ACTIVE QUEST (Tidak ada quest aktif)"
+            }
+            isEnabled = activeQuestForDev != null
+            setBackgroundColor(0xFF2E7D32.toInt())
+            setTextColor(Color.WHITE)
+            setOnClickListener {
+                val active = questRepository.getActiveQuest()
+                if (active != null) {
+                    val reward = questRepository.completeActiveQuest(active.id)
+                    if (reward != null) {
+                        Toast.makeText(
+                            this@MainActivity,
+                            "✓ [DEV] QUEST COMPLETE! +$reward Menit masuk ke Time Bank",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    } else {
+                        Toast.makeText(this@MainActivity, "Gagal menyelesaikan quest atau sudah selesai.", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Toast.makeText(this@MainActivity, "Tidak ada quest aktif untuk diselesaikan.", Toast.LENGTH_SHORT).show()
+                }
+                renderDashboard()
+            }
+        }
+        statusContainer.addView(devCompleteActiveQuestBtn)
     }
 }
