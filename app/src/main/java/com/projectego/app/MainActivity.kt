@@ -122,18 +122,20 @@ class MainActivity : AppCompatActivity() {
             setTypeface(null, Typeface.BOLD)
             setTextColor(Color.WHITE)
             setOnClickListener {
-                val now = System.currentTimeMillis()
-                if (now - lastDevTapTime < 500) {
-                    devTapCount++
-                    if (devTapCount >= 7) {
-                        showDevPanel = !showDevPanel
-                        devTapCount = 0
-                        renderDashboard()
+                if (BuildConfig.DEBUG) {
+                    val now = System.currentTimeMillis()
+                    if (now - lastDevTapTime < 500) {
+                        devTapCount++
+                        if (devTapCount >= 7) {
+                            showDevPanel = !showDevPanel
+                            devTapCount = 0
+                            renderDashboard()
+                        }
+                    } else {
+                        devTapCount = 1
                     }
-                } else {
-                    devTapCount = 1
+                    lastDevTapTime = now
                 }
-                lastDevTapTime = now
             }
         }
         statusContainer.addView(titleView)
@@ -314,9 +316,9 @@ class MainActivity : AppCompatActivity() {
         renderTimeBankSection(timeBank.availableMinutes)
 
         // ==========================================
-        // SECTION: HIDDEN DEVELOPER TOOLS
+        // SECTION: HIDDEN DEVELOPER TOOLS (DEBUG builds only)
         // ==========================================
-        if (showDevPanel) {
+        if (BuildConfig.DEBUG && showDevPanel) {
             renderDevPanel()
         }
     }
