@@ -755,34 +755,17 @@ class MainActivity : AppCompatActivity() {
         }
         statusContainer.addView(simulateFailRolloverBtn)
 
+        // Phase 2.3.2: the old direct-reward completeActiveQuest() API was
+        // removed from QuestRepository because it was a second reward path
+        // that bypassed verification. This button is intentionally inert
+        // until a later Phase 2.3 step wires up the real commit -> start ->
+        // requestVerification -> verifyQuest -> claimReward pipeline in the
+        // UI - it is not re-implemented here to avoid adding UI flow logic
+        // in a step scoped to QuestRepository only.
         val devCompleteActiveQuestBtn = Button(this).apply {
-            val activeQuestForDev = questRepository.getActiveQuest()
-            text = if (activeQuestForDev != null) {
-                "DEV: COMPLETE ACTIVE QUEST (+${activeQuestForDev.rewardMinutes} MIN)"
-            } else {
-                "DEV: COMPLETE ACTIVE QUEST (Tidak ada quest aktif)"
-            }
-            isEnabled = activeQuestForDev != null
-            setBackgroundColor(0xFF2E7D32.toInt())
-            setTextColor(Color.WHITE)
-            setOnClickListener {
-                val active = questRepository.getActiveQuest()
-                if (active != null) {
-                    val reward = questRepository.completeActiveQuest(active.id)
-                    if (reward != null) {
-                        Toast.makeText(
-                            this@MainActivity,
-                            "✓ [DEV] QUEST COMPLETE! +$reward Menit masuk ke Time Bank",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    } else {
-                        Toast.makeText(this@MainActivity, "Gagal menyelesaikan quest atau sudah selesai.", Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    Toast.makeText(this@MainActivity, "Tidak ada quest aktif untuk diselesaikan.", Toast.LENGTH_SHORT).show()
-                }
-                renderDashboard()
-            }
+            text = "DEV: Quest reward now requires the verification pipeline (coming in a later Phase 2.3 step)"
+            isEnabled = false
+            setTextColor(Color.GRAY)
         }
         statusContainer.addView(devCompleteActiveQuestBtn)
     }
