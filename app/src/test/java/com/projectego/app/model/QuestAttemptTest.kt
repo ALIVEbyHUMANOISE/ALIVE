@@ -2,6 +2,7 @@ package com.projectego.app.model
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -167,5 +168,87 @@ class QuestAttemptTest {
         val rewarded = attempt.copy(rewardMinutes = 20L, rewardedTimestamp = 4_000L)
 
         assertTrue(rewarded.isRewarded)
+    }
+
+    // ============================================================
+    // Phase 2.3.3 Step 1: attemptId identity + linkedFocusSessionId
+    // correlation. No repository/persistence wiring is tested here -
+    // that is deferred to a later step.
+    // ============================================================
+
+    @Test
+    fun `a freshly committed attempt has a non-blank attemptId`() {
+        val attempt = QuestAttempt.commit(
+            questId = "quest_study_30",
+            method = VerificationMethod.DIGITAL,
+            committedDurationMinutes = 30L
+        )
+
+        assertTrue(attempt.attemptId.isNotBlank())
+    }
+
+    @Test
+    fun `two separate commits produce different attemptId values`() {
+        val first = QuestAttempt.commit(
+            questId = "quest_study_30",
+            method = VerificationMethod.DIGITAL,
+            committedDurationMinutes = 30L
+        )
+        val second = QuestAttempt.commit(
+            questId = "quest_study_30",
+            method = VerificationMethod.DIGITAL,
+            committedDurationMinutes = 30L
+        )
+
+        assertNotEquals(first.attemptId, second.attemptId)
+    }
+
+    @Test
+    fun `an explicit attemptId can be provided to commit for deterministic tests`() {
+        val attempt = QuestAttempt.commit(
+            questId = "quest_study_30",
+            method = VerificationMethod.DIGITAL,
+            committedDurationMinutes = 30L,
+            attemptId = "fixed-test-attempt-id"
+        )
+
+        assertEquals("fixed-test-attempt-id", attempt.attemptId)
+    }
+
+    @Test
+    fun `a freshly committed attempt has no linked Focus session yet`() {
+        val attempt = QuestAttempt.commit(
+            questId = "quest_study_30",
+            method = VerificationMethod.DIGITAL,
+            committedDurationMinutes = 30L
+        )
+
+        assertNull(attempt.linkedFocusSessionId)
+    }
+
+    @Test
+    fun `linkedFocusSessionId can be represented once a Focus session exists`() {
+        val attempt = QuestAttempt.commit(
+            questId = "quest_study_30",
+            method = VerificationMethod.DIGITAL,
+            committedDurationMinutes = 30L
+        )
+
+        val linked = attempt.copy(linkedFocusSessionId = "some-focus-session-id")
+
+        assertEquals("some-focus-session-id", linked.linkedFocusSessionId)
+    }
+
+    @Test
+    fun `committedDurationMinutes is unaffected by setting linkedFocusSessionId`() {
+        val attempt = QuestAttempt.commit(
+            questId = "quest_study_30",
+            method = VerificationMethod.DIGITAL,
+            committedDurationMinutes = 30L
+        )
+
+        val linked = attempt.copy(linkedFocusSessionId = "some-focus-session-id")
+
+        assertEquals(30L, linked.committedDurationMinutes)
     }
 }
