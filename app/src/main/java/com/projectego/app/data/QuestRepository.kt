@@ -11,6 +11,7 @@ import com.projectego.app.model.QuestStatus
 import com.projectego.app.model.VerificationMethod
 import com.projectego.app.model.VerificationOutcome
 import com.projectego.app.model.VerificationResult
+import java.util.UUID
 
 class QuestRepository(
     context: Context,
@@ -34,7 +35,13 @@ class QuestRepository(
         // human-authored verification "reason" string, so the manual
         // serialization below stays safe without a JSON dependency.
         private const val ATTEMPT_FIELD_SEPARATOR = "\u001F"
-        private const val ATTEMPT_FIELD_COUNT = 12
+
+        // Phase 2.3.3 Step 2: field count grew from 12 to 14 to add
+        // attemptId and linkedFocusSessionId. LEGACY_ATTEMPT_FIELD_COUNT
+        // lets deserializeAttempt() safely migrate records persisted
+        // before this step, rather than discarding them.
+        private const val ATTEMPT_FIELD_COUNT = 14
+        private const val LEGACY_ATTEMPT_FIELD_COUNT = 12
 
         // Static initial quests for Phase 2.1
         private val INITIAL_QUESTS = listOf(
@@ -380,14 +387,23 @@ class QuestRepository(
             safeReason,
             attempt.verificationResult?.evaluatedTimestamp?.toString() ?: "",
             attempt.rewardMinutes?.toString() ?: "",
-            attempt.rewardedTimestamp?.toString() ?: ""
+            attempt.rewardedTimestamp?.toString() ?: "",
+            attempt.attemptId,
+            attempt.linkedFocusSessionId ?: ""
         )
         return fields.joinToString(ATTEMPT_FIELD_SEPARATOR)
     }
 
     private fun deserializeAttempt(raw: String): QuestAttempt? {
         val parts = raw.split(ATTEMPT_FIELD_SEPARATOR)
-        if (parts.size != ATTEMPT_FIELD_COUNT) return null
+
+        // Phase 2.3.3 Step 2: accept both the current 14-field format and
+        // the legacy 12-field format persisted before Step 1 introduced
+        // attemptId/linkedFocusSessionId. Anything else is corrupt or
+        // unrecognized data.
+        if (parts.size != ATTEMPT_FIELD_COUNT && parts.size != LEGACY_ATTEMPT_FIELD_COUNT) {
+            return null
+        }
 
         return try {
             val outcomeName = parts[7]
@@ -401,7 +417,25 @@ class QuestRepository(
                 )
             }
 
+            // Legacy (12-field) records have no attemptId/linkedFocusSessionId
+            // at all. Generating a fresh UUID here is the one-time migration
+            // fallback for a MISSING legacy field - it is NOT the same as
+            // regenerating an id that was actually stored: a 14-field
+            // record's stored attemptId (parts[12]) is always used as-is,
+            // never replaced.
+            val attemptId = if (parts.size == ATTEMPT_FIELD_COUNT) {
+                parts[12]
+            } else {
+                UUID.randomUUID().toString()
+            }
+            val linkedFocusSessionId = if (parts.size == ATTEMPT_FIELD_COUNT) {
+                parts[13].takeIf { it.isNotEmpty() }
+            } else {
+                null
+            }
+
             QuestAttempt(
+                attemptId = attemptId,
                 questId = parts[0],
                 method = VerificationMethod.valueOf(parts[1]),
                 state = QuestAttemptState.valueOf(parts[2]),
@@ -411,7 +445,8 @@ class QuestRepository(
                 activityEndTimestamp = parts[6].takeIf { it.isNotEmpty() }?.toLong(),
                 verificationResult = verificationResult,
                 rewardMinutes = parts[10].takeIf { it.isNotEmpty() }?.toLong(),
-                rewardedTimestamp = parts[11].takeIf { it.isNotEmpty() }?.toLong()
+                rewardedTimestamp = parts[11].takeIf { it.isNotEmpty() }?.toLong(),
+                linkedFocusSessionId = linkedFocusSessionId
             )
         } catch (e: Exception) {
             // Defensive: any parse failure means "no valid attempt" rather

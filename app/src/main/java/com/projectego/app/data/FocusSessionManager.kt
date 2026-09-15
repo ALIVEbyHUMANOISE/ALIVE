@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import com.projectego.app.model.FocusActivityType
 import com.projectego.app.model.FocusSession
 import com.projectego.app.model.FocusState
+import java.util.UUID
 
 class FocusSessionManager(
     context: Context,
@@ -21,6 +22,11 @@ class FocusSessionManager(
         private const val KEY_DURATION_MINUTES = "key_duration_minutes"
         private const val KEY_START_TIMESTAMP = "key_start_timestamp"
         private const val KEY_END_TIMESTAMP = "key_end_timestamp"
+
+        // Phase 2.3.3 Step 2: explicit identity/correlation fields.
+        private const val KEY_FOCUS_SESSION_ID = "key_focus_session_id"
+        private const val KEY_LINKED_QUEST_ATTEMPT_ID = "key_linked_quest_attempt_id"
+        private const val KEY_VIOLATION_COUNT = "key_violation_count"
     }
 
     @Synchronized
@@ -49,13 +55,27 @@ class FocusSessionManager(
         val durationMinutes = prefs.getLong(KEY_DURATION_MINUTES, 0L)
         val startTimestamp = prefs.getLong(KEY_START_TIMESTAMP, 0L)
 
+        // Phase 2.3.3 Step 2: focusSessionId falls back to a freshly
+        // generated UUID only when reading a legacy session persisted
+        // before Step 1 (the key was never written, so it reads back
+        // null here). A session persisted by the current
+        // startFocusSession()/startTestFocusSession() always has this key
+        // written at creation time and is restored as-is, never
+        // regenerated.
+        val focusSessionId = prefs.getString(KEY_FOCUS_SESSION_ID, null) ?: UUID.randomUUID().toString()
+        val linkedQuestAttemptId = prefs.getString(KEY_LINKED_QUEST_ATTEMPT_ID, null)
+        val violationCount = prefs.getInt(KEY_VIOLATION_COUNT, 0)
+
         return FocusSession(
             activityType = activityType,
             goal = goal,
             durationMinutes = durationMinutes,
             startTimestamp = startTimestamp,
             endTimestamp = endTimestamp,
-            isActive = true
+            isActive = true,
+            focusSessionId = focusSessionId,
+            linkedQuestAttemptId = linkedQuestAttemptId,
+            violationCount = violationCount
         )
     }
 
@@ -100,6 +120,9 @@ class FocusSessionManager(
             .putLong(KEY_DURATION_MINUTES, durationMinutes)
             .putLong(KEY_START_TIMESTAMP, now)
             .putLong(KEY_END_TIMESTAMP, end)
+            .putString(KEY_FOCUS_SESSION_ID, UUID.randomUUID().toString())
+            .remove(KEY_LINKED_QUEST_ATTEMPT_ID)
+            .putInt(KEY_VIOLATION_COUNT, 0)
             .apply()
 
         return true
@@ -152,6 +175,9 @@ class FocusSessionManager(
             .putLong(KEY_DURATION_MINUTES, 1L)
             .putLong(KEY_START_TIMESTAMP, now)
             .putLong(KEY_END_TIMESTAMP, end)
+            .putString(KEY_FOCUS_SESSION_ID, UUID.randomUUID().toString())
+            .remove(KEY_LINKED_QUEST_ATTEMPT_ID)
+            .putInt(KEY_VIOLATION_COUNT, 0)
             .apply()
         return true
     }

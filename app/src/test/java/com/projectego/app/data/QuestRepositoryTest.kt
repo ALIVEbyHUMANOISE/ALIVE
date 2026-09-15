@@ -451,4 +451,128 @@ class QuestRepositoryTest {
         assertEquals(QuestAttemptState.REWARDED, recreatedQuestRepository.getCurrentAttempt()?.state)
         assertEquals(quest.rewardMinutes, recreatedTimeBankRepository.getTimeBank().earnedMinutes)
     }
+
+    // ============================================================
+    // Phase 2.3.3 Step 2: persistence of attemptId/linkedFocusSessionId.
+    // No DigitalQuestVerifier, coordinator, violation, or linking-wiring
+    // logic is tested here - only that the identity/correlation fields
+    // introduced in Step 1 survive serialization/deserialization.
+    // ============================================================
+
+    @Test
+    fun `attemptId is preserved across repository reconstruction`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val questId = questRepository.getAllQuests().first().id
+        questRepository.commitQuest(questId, VerificationMethod.DIGITAL, 30L)
+        val originalAttemptId = questRepository.getCurrentAttempt()?.attemptId
+
+        val recreatedTimeBankRepository = TimeBankRepository(context)
+        val recreatedQuestRepository = QuestRepository(context, recreatedTimeBankRepository)
+
+        assertEquals(originalAttemptId, recreatedQuestRepository.getCurrentAttempt()?.attemptId)
+    }
+
+    @Test
+    fun `reading the current attempt multiple times returns the same attemptId each time`() {
+        val questId = questRepository.getAllQuests().first().id
+        questRepository.commitQuest(questId, VerificationMethod.DIGITAL, 30L)
+
+        val firstRead = questRepository.getCurrentAttempt()?.attemptId
+        val secondRead = questRepository.getCurrentAttempt()?.attemptId
+        val thirdRead = questRepository.getCurrentAttempt()?.attemptId
+
+        assertEquals(firstRead, secondRead)
+        assertEquals(secondRead, thirdRead)
+    }
+
+    @Test
+    fun `linkedFocusSessionId is preserved across repository reconstruction when present`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val rawWithLink = listOf(
+            "quest_study_30", "DIGITAL", "IN_PROGRESS", "1000", "30",
+            "1000", "", "", "", "", "", "",
+            "fixed-attempt-id", "fixed-focus-session-id"
+        ).joinToString("\u001F")
+
+        context.getSharedPreferences("project_ego_quests", Context.MODE_PRIVATE)
+            .edit()
+            .putString("key_current_quest_attempt", rawWithLink)
+            .apply()
+
+        val recreatedTimeBankRepository = TimeBankRepository(context)
+        val recreatedQuestRepository = QuestRepository(context, recreatedTimeBankRepository)
+
+        val attempt = recreatedQuestRepository.getCurrentAttempt()
+        assertEquals("fixed-attempt-id", attempt?.attemptId)
+        assertEquals("fixed-focus-session-id", attempt?.linkedFocusSessionId)
+    }
+
+    @Test
+    fun `a persisted attempt with no linked Focus session deserializes with null linkedFocusSessionId`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val rawWithoutLink = listOf(
+            "quest_study_30", "DIGITAL", "IN_PROGRESS", "1000", "30",
+            "1000", "", "", "", "", "", "",
+            "fixed-attempt-id", ""
+        ).joinToString("\u001F")
+
+        context.getSharedPreferences("project_ego_quests", Context.MODE_PRIVATE)
+            .edit()
+            .putString("key_current_quest_attempt", rawWithoutLink)
+            .apply()
+
+        val attempt = questRepository.getCurrentAttempt()
+
+        assertEquals("fixed-attempt-id", attempt?.attemptId)
+        assertNull(attempt?.linkedFocusSessionId)
+    }
+
+    @Test
+    fun `a legacy 12-field attempt persisted before Step 1 is migrated safely on read`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val legacyRaw = listOf(
+            "quest_study_30", "DIGITAL", "IN_PROGRESS", "1000", "30",
+            "1000", "", "", "", "", "", ""
+        ).joinToString("\u001F")
+
+        context.getSharedPreferences("project_ego_quests", Context.MODE_PRIVATE)
+            .edit()
+            .putString("key_current_quest_attempt", legacyRaw)
+            .apply()
+
+        val migrated = questRepository.getCurrentAttempt()
+
+        assertEquals("quest_study_30", migrated?.questId)
+        assertEquals(QuestAttemptState.IN_PROGRESS, migrated?.state)
+        assertEquals(30L, migrated?.committedDurationMinutes)
+        assertNotNull(migrated?.attemptId)
+        assertTrue(migrated?.attemptId?.isNotBlank() == true)
+        assertNull(migrated?.linkedFocusSessionId)
+    }
+
+    @Test
+    fun `a legacy attempt does not corrupt existing completed-quest history`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val quest = questRepository.getAllQuests().first()
+        questRepository.commitQuest(quest.id, VerificationMethod.DIGITAL, 30L)
+        questRepository.startAttempt()
+        questRepository.requestVerification()
+        questRepository.verifyQuest(VerificationOutcome.PASS, "Test evidence passed")
+        questRepository.claimReward()
+
+        // Simulate a legacy 12-field CURRENT attempt sitting alongside the
+        // already-completed quest history above.
+        val secondQuest = questRepository.getAllQuests()[1]
+        val legacyRaw = listOf(
+            secondQuest.id, "DIGITAL", "COMMITTED", "2000", "20",
+            "", "", "", "", "", "", ""
+        ).joinToString("\u001F")
+        context.getSharedPreferences("project_ego_quests", Context.MODE_PRIVATE)
+            .edit()
+            .putString("key_current_quest_attempt", legacyRaw)
+            .apply()
+
+        assertEquals(QuestStatus.COMPLETED, questRepository.getAllQuests().find { it.id == quest.id }?.status)
+        assertEquals(quest.rewardMinutes, TimeBankRepository(context).getTimeBank().earnedMinutes)
+    }
 }
