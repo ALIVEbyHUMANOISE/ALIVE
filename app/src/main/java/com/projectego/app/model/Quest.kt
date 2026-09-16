@@ -7,6 +7,8 @@ enum class QuestCategory {
     WALKING,
     CLEANING,
     CREATIVE,
+    CODING,
+    WRITING,
     OTHER
 }
 
