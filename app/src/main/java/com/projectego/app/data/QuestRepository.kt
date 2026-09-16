@@ -372,6 +372,49 @@ class QuestRepository(
         prefs.edit().putString(KEY_CURRENT_ATTEMPT, serializeAttempt(attempt)).apply()
     }
 
+    /**
+     * Links a Focus session to the current Digital quest attempt.
+     *
+     * Succeeds ONLY when:
+     * - there is a current attempt
+     * - attempt state is IN_PROGRESS
+     * - verification method is DIGITAL
+     * - linkedFocusSessionId is currently null
+     * - focusSessionId is non-blank
+     *
+     * Does not alter TimeBank or completed history.
+     * Does not change any other state transition.
+     * Repeated linking (when already linked) fails rather than overwriting.
+     */
+    @Synchronized
+    fun linkFocusSession(focusSessionId: String): Boolean {
+        if (focusSessionId.isBlank()) {
+            return false
+        }
+
+        val current = getCurrentAttempt() ?: return false
+
+        // Check eligibility
+        if (current.state != QuestAttemptState.IN_PROGRESS) {
+            return false
+        }
+
+        if (current.method != VerificationMethod.DIGITAL) {
+            return false
+        }
+
+        if (current.linkedFocusSessionId != null) {
+            // Already linked; do not overwrite
+            return false
+        }
+
+        // Create updated attempt with linkage
+        val updated = current.copy(linkedFocusSessionId = focusSessionId)
+        persistAttempt(updated)
+
+        return true
+    }
+
     private fun serializeAttempt(attempt: QuestAttempt): String {
         val safeReason = attempt.verificationResult?.reason
             ?.replace(ATTEMPT_FIELD_SEPARATOR, " ") ?: ""

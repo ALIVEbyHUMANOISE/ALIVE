@@ -575,4 +575,94 @@ class QuestRepositoryTest {
         assertEquals(QuestStatus.COMPLETED, questRepository.getAllQuests().find { it.id == quest.id }?.status)
         assertEquals(quest.rewardMinutes, TimeBankRepository(context).getTimeBank().earnedMinutes)
     }
+
+    // ============================================================
+    // Phase 2.3.3 Step 3a: linkFocusSession() API testing.
+    // ============================================================
+
+    @Test
+    fun `linkFocusSession succeeds for eligible IN_PROGRESS DIGITAL attempt`() {
+        val questId = questRepository.getAllQuests().first().id
+        questRepository.commitQuest(questId, VerificationMethod.DIGITAL, 30L)
+        questRepository.startAttempt()
+
+        val linked = questRepository.linkFocusSession("test-focus-session-id")
+
+        assertTrue(linked)
+        assertEquals("test-focus-session-id", questRepository.getCurrentAttempt()?.linkedFocusSessionId)
+    }
+
+    @Test
+    fun `linkFocusSession persists after repository reconstruction`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val questId = questRepository.getAllQuests().first().id
+        questRepository.commitQuest(questId, VerificationMethod.DIGITAL, 30L)
+        questRepository.startAttempt()
+        questRepository.linkFocusSession("persisted-focus-id")
+
+        val recreatedTimeBankRepository = TimeBankRepository(context)
+        val recreatedQuestRepository = QuestRepository(context, recreatedTimeBankRepository)
+
+        assertEquals("persisted-focus-id", recreatedQuestRepository.getCurrentAttempt()?.linkedFocusSessionId)
+    }
+
+    @Test
+    fun `second linkFocusSession attempt fails when already linked`() {
+        val questId = questRepository.getAllQuests().first().id
+        questRepository.commitQuest(questId, VerificationMethod.DIGITAL, 30L)
+        questRepository.startAttempt()
+        questRepository.linkFocusSession("first-link")
+
+        val secondLink = questRepository.linkFocusSession("second-link")
+
+        assertFalse(secondLink)
+        assertEquals("first-link", questRepository.getCurrentAttempt()?.linkedFocusSessionId)
+    }
+
+    @Test
+    fun `linkFocusSession fails for non-DIGITAL attempt method`() {
+        val questId = questRepository.getAllQuests().first().id
+        questRepository.commitQuest(questId, VerificationMethod.PHYSICAL, 30L)
+        questRepository.startAttempt()
+
+        val linked = questRepository.linkFocusSession("any-focus-id")
+
+        assertFalse(linked)
+        assertNull(questRepository.getCurrentAttempt()?.linkedFocusSessionId)
+    }
+
+    @Test
+    fun `linkFocusSession fails when attempt is not IN_PROGRESS state`() {
+        val questId = questRepository.getAllQuests().first().id
+        val committed = questRepository.commitQuest(questId, VerificationMethod.DIGITAL, 30L)
+
+        assertTrue(committed)
+        // At COMMITTED state (not IN_PROGRESS), linking should fail
+        val linked = questRepository.linkFocusSession("focus-id")
+
+        assertFalse(linked)
+        assertNull(questRepository.getCurrentAttempt()?.linkedFocusSessionId)
+    }
+
+    @Test
+    fun `linkFocusSession rejects blank focus session id`() {
+        val questId = questRepository.getAllQuests().first().id
+        questRepository.commitQuest(questId, VerificationMethod.DIGITAL, 30L)
+        questRepository.startAttempt()
+
+        val linkedBlank = questRepository.linkFocusSession("")
+        val linkedSpaces = questRepository.linkFocusSession("   ")
+
+        assertFalse(linkedBlank)
+        assertFalse(linkedSpaces)
+        assertNull(questRepository.getCurrentAttempt()?.linkedFocusSessionId)
+    }
+
+    @Test
+    fun `linkFocusSession fails when no current attempt exists`() {
+        val linked = questRepository.linkFocusSession("some-focus-id")
+
+        assertFalse(linked)
+        assertNull(questRepository.getCurrentAttempt())
+    }
 }
