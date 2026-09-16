@@ -6,9 +6,11 @@ import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import com.projectego.app.data.FocusSessionManager
 import com.projectego.app.data.LockStateManager
+import com.projectego.app.data.QuestRepository
 import com.projectego.app.data.TimeBankRepository
 import com.projectego.app.domain.AppClassifier
 import com.projectego.app.domain.FocusAppPolicy
+import com.projectego.app.domain.QuestVerificationCoordinator
 import com.projectego.app.domain.UsageTracker
 import com.projectego.app.model.AppCategory
 import com.projectego.app.ui.LockActivity
@@ -18,6 +20,7 @@ class EgoAccessibilityService : AccessibilityService() {
     private lateinit var usageTracker: UsageTracker
     private lateinit var lockStateManager: LockStateManager
     private lateinit var focusSessionManager: FocusSessionManager
+    private lateinit var questVerificationCoordinator: QuestVerificationCoordinator
 
     private var lastInterceptionTime = 0L
     private var lastForegroundPackage: String? = null
@@ -28,6 +31,8 @@ class EgoAccessibilityService : AccessibilityService() {
         lockStateManager = LockStateManager(this)
         val timeBankRepository = TimeBankRepository(this)
         focusSessionManager = FocusSessionManager(this, timeBankRepository)
+        val questRepository = QuestRepository(this, timeBankRepository)
+        questVerificationCoordinator = QuestVerificationCoordinator(questRepository, focusSessionManager)
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -81,6 +86,8 @@ class EgoAccessibilityService : AccessibilityService() {
             return
         }
         lastInterceptionTime = now
+
+        questVerificationCoordinator.onViolationConfirmed()
 
         performGlobalAction(GLOBAL_ACTION_HOME)
 
