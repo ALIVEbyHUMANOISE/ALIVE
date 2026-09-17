@@ -25,9 +25,11 @@ import com.projectego.app.data.LockStateManager
 import com.projectego.app.data.QuestRepository
 import com.projectego.app.data.TimeBankRepository
 import com.projectego.app.domain.FocusAppPolicy
+import com.projectego.app.domain.QuestStartCoordinator
 import com.projectego.app.domain.UsageTracker
 import com.projectego.app.model.DayType
 import com.projectego.app.model.FocusActivityType
+import com.projectego.app.model.QuestAttemptState
 import com.projectego.app.model.QuestStatus
 import com.projectego.app.model.TimeStatus
 import com.projectego.app.service.EgoAccessibilityService
@@ -42,6 +44,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var timeBankRepository: TimeBankRepository
     private lateinit var questRepository: QuestRepository
     private lateinit var focusSessionManager: FocusSessionManager
+    private lateinit var questStartCoordinator: QuestStartCoordinator
 
     private lateinit var statusContainer: LinearLayout
     private lateinit var scrollView: ScrollView
@@ -59,6 +62,7 @@ class MainActivity : AppCompatActivity() {
         timeBankRepository = TimeBankRepository(this)
         questRepository = QuestRepository(this, timeBankRepository)
         focusSessionManager = FocusSessionManager(this, timeBankRepository)
+        questStartCoordinator = QuestStartCoordinator(questRepository, focusSessionManager)
 
         scrollView = ScrollView(this)
         statusContainer = LinearLayout(this).apply {
@@ -527,7 +531,22 @@ class MainActivity : AppCompatActivity() {
         statusContainer.addView(questHeader)
 
         val allQuests = questRepository.getAllQuests()
-        val activeQuest = questRepository.getActiveQuest()
+
+        // Phase 2.3.3: the Quest Board's active state is derived from the
+        // active QuestAttempt, not the legacy KEY_ACTIVE_QUEST_ID state.
+        // The legacy key may be stale (it is no longer written by the AMBIL
+        // flow), so it must not decide which quest is shown as active nor
+        // which quest is skipped in the list below.
+        val currentAttempt = questRepository.getCurrentAttempt()
+        val hasActiveAttempt = currentAttempt != null && when (currentAttempt.state) {
+            QuestAttemptState.COMMITTED,
+            QuestAttemptState.IN_PROGRESS,
+            QuestAttemptState.PENDING_VERIFICATION,
+            QuestAttemptState.VERIFIED -> true
+            else -> false
+        }
+        val activeQuestId = if (hasActiveAttempt) currentAttempt?.questId else null
+        val activeQuest = activeQuestId?.let { id -> allQuests.find { it.id == id } }
 
         if (activeQuest != null) {
             val activeCard = LinearLayout(this).apply {
@@ -580,7 +599,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         for (quest in allQuests) {
-            if (quest.status == QuestStatus.ACTIVE) continue
+            if (quest.id == activeQuestId) continue
 
             val questItem = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -627,13 +646,13 @@ class MainActivity : AppCompatActivity() {
             } else {
                 val startBtn = Button(this).apply {
                     text = "AMBIL"
-                    isEnabled = (activeQuest == null)
+                    isEnabled = !hasActiveAttempt
                     setOnClickListener {
-                        val success = questRepository.startQuest(quest.id)
+                        val success = questStartCoordinator.startDigitalQuest(quest.id)
                         if (success) {
                             renderDashboard()
                         } else {
-                            Toast.makeText(this@MainActivity, "Hanya boleh 1 quest aktif sekaligus!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@MainActivity, "Quest tidak dapat dimulai saat ini.", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }

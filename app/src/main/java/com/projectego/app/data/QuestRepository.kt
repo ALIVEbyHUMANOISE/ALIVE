@@ -21,9 +21,41 @@ class QuestRepository(
     private val prefs: SharedPreferences =
         context.getSharedPreferences("project_ego_quests", Context.MODE_PRIVATE)
 
+    init {
+        migrateLegacyQuestStateIfNeeded()
+    }
+
+    /**
+     * Phase 2.3.3 one-time migration away from the legacy Phase 2.1 quest
+     * lifecycle. Clears ONLY [KEY_ACTIVE_QUEST_ID] and
+     * [KEY_COMPLETED_QUEST_IDS] - the old state could otherwise render a
+     * quest as completed/active and block it from being started.
+     *
+     * Idempotent: guarded by [KEY_LEGACY_QUEST_STATE_MIGRATED] inside the
+     * same synchronous commit, so it runs at most once per install.
+     *
+     * Deliberately does NOT touch the QuestAttempt blob, TimeBank, Focus
+     * session data, or any other SharedPreferences file.
+     */
+    @Synchronized
+    private fun migrateLegacyQuestStateIfNeeded() {
+        if (prefs.getBoolean(KEY_LEGACY_QUEST_STATE_MIGRATED, false)) return
+
+        prefs.edit()
+            .remove(KEY_ACTIVE_QUEST_ID)
+            .remove(KEY_COMPLETED_QUEST_IDS)
+            .putBoolean(KEY_LEGACY_QUEST_STATE_MIGRATED, true)
+            .commit()
+    }
+
     companion object {
         private const val KEY_ACTIVE_QUEST_ID = "key_active_quest_id"
         private const val KEY_COMPLETED_QUEST_IDS = "key_completed_quest_ids"
+
+        // Phase 2.3.3: one-time migration marker. When this key is present,
+        // the legacy Phase 2.1 quest lifecycle state (active id + completed
+        // ids) has already been cleared and will never be cleared again.
+        private const val KEY_LEGACY_QUEST_STATE_MIGRATED = "key_legacy_quest_state_migrated_v1"
 
         // Phase 2.3.2: the current QuestAttempt is persisted as a single
         // serialized string under one key, rather than scattering its
@@ -101,6 +133,7 @@ class QuestRepository(
     // rewarded through the new pipeline correctly shows COMPLETED here.
     // ============================================================
 
+
     private fun getCompletedIds(): Set<String> {
         return prefs.getStringSet(KEY_COMPLETED_QUEST_IDS, emptySet()) ?: emptySet()
     }
@@ -123,7 +156,6 @@ class QuestRepository(
             quest.copy(status = status)
         }
     }
-
     fun getActiveQuest(): Quest? {
         val activeId = getActiveQuestId() ?: return null
         return getAllQuests().find { it.id == activeId }
