@@ -130,13 +130,38 @@ class QuestVerificationCoordinatorTest {
     }
 
     @Test
-    fun `multiple evaluateAttemptOnResume calls after VERIFIED return false`() {
+    fun `VERIFIED unrewarded attempt recovers reward on resume via claimReward`() {
         assertTrue(questRepository.commitQuest("quest_study_30", VerificationMethod.DIGITAL, 30L))
         assertTrue(questRepository.startAttempt())
         assertTrue(questRepository.requestVerification())
         assertTrue(questRepository.verifyQuest(VerificationOutcome.PASS, "pass"))
         assertEquals(QuestAttemptState.VERIFIED, questRepository.getCurrentAttempt()?.state)
+        assertNull(questRepository.getCurrentAttempt()?.rewardMinutes)
+        assertEquals(0L, timeBankRepository.getTimeBank().earnedMinutes)
+
         val result = coordinator.evaluateAttemptOnResume(context)
-        assertFalse(result)
+
+        assertTrue(result)
+        assertEquals(QuestAttemptState.REWARDED, questRepository.getCurrentAttempt()?.state)
+        assertEquals(20L, questRepository.getCurrentAttempt()?.rewardMinutes)
+        assertNotNull(questRepository.getCurrentAttempt()?.rewardedTimestamp)
+        assertEquals(20L, timeBankRepository.getTimeBank().earnedMinutes)
+    }
+
+    @Test
+    fun `second evaluateAttemptOnResume after VERIFIED recovery is idempotent`() {
+        assertTrue(questRepository.commitQuest("quest_study_30", VerificationMethod.DIGITAL, 30L))
+        assertTrue(questRepository.startAttempt())
+        assertTrue(questRepository.requestVerification())
+        assertTrue(questRepository.verifyQuest(VerificationOutcome.PASS, "pass"))
+
+        assertTrue(coordinator.evaluateAttemptOnResume(context))
+        assertEquals(20L, timeBankRepository.getTimeBank().earnedMinutes)
+
+        val second = coordinator.evaluateAttemptOnResume(context)
+
+        assertFalse(second)
+        assertEquals(QuestAttemptState.REWARDED, questRepository.getCurrentAttempt()?.state)
+        assertEquals(20L, timeBankRepository.getTimeBank().earnedMinutes)
     }
 }

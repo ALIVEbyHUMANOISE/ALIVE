@@ -45,6 +45,14 @@ class QuestVerificationCoordinator(
         // Only DIGITAL attempts are evaluated by this coordinator.
         if (attempt.method != VerificationMethod.DIGITAL) return false
 
+        // Already VERIFIED but unrewarded (crash between verifyQuest() and
+        // claimReward()). Do NOT re-run the verifier or verifyQuest() again -
+        // claimReward() alone recovers the existing reward, and is idempotent
+        // (a REWARDED attempt returns null).
+        if (attempt.state == QuestAttemptState.VERIFIED) {
+            return questRepository.claimReward() != null
+        }
+
         // Monitoring-integrity check first (Section 9 of design).
         if (!isAccessibilityServiceEnabled(context)) {
             return onMonitoringLost(context)
@@ -76,7 +84,7 @@ class QuestVerificationCoordinator(
 
         return when (val result = digitalQuestVerifier.verify(evidence)) {
             is DigitalQuestVerificationResult.Verified -> {
-                when (attempt.state) {
+                val verified = when (attempt.state) {
                     QuestAttemptState.IN_PROGRESS -> {
                         // Transition to PENDING_VERIFICATION, then apply VERIFIED.
                         if (!questRepository.requestVerification()) return false
@@ -88,6 +96,13 @@ class QuestVerificationCoordinator(
                     }
                     else -> false // Not a valid state for this flow
                 }
+                // Reward only after the attempt is actually VERIFIED. claimReward()
+                // itself requires state == VERIFIED and is idempotent (a REWARDED
+                // attempt returns null), so this is safe on repeated resumes.
+                if (verified) {
+                    questRepository.claimReward()
+                }
+                verified
             }
             is DigitalQuestVerificationResult.NotReady -> {
                 // No transition; still waiting for committed duration.
