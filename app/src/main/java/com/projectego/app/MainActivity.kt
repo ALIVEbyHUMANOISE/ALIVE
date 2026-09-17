@@ -26,6 +26,7 @@ import com.projectego.app.data.QuestRepository
 import com.projectego.app.data.TimeBankRepository
 import com.projectego.app.domain.FocusAppPolicy
 import com.projectego.app.domain.QuestStartCoordinator
+import com.projectego.app.domain.QuestVerificationCoordinator
 import com.projectego.app.domain.UsageTracker
 import com.projectego.app.model.DayType
 import com.projectego.app.model.FocusActivityType
@@ -45,6 +46,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var questRepository: QuestRepository
     private lateinit var focusSessionManager: FocusSessionManager
     private lateinit var questStartCoordinator: QuestStartCoordinator
+    private lateinit var questVerificationCoordinator: QuestVerificationCoordinator
 
     private lateinit var statusContainer: LinearLayout
     private lateinit var scrollView: ScrollView
@@ -63,6 +65,7 @@ class MainActivity : AppCompatActivity() {
         questRepository = QuestRepository(this, timeBankRepository)
         focusSessionManager = FocusSessionManager(this, timeBankRepository)
         questStartCoordinator = QuestStartCoordinator(questRepository, focusSessionManager)
+        questVerificationCoordinator = QuestVerificationCoordinator(questRepository, focusSessionManager)
 
         scrollView = ScrollView(this)
         statusContainer = LinearLayout(this).apply {
@@ -76,6 +79,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        questVerificationCoordinator.evaluateAttemptOnResume(this)
         renderDashboard()
     }
 
