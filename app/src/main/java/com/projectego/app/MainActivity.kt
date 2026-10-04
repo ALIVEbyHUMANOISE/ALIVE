@@ -1,4 +1,4 @@
-﻿package com.projectego.app
+package com.projectego.app
 
 import android.app.AppOpsManager
 import android.content.Context
@@ -13,13 +13,16 @@ import android.text.TextUtils
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.ScrollView
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.projectego.app.data.FocusSessionManager
 import com.projectego.app.data.LockStateManager
 import com.projectego.app.data.QuestRepository
@@ -27,6 +30,7 @@ import com.projectego.app.data.TimeBankRepository
 import com.projectego.app.domain.FocusAppPolicy
 import com.projectego.app.domain.QuestStartCoordinator
 import com.projectego.app.domain.QuestVerificationCoordinator
+import com.projectego.app.domain.UsageReport
 import com.projectego.app.domain.UsageTracker
 import com.projectego.app.model.DayType
 import com.projectego.app.model.FocusActivityType
@@ -49,7 +53,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var questVerificationCoordinator: QuestVerificationCoordinator
 
     private lateinit var statusContainer: LinearLayout
-    private lateinit var scrollView: ScrollView
+    private lateinit var questContainer: LinearLayout
+    private lateinit var profileContainer: LinearLayout
+    private lateinit var tabContent: FrameLayout
+    private lateinit var bottomNav: BottomNavigationView
 
     // Hidden developer trigger state
     private var devTapCount = 0
@@ -67,20 +74,50 @@ class MainActivity : AppCompatActivity() {
         questStartCoordinator = QuestStartCoordinator(questRepository, focusSessionManager)
         questVerificationCoordinator = QuestVerificationCoordinator(questRepository, focusSessionManager)
 
-        scrollView = ScrollView(this)
+        setContentView(R.layout.activity_main)
+
         statusContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(48, 64, 48, 64)
-            setBackgroundColor(0xFF181818.toInt())
         }
-        scrollView.addView(statusContainer)
-        setContentView(scrollView)
+        val homeScroll = ScrollView(this)
+        homeScroll.addView(statusContainer)
+
+        questContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(48, 64, 48, 64)
+        }
+        val questScroll = ScrollView(this)
+        questScroll.addView(questContainer)
+
+        profileContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(48, 64, 48, 64)
+        }
+
+        tabContent = findViewById(R.id.tabContent)
+        tabContent.addView(homeScroll)
+        tabContent.addView(questScroll)
+        tabContent.addView(profileContainer)
+
+        bottomNav = findViewById(R.id.bottomNav)
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> { showTab(0); renderDashboard(); true }
+                R.id.nav_quest -> { showTab(1); renderQuestSection(); true }
+                R.id.nav_profile -> { showTab(2); renderProfile(); true }
+                else -> false
+            }
+        }
+        bottomNav.selectedItemId = R.id.nav_home
+        showTab(0)
     }
 
     override fun onResume() {
         super.onResume()
         questVerificationCoordinator.evaluateAttemptOnResume(this)
         renderDashboard()
+        renderQuestSection()
     }
 
     private fun hasUsageAccess(): Boolean {
@@ -123,42 +160,17 @@ class MainActivity : AppCompatActivity() {
     private fun renderDashboard() {
         statusContainer.removeAllViews()
 
-        // Title with hidden developer tap sequence (tap 7 times rapidly to toggle dev panel)
-        val titleView = TextView(this).apply {
-            text = "PROJECT EGO"
-            textSize = 26f
-            setTypeface(null, Typeface.BOLD)
-            setTextColor(Color.WHITE)
-            setOnClickListener {
-                if (BuildConfig.DEBUG) {
-                    val now = System.currentTimeMillis()
-                    if (now - lastDevTapTime < 500) {
-                        devTapCount++
-                        if (devTapCount >= 7) {
-                            showDevPanel = !showDevPanel
-                            devTapCount = 0
-                            renderDashboard()
-                        }
-                    } else {
-                        devTapCount = 1
-                    }
-                    lastDevTapTime = now
-                }
-            }
-        }
-        statusContainer.addView(titleView)
-
-        val subtitleView = TextView(this).apply {
-            text = "Focus With Your Activity & Screen Time Discipline\n"
-            textSize = 14f
-            setTextColor(Color.LTGRAY)
-        }
-        statusContainer.addView(subtitleView)
-
-        // Permission Checks
+        // Calculate usage report early for state-based rendering
+        val report = usageTracker.calculateTodayEntertainmentUsage()
         val hasUsage = hasUsageAccess()
         val hasAccessibility = isAccessibilityServiceEnabled()
 
+        // ==========================================
+        // SECTION: HEADER WITH CHARACTER VISUALIZATION (BUILD 02)
+        // ==========================================
+        renderHeader(report.timeStatus)
+
+        // Permission Checks
         if (!hasUsage || !hasAccessibility) {
             val warningTitle = TextView(this).apply {
                 text = "PERHATIAN: Izin Diperlukan"
@@ -195,128 +207,27 @@ class MainActivity : AppCompatActivity() {
             statusContainer.addView(divider)
         }
 
-        // Calculate usage report
-        val report = usageTracker.calculateTodayEntertainmentUsage()
-
-        // Top Metrics Layout: Streak + Time Bank Cards
-        val metricsRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-        }
-
-        val streakCard = TextView(this).apply {
-            textSize = 16f
-            setTypeface(null, Typeface.BOLD)
-            setPadding(24, 20, 24, 20)
-            setBackgroundColor(0xFF2E3440.toInt())
-            setTextColor(Color.WHITE)
-            text = "🔥 STREAK: ${report.currentStreak} HARI"
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
-                setMargins(0, 0, 12, 0)
-            }
-        }
-        metricsRow.addView(streakCard)
-
         val timeBank = report.timeBank
-        val timeBankCard = TextView(this).apply {
-            textSize = 16f
-            setTypeface(null, Typeface.BOLD)
-            setPadding(24, 20, 24, 20)
-            setBackgroundColor(0xFF3B4252.toInt())
-            setTextColor(Color.WHITE)
-            text = "🪙 BANK: ${timeBank.availableMinutes} MIN"
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
-                setMargins(12, 0, 0, 0)
-            }
-        }
-        metricsRow.addView(timeBankCard)
-        statusContainer.addView(metricsRow)
 
-        val spacer1 = View(this).apply { minimumHeight = 24 }
-        statusContainer.addView(spacer1)
+        // ==========================================
+        // SECTION: YOUR TIME (BUILD 02 - Editorial Treatment)
+        // ==========================================
+        renderYourTimeSection(report)
 
-        // Time Status Banner
-        val statusBanner = TextView(this).apply {
-            textSize = 16f
-            setTypeface(null, Typeface.BOLD)
-            setPadding(24, 24, 24, 24)
+        // ==========================================
+        // SECTION: CURRENT QUEST (Not Full Quest Board)
+        // ==========================================
+        renderCurrentQuest()
 
-            when (report.timeStatus) {
-                TimeStatus.ZERO_ENTERTAINMENT_DAY -> {
-                    text = "STATUS: ZERO-TIME RECOVERY DAY\n" +
-                            "Kemarin melebihi batas 120 menit.\n" +
-                            "Hari ini Anda memiliki 0 menit hiburan dasar."
-                    setBackgroundColor(0xFF7A0000.toInt())
-                    setTextColor(Color.WHITE)
-                }
-                TimeStatus.LOCKED -> {
-                    text = "STATUS: TERKUNCI (HARD LOCK)\n" +
-                            "Batas hiburan harian telah habis."
-                    setBackgroundColor(0xFF990000.toInt())
-                    setTextColor(Color.WHITE)
-                }
-                TimeStatus.CRITICAL -> {
-                    val remainingAlert = when (report.criticalZoneTier) {
-                        4 -> "TINGGAL 1 MENIT!"
-                        3 -> "TINGGAL 5 MENIT!"
-                        2 -> "TINGGAL 15 MENIT!"
-                        1 -> "TINGGAL 30 MENIT!"
-                        else -> "ZONA KRITIS"
-                    }
-                    text = "STATUS: CRITICAL ZONE ($remainingAlert)\n" +
-                            "Sisa waktu: ${report.remainingMinutes} menit."
-                    setBackgroundColor(0xFFB8860B.toInt())
-                    setTextColor(Color.WHITE)
-                }
-                TimeStatus.ACTIVE -> {
-                    text = "STATUS: ACTIVE (AMAN)\n" +
-                            "Sisa waktu: ${report.remainingMinutes} menit."
-                    setBackgroundColor(0xFF2E7D32.toInt())
-                    setTextColor(Color.WHITE)
-                }
-            }
-        }
-        statusContainer.addView(statusBanner)
-
-        // Usage Statistics
-        val statsView = TextView(this).apply {
-            textSize = 16f
-            setTextColor(Color.WHITE)
-            setPadding(0, 24, 0, 16)
-            text = buildString {
-                append("• Waktu Terpakai: ${report.totalEntertainmentMinutes} menit\n")
-                append("• Sisa Waktu Dasar: ${report.remainingMinutes} menit\n")
-                append("• Batas Harian: ${report.limitMinutes} menit (Tetap/Non-editable)\n")
-                append("• Tipe Hari: ${if (report.dayType == DayType.NORMAL_DAY) "NORMAL" else "RECOVERY (0 MENIT)"}\n\n")
-
-                append("Rincian Pemakaian Hiburan Hari Ini:\n")
-                if (report.entertainmentAppDetails.isEmpty()) {
-                    append("- Belum ada pemakaian hiburan hari ini.\n")
-                } else {
-                    for ((pkg, min) in report.entertainmentAppDetails) {
-                        append("• $pkg: $min menit\n")
-                    }
-                }
-            }
-        }
-        statusContainer.addView(statsView)
-
-        val refreshBtn = Button(this).apply {
-            text = "REFRESH STATUS"
-            setOnClickListener {
-                renderDashboard()
-            }
-        }
-        statusContainer.addView(refreshBtn)
+        // ==========================================
+        // SECTION: TIME BANK SUMMARY
+        // ==========================================
+        renderTimeBankSummary(timeBank.availableMinutes)
 
         // ==========================================
         // SECTION: FOCUS WITH YOUR ACTIVITY (PHASE 2.2)
         // ==========================================
         renderFocusSection(timeBank.availableMinutes)
-
-        // ==========================================
-        // SECTION: QUEST BOARD
-        // ==========================================
-        renderQuestSection()
 
         // ==========================================
         // SECTION: TIME BANK SPENDING FOUNDATION
@@ -331,12 +242,226 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Renders the ALIVE header section with character visualization (BUILD 02)
+     */
+    private fun renderHeader(timeStatus: TimeStatus) {
+        val headerLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24, 0, 24, 32)
+        }
+
+        val characterIcon = ImageView(this).apply {
+            setImageResource(
+                if (timeStatus == TimeStatus.ACTIVE) R.drawable.ic_alive_character
+                else R.drawable.ic_alive_character_aware
+            )
+            contentDescription = "ALIVE Character State"
+        }
+        headerLayout.addView(characterIcon)
+
+        val titleView = TextView(this).apply {
+            text = "ALIVE"
+            textSize = 32f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(0xFF1D1D1B.toInt())
+            setPadding(0, 8, 0, 4)
+            setOnClickListener {
+                if (BuildConfig.DEBUG) {
+                    val now = System.currentTimeMillis()
+                    if (now - lastDevTapTime < 500) {
+                        devTapCount++
+                        if (devTapCount >= 7) {
+                            showDevPanel = !showDevPanel
+                            devTapCount = 0
+                            renderDashboard()
+                        }
+                    } else {
+                        devTapCount = 1
+                    }
+                    lastDevTapTime = now
+                }
+            }
+        }
+        headerLayout.addView(titleView)
+
+        val subtitleView = TextView(this).apply {
+            text = "Focus With Your Activity & Screen Time Discipline"
+            textSize = 14f
+            setTextColor(0xFF5A5A5A.toInt())
+        }
+        headerLayout.addView(subtitleView)
+
+        statusContainer.addView(headerLayout)
+    }
+
+    /**
+     * Renders the YOUR TIME section with ALIVE editorial styling (BUILD 02)
+     */
+    private fun renderYourTimeSection(report: UsageReport) {
+        val yourTimeHeader = TextView(this).apply {
+            text = "YOUR TIME"
+            textSize = 20f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(0xFF1D1D1B.toInt())
+            setPadding(0, 24, 0, 8)
+        }
+        statusContainer.addView(yourTimeHeader)
+
+        val timeIndicator = ImageView(this).apply {
+            setImageResource(R.drawable.ic_time_indicator)
+            contentDescription = "Time Status Indicator"
+        }
+        statusContainer.addView(timeIndicator)
+
+        val remainingText = TextView(this).apply {
+            val formattedTime = if (report.remainingMinutes <= 1) "${report.remainingMinutes} minute"
+                               else "${report.remainingMinutes} minutes"
+            text = "$formattedTime left"
+            textSize = 18f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(
+                if (report.timeStatus == TimeStatus.ACTIVE) 0xFF2E7D32.toInt()
+                else when (report.timeStatus) {
+                    TimeStatus.CRITICAL -> 0xFFFFA726.toInt()
+                    TimeStatus.LOCKED -> 0xFF7A0000.toInt()
+                    TimeStatus.ZERO_ENTERTAINMENT_DAY -> 0xFF7A0000.toInt()
+                    else -> 0xFF1D1D1B.toInt()
+                }
+            )
+            setPadding(0, 12, 0, 4)
+        }
+        statusContainer.addView(remainingText)
+
+        val limitText = TextView(this).apply {
+            text = "Normal \u2022 ${report.limitMinutes} min daily limit"
+            textSize = 13f
+            setTextColor(0xFF5A5A5A.toInt())
+            setPadding(0, 0, 0, 24)
+        }
+        statusContainer.addView(limitText)
+
+        val separatorLine = View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 1
+            ).apply { setMargins(0, 0, 0, 32) }
+            setBackgroundColor(0xFFF0EAD8.toInt())
+        }
+        statusContainer.addView(separatorLine)
+    }
+
+    /**
+     * Renders the current quest in editorial style (not full quest board) (BUILD 02)
+     */
+    private fun renderCurrentQuest() {
+        val currentAttempt = questRepository.getCurrentAttempt()
+
+        if (currentAttempt == null || currentAttempt.state == QuestAttemptState.AVAILABLE) {
+            return
+        }
+
+        val allQuests = questRepository.getAllQuests()
+        val activeQuest = allQuests.find { it.id == currentAttempt.questId }
+
+        if (activeQuest != null) {
+            val currentQuestHeader = TextView(this).apply {
+                text = "Current Quest:"
+                textSize = 16f
+                setTypeface(Typeface.SANS_SERIF)
+                setTextColor(0xFF5A5A5A.toInt())
+                setPadding(0, 16, 0, 4)
+            }
+            statusContainer.addView(currentQuestHeader)
+
+            val questCard = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(24, 0, 24, 16)
+            }
+
+            val questTitle = TextView(this).apply {
+                text = activeQuest.title
+                textSize = 16f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(0xFF1D1D1B.toInt())
+            }
+            questCard.addView(questTitle)
+
+            val questDesc = TextView(this).apply {
+                text = activeQuest.description
+                textSize = 13f
+                setTextColor(0xFF5A5A5A.toInt())
+                setPadding(0, 4, 0, 8)
+            }
+            questCard.addView(questDesc)
+
+            val questMeta = TextView(this).apply {
+                text = "📚 ${activeQuest.category.name} • ${activeQuest.difficulty.name} • +${activeQuest.rewardMinutes} min reward"
+                textSize = 12f
+                setTextColor(0xFF315C45.toInt())
+                setPadding(0, 0, 0, 4)
+            }
+            questCard.addView(questMeta)
+
+            statusContainer.addView(questCard)
+
+            val questSeparator = View(this).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, 1
+                ).apply { setMargins(0, 0, 0, 24) }
+                setBackgroundColor(0xFFF0EAD8.toInt())
+            }
+            statusContainer.addView(questSeparator)
+        }
+    }
+
+    /**
+     * Renders Time Bank summary in minimalist ALIVE style (BUILD 02)
+     */
+    private fun renderTimeBankSummary(availableBankMinutes: Long) {
+        if (availableBankMinutes <= 0) return
+
+        val bankSummaryHeader = TextView(this).apply {
+            text = "Time Bank"
+            textSize = 16f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(0xFF1D1D1B.toInt())
+            setPadding(0, 16, 0, 4)
+        }
+        statusContainer.addView(bankSummaryHeader)
+
+        val bankSummaryText = TextView(this).apply {
+            text = "You've reclaimed $availableBankMinutes minutes through completed quests.\nUse these minutes wisely when you need extra focus time."
+            textSize = 13f
+            setTextColor(0xFF5A5A5A.toInt())
+            setPadding(0, 4, 0, 16)
+        }
+        statusContainer.addView(bankSummaryText)
+
+        val balanceText = TextView(this).apply {
+            text = "Balance: $availableBankMinutes min"
+            textSize = 14f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(0xFF315C45.toInt())
+        }
+        statusContainer.addView(balanceText)
+
+        val bankSeparator = View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 1
+            ).apply { setMargins(0, 0, 0, 24) }
+            setBackgroundColor(0xFFF0EAD8.toInt())
+        }
+        statusContainer.addView(bankSeparator)
+    }
+
+
+
     private fun renderFocusSection(availableBankMinutes: Long) {
         val focusHeader = TextView(this).apply {
             text = "\n⚡ FOCUS WITH YOUR ACTIVITY"
             textSize = 20f
             setTypeface(null, Typeface.BOLD)
-            setTextColor(Color.WHITE)
+            setTextColor(0xFF1D1D1B.toInt())
             setPadding(0, 20, 0, 10)
         }
         statusContainer.addView(focusHeader)
@@ -529,10 +654,10 @@ class MainActivity : AppCompatActivity() {
             text = "\n📋 QUEST BOARD"
             textSize = 20f
             setTypeface(null, Typeface.BOLD)
-            setTextColor(Color.WHITE)
+            setTextColor(0xFF1D1D1B.toInt())
             setPadding(0, 16, 0, 12)
         }
-        statusContainer.addView(questHeader)
+        questContainer.addView(questHeader)
 
         val allQuests = questRepository.getAllQuests()
 
@@ -591,7 +716,7 @@ class MainActivity : AppCompatActivity() {
             }
             activeCard.addView(questDetails)
 
-            statusContainer.addView(activeCard)
+            questContainer.addView(activeCard)
         } else {
             val noActiveText = TextView(this).apply {
                 text = "Pilih satu quest di bawah untuk memulai real-world task:"
@@ -599,7 +724,7 @@ class MainActivity : AppCompatActivity() {
                 setTextColor(Color.GRAY)
                 setPadding(0, 0, 0, 12)
             }
-            statusContainer.addView(noActiveText)
+            questContainer.addView(noActiveText)
         }
 
         for (quest in allQuests) {
@@ -662,7 +787,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 questItem.addView(startBtn)
             }
-            statusContainer.addView(questItem)
+            questContainer.addView(questItem)
         }
     }
 
@@ -671,7 +796,7 @@ class MainActivity : AppCompatActivity() {
             text = "\n🪙 TIME BANK SPENDING FOUNDATION"
             textSize = 18f
             setTypeface(null, Typeface.BOLD)
-            setTextColor(Color.WHITE)
+            setTextColor(0xFF1D1D1B.toInt())
             setPadding(0, 16, 0, 8)
         }
         statusContainer.addView(bankSectionHeader)
@@ -792,4 +917,31 @@ class MainActivity : AppCompatActivity() {
         }
         statusContainer.addView(devCompleteActiveQuestBtn)
     }
+
+    private fun showTab(index: Int) {
+        tabContent.getChildAt(0).visibility = if (index == 0) View.VISIBLE else View.GONE
+        tabContent.getChildAt(1).visibility = if (index == 1) View.VISIBLE else View.GONE
+        tabContent.getChildAt(2).visibility = if (index == 2) View.VISIBLE else View.GONE
+    }
+
+    private fun renderProfile() {
+        profileContainer.removeAllViews()
+
+        val title = TextView(this).apply {
+            text = "PROFILE"
+            textSize = 26f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(0xFF1D1D1B.toInt())
+        }
+        profileContainer.addView(title)
+
+        val body = TextView(this).apply {
+            text = "Profil ALIVE akan diisi pada tahap berikutnya."
+            textSize = 14f
+            setTextColor(0xFF1D1D1B.toInt())
+            setPadding(0, 12, 0, 0)
+        }
+        profileContainer.addView(body)
+    }
 }
+

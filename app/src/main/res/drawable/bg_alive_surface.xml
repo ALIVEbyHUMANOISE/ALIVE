@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Soft-forest surface: subtle grouping area, no hard borders. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/alive_soft_forest"/>
+    <corners android:radius="8dp"/>
+</shape>

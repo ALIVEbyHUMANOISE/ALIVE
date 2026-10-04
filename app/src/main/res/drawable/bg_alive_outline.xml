@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Thin ink stroke outline on paper - used sparingly.
+     Rond caps keep the stroke human-ink like. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/alive_paper"/>
+    <stroke
+        android:width="1.5dp"
+        android:color="@color/alive_ink"/>
+    <corners android:radius="8dp"/>
+</shape>

@@ -1,16 +1,21 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Theme.ProjectEgo" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
-        <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/purple_200</item>
-        <item name="colorPrimaryVariant">@color/purple_700</item>
-        <item name="colorOnPrimary">@color/black</item>
-        <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/teal_200</item>
-        <item name="colorSecondaryVariant">@color/teal_200</item>
-        <item name="colorOnSecondary">@color/black</item>
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
+    <!-- ALIVE base theme: paper background, ink text, forest identity.
+         ALIVE is a light editorial palette per the Design Constitution. -->
+    <style name="Theme.ProjectEgo" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/alive_forest</item>
+        <item name="colorPrimaryVariant">@color/alive_forest</item>
+        <item name="colorOnPrimary">@color/alive_white</item>
+        <item name="colorSecondary">@color/alive_forest</item>
+        <item name="colorSecondaryVariant">@color/alive_forest</item>
+        <item name="colorOnSecondary">@color/alive_white</item>
+        <item name="android:colorBackground">@color/alive_paper</item>
+        <item name="colorSurface">@color/alive_paper</item>
+        <item name="colorOnSurface">@color/alive_ink</item>
+        <item name="android:statusBarColor">@color/alive_paper</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">@color/alive_paper</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
+        <item name="android:textColorPrimary">@color/alive_ink</item>
+        <item name="android:textColorSecondary">@color/alive_ink</item>
     </style>
 </resources>

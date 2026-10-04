@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- ALIVE Design Constitution palette (authoritative) -->
+    <color name="alive_paper">#F5F1E8</color>
+    <color name="alive_ink">#1D1D1B</color>
+    <color name="alive_forest">#315C45</color>
+    <color name="alive_soft_forest">#DCE5DC</color>
+    <color name="alive_warm_gray">#D8D2C7</color>
+    <color name="alive_white">#FFFDF8</color>
+
+    <!-- Legacy template colors kept for resource compatibility -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>

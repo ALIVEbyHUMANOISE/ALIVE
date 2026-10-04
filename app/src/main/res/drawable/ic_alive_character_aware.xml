@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+ android:width="48dp"
+android:height="48dp"
+ android:viewportWidth="48"
+android:viewportHeight="48">
+
+ <!-- Simple stickman - aware pose(stepping backfromphone) -->
+<!-- Head - imperfectcircle-->
+<path
+ android:fillColor="@color/alive_ink"
+ android:pathData="M2412m-6 0a6 60 10 12 0a6 601 0-120"
+android:strokeWidth="1.5"/>
+
+ <!--Body- slightly curved organicline-->
+<path
+ android:fillColor="@android:color/transparent"
+ android:pathData="M24 19L2432"
+android:strokeColor="@color/alive_ink"
+android:strokeWidth="1.5"
+ android:strokeLineCap="round"/>
+
+<!-- Arms- natural position,one stepping back -->
+<path
+ android:fillColor="@android:color/transparent"
+android:pathData="M2421 Q18 241628"
+android:strokeColor="@color/alive_ink"
+android:strokeWidth="1.5"
+ android:strokeLineCap="round"/>
+<path
+android:fillColor="@android:color/transparent"
+ android:pathData="M2421 Q30 24 3228"
+android:strokeColor="@color/alive_ink"
+android:strokeWidth="1.5"
+ android:strokeLineCap="round"/>
+
+ <!-- Legs -steppingpose -->
+<path
+ android:fillColor="@android:color/transparent"
+ android:pathData="M2432 L20 40"
+android:strokeColor="@color/alive_ink"
+android:strokeWidth="1.5"
+ android:strokeLineCap="round"/>
+<path
+ android:fillColor="@android:color/transparent"
+ android:pathData="M2432 L28 40"
+android:strokeColor="@color/alive_ink"
+android:strokeWidth="1.5"
+ android:strokeLineCap="round"/>
+
+ <!-- Phone indication- small rectangle infront -->
+<path
+android:fillColor="@android:color/transparent"
+android:pathData="M28 24 L2826 L30 26 L3024 Z"
+ android:strokeColor="@color/alive_ink"
+android:strokeWidth="1"
+android:strokeLineJoin="round"/>
+
+</vector>

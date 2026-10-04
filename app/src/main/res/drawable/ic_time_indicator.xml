@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+
+    <!-- Organic clock/circle indicator for time -->
+    <path
+        android:pathData="M32,8
+            A24,24 0,1 0,32,56
+            A24,24 0,1 0,32,8"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5" />
+
+    <!-- Simple hands - functional, organic -->
+    <path
+        android:pathData="M32,32L32,20"
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round" />
+
+    <path
+        android:pathData="M32,32 L42,34"
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round" />
+
+</vector>

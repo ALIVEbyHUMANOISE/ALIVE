@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+ android:width="48dp"
+android:height="48dp"
+android:viewportWidth="48"
+android:viewportHeight="48">
+
+ <!-- Simple humanfigure - aware/ALIVE state (standing tall) -->
+ <!-- Head -->
+<path
+ android:fillColor="@color/alive_ink"
+ android:pathData="M24,13m-5,0a5,50,11,100a5,50,11,-100" />
+
+ <!-- Body -slightlyorganic line -->
+<path
+ android:fillColor="@android:color/transparent"
+android:pathData="M24,19L24,31"
+android:strokeColor="@color/alive_ink"
+android:strokeWidth="1.5"
+android:strokeLineCap="round" />
+
+ <!-- Arms -openand confident -->
+<path
+ android:fillColor="@android:color/transparent"
+ android:pathData="M24,21 L18,26"
+android:strokeColor="@color/alive_ink"
+android:strokeWidth="1.5"
+ android:strokeLineCap="round" />
+<path
+ android:fillColor="@android:color/transparent"
+ android:pathData="M24,21 L30,26"
+ android:strokeColor="@color/alive_ink"
+ android:strokeWidth="1.5"
+ android:strokeLineCap="round" />
+
+ <!-- Legs -standing tall-->
+<path
+ android:fillColor="@android:color/transparent"
+ android:pathData="M24,31 L20,42"
+android:strokeColor="@color/alive_ink"
+ android:strokeWidth="1.5"
+android:strokeLineCap="round" />
+<path
+android:fillColor="@android:color/transparent"
+ android:pathData="M24,31L28,42"
+ android:strokeColor="@color/alive_ink"
+ android:strokeWidth="1.5"
+ android:strokeLineCap="round"/>
+
+</vector>
