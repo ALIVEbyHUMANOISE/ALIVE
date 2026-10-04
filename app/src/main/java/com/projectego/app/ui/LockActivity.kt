@@ -1,17 +1,28 @@
-﻿package com.projectego.app.ui
+package com.projectego.app.ui
 
 import android.content.Intent
-import android.graphics.Color
 import android.os.Bundle
-import android.widget.Button
 import android.widget.LinearLayout
-import android.widget.TextView
+import android.widget.ScrollView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import com.projectego.app.MainActivity
+import com.projectego.app.R
 import com.projectego.app.domain.UsageTracker
 import com.projectego.app.model.DayType
 
+/**
+ * ALIVE's lock screen.
+ *
+ * It says three things and nothing else: entertainment time is over, that is on
+ * purpose, and there are other things to do. Deliberately not red, not shouting,
+ * and never worded as an accusation or as catching anyone out.
+ *
+ * The back interception and the intent-extra contract with the accessibility
+ * service are bypass-prevention, not styling. The extra keys stay literal on
+ * both sides: the writer lives in `service/`, and a shared constant would only
+ * create a second place for the two ends to drift apart.
+ */
 class LockActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,107 +39,145 @@ class LockActivity : AppCompatActivity() {
             }
         })
 
-        val layout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(64, 128, 64, 64)
-            setBackgroundColor(0xFF111111.toInt())
-        }
+        val ui = AliveComponents(this)
+
+        // This screen performs the same single read the previous revision did.
+        val report = UsageTracker(this).calculateTodayEntertainmentUsage()
 
         val lockReason = intent.getStringExtra("EXTRA_LOCK_REASON") ?: "ENTERTAINMENT_EXCEEDED"
-        val blockedPkg = intent.getStringExtra("EXTRA_BLOCKED_PACKAGE") ?: "Aplikasi Terlarang"
+        val blockedPkg = intent.getStringExtra("EXTRA_BLOCKED_PACKAGE")
+            ?: getString(R.string.lock_blocked_app_unknown)
+        val focusActivityName = intent.getStringExtra("EXTRA_FOCUS_ACTIVITY") ?: getString(R.string.focus_heading)
 
-        val titleView = TextView(this).apply {
-            textSize = 28f
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            if (lockReason == "FOCUS_SESSION") {
-                text = "PROJECT EGO\nFOCUS SESSION ACTIVE"
-                setTextColor(0xFFFF8800.toInt())
-            } else {
-                text = "PROJECT EGO\nHARD LOCK"
-                setTextColor(0xFFFF3333.toInt())
-            }
+        val isFocusSession = lockReason == "FOCUS_SESSION"
+        val isRecoveryDay = report.dayType == DayType.ZERO_ENTERTAINMENT_DAY
+
+        val page = ui.column().apply {
+            setPadding(
+                ui.dimens.xxxl,
+                ui.dimens.xxxl,
+                ui.dimens.xxxl,
+                ui.dimens.xxl
+            )
         }
-        layout.addView(titleView)
 
-        val tracker = UsageTracker(this)
-        val report = tracker.calculateTodayEntertainmentUsage()
-        val focusActivityName = intent.getStringExtra("EXTRA_FOCUS_ACTIVITY") ?: "Focus"
+        page.addView(
+            ui.pose(
+                R.drawable.ic_alive_character_aware,
+                ui.dimens.characterLarge,
+                getString(R.string.lock_intent)
+            )
+        )
+        page.addView(ui.vgap(ui.dimens.xxl))
 
-        val bodyView = TextView(this).apply {
-            textSize = 17f
-            setTextColor(Color.WHITE)
-            setPadding(0, 32, 0, 48)
-            text = buildString {
-                if (lockReason == "FOCUS_SESSION") {
-                    append("Sesi Focus ($focusActivityName) sedang aktif.\n\n")
-                    append("Aplikasi yang dicegat:\n$blockedPkg\n\n")
-                    append("Selama sesi Focus, hanya aplikasi produktivitas yang disetujui dan aplikasi esensial (Telepon/SMS) yang dapat digunakan.\n")
-                    append("Aplikasi hiburan, browser, dan aplikasi di luar katalog tetap diblokir.")
-                } else {
-                    if (report.dayType == DayType.ZERO_ENTERTAINMENT_DAY) {
-                        append("STATUS: ZERO-ENTERTAINMENT RECOVERY DAY\n\n")
-                        append("Hari kemarin batas hiburan terlampaui (Gagal).\n")
-                        append("Hari ini Anda memulai dengan 0 menit hiburan.\n\n")
-                    } else {
-                        append("Waktu hiburan harian Anda telah habis.\n\n")
-                        append("Batas maksimal: ${report.limitMinutes} menit\n")
-                        append("Total pemakaian: ${report.totalEntertainmentMinutes} menit\n\n")
+        page.addView(
+            ui.headline(
+                getString(
+                    when {
+                        isFocusSession -> R.string.lock_title_focus
+                        isRecoveryDay -> R.string.lock_title_zero
+                        else -> R.string.lock_title_over
                     }
-                    append("Aplikasi yang dicegat:\n$blockedPkg\n\n")
-                    append("Streak saat ini: ${report.currentStreak} hari\n\n")
-                    append("Aplikasi hiburan dikunci hingga besok.\n")
-                    append("Aplikasi esensial (Telepon, SMS, Navigasi) tetap aktif.")
+                )
+            )
+        )
+        page.addView(ui.vgap(ui.dimens.l))
+        page.addView(ui.annotation(getString(R.string.lock_intent)))
+
+        page.addView(ui.vgap(ui.dimens.xxl))
+
+        if (isFocusSession) {
+            page.addView(ui.body(getString(R.string.lock_focus_body, focusActivityName)))
+        } else if (isRecoveryDay) {
+            // A recovery day has no numbers to show: there was no allowance to
+            // spend, so printing "0 min of 0 min" would be noise.
+            page.addView(ui.body(getString(R.string.lock_zero_body)))
+            page.addView(ui.vgap(ui.dimens.s))
+            page.addView(ui.bodySecondary(getString(R.string.lock_zero_support)))
+        } else {
+            page.addView(ui.body(getString(R.string.lock_over_body)))
+            page.addView(ui.vgap(ui.dimens.m))
+            page.addView(ui.bodySecondary(getString(R.string.lock_allowance_line, report.limitMinutes)))
+            page.addView(ui.vgap(ui.dimens.xs))
+            page.addView(ui.bodySecondary(getString(R.string.lock_used_line, report.totalEntertainmentMinutes)))
+        }
+
+        page.addView(ui.vgap(ui.dimens.xl))
+        page.addView(ui.hairline())
+        page.addView(ui.vgap(ui.dimens.xl))
+
+        page.addView(
+            ui.quietText(
+                if (isFocusSession) getString(R.string.lock_focus_blocked, blockedPkg)
+                else getString(R.string.lock_blocked_app, blockedPkg)
+            )
+        )
+        page.addView(ui.vgap(ui.dimens.s))
+        page.addView(ui.quietText(getString(R.string.lock_days_row, report.currentStreak)))
+        page.addView(ui.vgap(ui.dimens.s))
+        page.addView(ui.quietText(getString(R.string.lock_essential)))
+
+        if (!isFocusSession) {
+            page.addView(ui.vgap(ui.dimens.xxl))
+            page.addView(ui.label(getString(R.string.lock_do_instead)))
+            page.addView(ui.vgap(ui.dimens.m))
+            page.addView(
+                ui.primary(getString(R.string.lock_action_focus)).apply {
+                    layoutParams = matchWidth()
+                    setOnClickListener {
+                        val intent = Intent(this@LockActivity, MainActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                            putExtra("EXTRA_NAVIGATE_TO_FOCUS", true)
+                        }
+                        startActivity(intent)
+                        finish()
+                    }
+                }
+            )
+        }
+
+        page.addView(ui.vgap(ui.dimens.l))
+        page.addView(
+            ui.secondary(getString(R.string.lock_action_home)).apply {
+                layoutParams = matchWidth()
+                setOnClickListener {
+                    val homeIntent = Intent(Intent.ACTION_MAIN).apply {
+                        addCategory(Intent.CATEGORY_HOME)
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    startActivity(homeIntent)
+                    finish()
                 }
             }
-        }
-        layout.addView(bodyView)
+        )
 
-        // Option: FOCUS WITH YOUR ACTIVITY (Allows productive activity even when entertainment is locked)
-        if (lockReason != "FOCUS_SESSION") {
-            val startFocusBtn = Button(this).apply {
-                text = "⚡ FOCUS WITH YOUR ACTIVITY"
-                textSize = 16f
-                setBackgroundColor(0xFF2E7D32.toInt())
-                setTextColor(Color.WHITE)
+        page.addView(ui.vgap(ui.dimens.s))
+        page.addView(
+            ui.quiet(getString(R.string.lock_action_dashboard)).apply {
+                layoutParams = matchWidth()
                 setOnClickListener {
                     val intent = Intent(this@LockActivity, MainActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                        putExtra("EXTRA_NAVIGATE_TO_FOCUS", true)
                     }
                     startActivity(intent)
                     finish()
                 }
             }
-            layout.addView(startFocusBtn)
-        }
+        )
 
-        val homeButton = Button(this).apply {
-            text = "KEMBALI KE HOME"
-            textSize = 16f
-            setOnClickListener {
-                val homeIntent = Intent(Intent.ACTION_MAIN).apply {
-                    addCategory(Intent.CATEGORY_HOME)
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                }
-                startActivity(homeIntent)
-                finish()
+        // A scroll container is required: on a short display the buttons
+        // otherwise fall below the fold while back is still intercepted.
+        setContentView(
+            ScrollView(this).apply {
+                addView(page)
+                setBackgroundColor(ui.palette.paper)
+                isFillViewport = true
             }
-        }
-        layout.addView(homeButton)
-
-        val dashboardButton = Button(this).apply {
-            text = "BUKA DASHBOARD EGO"
-            textSize = 16f
-            setOnClickListener {
-                val intent = Intent(this@LockActivity, MainActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                }
-                startActivity(intent)
-                finish()
-            }
-        }
-        layout.addView(dashboardButton)
-
-        setContentView(layout)
+        )
     }
+
+    private fun matchWidth(): LinearLayout.LayoutParams = LinearLayout.LayoutParams(
+        LinearLayout.LayoutParams.MATCH_PARENT,
+        LinearLayout.LayoutParams.WRAP_CONTENT
+    )
 }

@@ -8,6 +8,16 @@
     <color name="alive_warm_gray">#D8D2C7</color>
     <color name="alive_white">#FFFDF8</color>
 
+    <!-- Ink with alpha. These are the same ink hue, not new colors, so the
+         palette stays six colors while still having a readable hierarchy.
+         Warm gray is ~1.2:1 on paper and is never used for text. -->
+    <color name="alive_ink_secondary">#B31D1D1B</color>
+    <color name="alive_ink_muted">#991D1D1B</color>
+    <color name="alive_ink_disabled">#611D1D1B</color>
+    <color name="alive_ink_hairline">#4D1D1D1B</color>
+    <color name="alive_ink_ripple">#1A1D1D1B</color>
+    <color name="alive_forest_soft">#33315C45</color>
+
     <!-- Legacy template colors kept for resource compatibility -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>

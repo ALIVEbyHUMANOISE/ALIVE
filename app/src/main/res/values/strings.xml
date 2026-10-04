@@ -1,7 +1,222 @@
 <resources>
+    <!-- ALIVE voice.
+
+         Rules this file is written to:
+           - Reclaimed time, never points, coins, XP or levels.
+           - "ALIVE couldn\'t verify" never becomes "you failed".
+           - Nothing here claims ALIVE knows what the user did inside an app.
+           - No emoji, no dingbats, no developer phase labels.
+         Keep every status string distinct: PENDING != VERIFIED != REWARDED. -->
+
     <string name="app_name">ALIVE</string>
     <string name="accessibility_service_description">ALIVE uses this service solely to detect foreground applications to enforce daily screen time limits and prevent bypass.</string>
+
+    <!-- Navigation -->
     <string name="nav_home">Home</string>
     <string name="nav_quest">Quest</string>
     <string name="nav_profile">Profile</string>
+
+    <!-- Wordmark -->
+    <string name="alive_wordmark">ALIVE</string>
+    <string name="alive_tagline">Wake up to your life.</string>
+
+    <!-- ============ HOME: YOUR TIME ============ -->
+    <string name="your_time_heading">Your time</string>
+    <string name="time_minutes_left">%1$d minutes left today</string>
+    <string name="time_minutes_left_critical">About %1$d minutes left.</string>
+    <string name="time_last_minute">The last minute.</string>
+    <string name="time_no_panic">No alarm in this. It is just what is left.</string>
+    <string name="time_allowance_support">Your own daily allowance — separate from reclaimed time.</string>
+    <string name="time_allowance_and_used">Allowance %1$d min a day · %2$d min used</string>
+    <string name="time_closed">Entertainment time is closed for today.</string>
+    <string name="time_closed_support">It opens again tomorrow. Nothing needs fixing tonight.</string>
+    <string name="zero_day_heading">Today is a no-entertainment day.</string>
+    <string name="zero_day_support">By design, after yesterday. Productive things still work.</string>
+
+    <!-- ============ HOME: CURRENT ACTION ============ -->
+    <string name="action_start_focus">Start focus</string>
+    <string name="action_continue_quest">Continue quest</string>
+    <string name="action_return_session">Return to session</string>
+    <string name="action_continue">Continue</string>
+    <string name="action_back">Back</string>
+    <string name="action_start_quest">Start quest</string>
+
+    <!-- ============ EMPTY STATE ============ -->
+    <string name="empty_heading">Nothing right now</string>
+    <string name="empty_body">You don\'t have to do anything here.</string>
+    <string name="empty_body_second">Make your own time.</string>
+
+    <!-- ============ PERMISSIONS ============ -->
+    <string name="permissions_heading">ALIVE can\'t see what it needs to</string>
+    <string name="permissions_body">Usage access and the accessibility service are how ALIVE knows when your entertainment time is over. Until both are on, nothing on this screen is reliable.</string>
+    <string name="permissions_usage_action">Turn on usage access</string>
+    <string name="permissions_accessibility_action">Turn on accessibility</string>
+    <string name="permissions_granted">On</string>
+    <string name="permissions_not_granted">Not on</string>
+
+    <!-- ============ TIME BANK ============ -->
+    <string name="time_bank_heading">Time Bank</string>
+    <string name="time_bank_minutes">%1$d min</string>
+    <string name="time_body">Time you\'ve reclaimed.</string>
+    <string name="time_bank_empty">Nothing reclaimed yet. A verified session gives you time back.</string>
+    <string name="time_bank_use_intro">Use reclaimed time to extend a session.</string>
+    <string name="time_bank_use_10">Use 10 minutes</string>
+    <string name="time_bank_use_15">Use 15 minutes</string>
+    <string name="time_bank_spent_toast">%1$d minutes moved out of your Time Bank.</string>
+    <string name="time_bank_not_enough">Not enough reclaimed time for that.</string>
+    <string name="time_bank_earned_total">Earned %1$d min</string>
+    <string name="time_bank_spent_total">Used %1$d min</string>
+    <string name="time_bank_available_total">%1$d min available</string>
+
+    <!-- ============ QUEST BOARD ============ -->
+    <string name="quest_heading">Quest</string>
+    <string name="quest_subhead">What do you want to make time for?</string>
+    <string name="quest_yours">Your quests</string>
+    <string name="quest_current">Current quest</string>
+    <string name="quest_duration">%1$d min</string>
+    <string name="quest_reclaimed">+%1$d min reclaimed</string>
+    <string name="quest_reclaimed_label">Reclaimed</string>
+    <string name="quest_detail_open">Details</string>
+    <string name="quest_not_verifiable">ALIVE can\'t verify this kind of session automatically yet.</string>
+    <string name="quest_cannot_start">One thing at a time. Finish what\'s running first.</string>
+    <string name="quest_start_failed">ALIVE couldn\'t start that quest.</string>
+
+    <!-- ============ QUEST DETAIL (journal page) ============ -->
+    <string name="quest_detail_duration">%1$d minutes</string>
+    <string name="quest_detail_how_title">How it works</string>
+    <string name="quest_detail_how_body">ALIVE will verify the digital session automatically. Nothing to press at the end.</string>
+    <string name="quest_detail_how_body_unsupported">ALIVE can only verify sessions that happen on this device, by watching which app is open. This one it can\'t prove — so it stays on the list as something to do, not something to earn.</string>
+    <string name="quest_detail_reward_title">Reward</string>
+    <string name="quest_detail_reward_body">+%1$d minutes reclaimed</string>
+
+    <!-- ============ ATTEMPT STATES ============ -->
+    <string name="attempt_committed">You\'ve committed to this.</string>
+    <string name="attempt_committed_support">ALIVE started the clock when you began.</string>
+    <string name="attempt_in_progress">You\'re working on this now.</string>
+    <string name="attempt_in_progress_support">Nothing to press. ALIVE checks this when you come back.</string>
+    <string name="attempt_pending">ALIVE is checking this session.</string>
+    <string name="attempt_pending_support">Not confirmed yet — this is where time is measured against what you committed.</string>
+    <string name="attempt_verified">This session counted.</string>
+    <string name="attempt_verified_support">The reclaimed time lands the next time ALIVE checks in.</string>
+    <string name="attempt_rewarded">Reclaimed +%1$d min.</string>
+    <string name="attempt_rewarded_total">Time Bank now at %1$d min.</string>
+    <string name="attempt_failed">ALIVE couldn\'t verify this session.</string>
+    <string name="attempt_failed_neutral">Nothing about you changed. You can start another one whenever.</string>
+
+    <!-- ============ FAILURE REASONS (never echo engine strings) ============ -->
+    <string name="reason_restricted_app">An app outside your focus list came up, so this session doesn\'t count.</string>
+    <string name="reason_monitoring_gap">ALIVE wasn\'t able to watch the whole time. Nothing about what you did.</string>
+    <string name="reason_not_supported">ALIVE can\'t verify this kind of session automatically yet.</string>
+    <string name="reason_activity_mismatch">The activity you picked doesn\'t match this quest.</string>
+    <string name="reason_technical_link">ALIVE couldn\'t match the session to your quest. That\'s a technical problem, not yours.</string>
+    <string name="reason_unknown">ALIVE couldn\'t verify this session.</string>
+    <string name="verified_reason">The session ran for the time you committed.</string>
+
+    <!-- ============ FOCUS ============ -->
+    <string name="focus_heading">Focus</string>
+    <string name="focus_intro">A quiet block of time for one thing.</string>
+    <string name="focus_activity_heading">What are you doing?</string>
+    <string name="focus_goal_heading">What\'s the goal?</string>
+    <string name="focus_goal_hint">e.g. Work through chapter four</string>
+    <string name="focus_duration_heading">How long? (minutes)</string>
+    <string name="focus_duration_value">%1$d</string>
+    <string name="focus_activity_option">%1$s · %2$d approved apps</string>
+    <string name="focus_start">Start focus</string>
+    <string name="focus_goal_required">Give the session a goal first.</string>
+    <string name="focus_started_toast">Focus started: %1$d minutes.</string>
+    <string name="focus_start_failed">ALIVE couldn\'t start that session.</string>
+    <string name="focus_active_heading">You\'re in a %1$s session.</string>
+    <string name="focus_remaining_minutes">%1$d minutes left</string>
+    <string name="focus_remaining_minute">1 minute left</string>
+    <string name="focus_remaining_none">Time is up.</string>
+    <string name="focus_of_total">of %1$d minutes</string>
+    <string name="focus_goal_quoted">Goal: %1$s</string>
+    <string name="focus_allowed_heading">What stays open</string>
+    <string name="focus_allowed_body">%1$d approved apps stay usable. Everything else — entertainment, browsers, anything outside that list — is blocked while this runs.</string>
+    <string name="focus_monitors">ALIVE only watches which app is on screen. It never opens your apps or reads what is inside them.</string>
+    <string name="focus_next">When the time is up, the session simply ends.</string>
+    <string name="focus_extend">Extend 15 minutes</string>
+    <string name="focus_extend_support">Takes 15 minutes from your Time Bank.</string>
+    <string name="focus_extended_toast">Extended by 15 minutes.</string>
+    <string name="focus_setup_hint">Focus is a session, not a place you navigate to. Start one here.</string>
+
+    <!-- ============ PROFILE ============ -->
+    <string name="profile_heading">Profile</string>
+    <string name="profile_identity">This device</string>
+    <string name="profile_identity_support">No account, no sync. Everything ALIVE knows stays here.</string>
+    <string name="profile_state_heading">Where you are</string>
+    <string name="profile_days_in_a_row">%1$d days in a row</string>
+    <string name="profile_one_day_in_a_row">1 day in a row</string>
+    <string name="profile_no_days">No run yet. That is fine.</string>
+    <string name="profile_history_heading">What you\'ve made time for</string>
+    <string name="profile_history_empty">Nothing verified yet.</string>
+    <string name="profile_history_row">%1$s · %2$d min reclaimed</string>
+    <string name="profile_permissions_heading">What ALIVE can see</string>
+    <string name="profile_how_title">How ALIVE decides</string>
+    <string name="profile_how_body">ALIVE knows which app was on screen and for how long. That is all. It does not open your apps, read their content, or judge what you did in them.</string>
+
+    <!-- ============ LOCK ============ -->
+    <string name="lock_title_over">Entertainment time is closed</string>
+    <string name="lock_title_zero">A no-entertainment day</string>
+    <string name="lock_title_focus">Your session is still running</string>
+    <string name="lock_intent">This is intentional. It opens again tomorrow.</string>
+    <string name="lock_over_body">You\'re at the end of today\'s entertainment time.</string>
+    <string name="lock_allowance_line">Allowance: %1$d min</string>
+    <string name="lock_used_line">Used: %1$d min</string>
+    <string name="lock_zero_body">Today has no entertainment time by design — it follows yesterday.</string>
+    <string name="lock_zero_support">There is nothing to unlock, and nothing you did wrong.</string>
+    <string name="lock_blocked_app">The app that came up: %1$s</string>
+    <string name="lock_blocked_app_unknown">An entertainment app</string>
+    <string name="lock_days_row">You\'re on a %1$d-day run.</string>
+    <string name="lock_essential">Calls, messages, your home screen and Settings still work.</string>
+    <string name="lock_do_instead">There are other things you can do.</string>
+    <string name="lock_focus_body">%1$s is still going. Entertainment and anything outside your approved apps stay closed until it ends.</string>
+    <string name="lock_focus_blocked">Blocked while this runs: %1$s</string>
+    <string name="lock_action_focus">Make time for something</string>
+    <string name="lock_action_home">Go to your home screen</string>
+    <string name="lock_action_dashboard">Open ALIVE</string>
+
+    <!-- ============ CHARACTER STAGES (annotation + content description) ============ -->
+    <string name="stage_disconnected">Disconnected</string>
+    <string name="stage_unaware">Unaware</string>
+    <string name="stage_controlled">Controlled</string>
+    <string name="stage_aware">Aware</string>
+    <string name="stage_reclaiming">Reclaiming</string>
+    <string name="stage_alive">Alive</string>
+
+    <string name="pose_disconnected_note">The screen had the last say today.</string>
+    <string name="pose_unaware_note">Nothing has to happen here.</string>
+    <string name="pose_controlled_note">It is still holding you.</string>
+    <string name="pose_aware_note">You can see it now.</string>
+    <string name="pose_reclaiming_note">You\'re making time for something.</string>
+    <string name="pose_alive_note">That time is yours now.</string>
+    <string name="pose_pending_note">ALIVE is still reading this session.</string>
+    <string name="pose_failed_note">That one didn\'t count. You can try again.</string>
+    <string name="pose_streak_note">You\'ve done this before.</string>
+
+    <string name="cd_character_pose">ALIVE character, %1$s</string>
+    <string name="cd_time_state">Time remaining: %1$s</string>
+
+    <!-- Quest kind, in the user's words. The engine enum names are never shown. -->
+    <string name="category_exercise">Move</string>
+    <string name="category_study">Study</string>
+    <string name="category_reading">Read</string>
+    <string name="category_walking">Walk</string>
+    <string name="category_cleaning">Tidy up</string>
+    <string name="category_creative">Make something</string>
+    <string name="category_coding">Code</string>
+    <string name="category_writing">Write</string>
+    <string name="category_other">Something else</string>
+
+    <!-- Focus activity names, same wording as the engine display names. -->
+    <string name="focus_activity_study">Study</string>
+    <string name="focus_activity_work">Work</string>
+    <string name="focus_activity_coding">Coding</string>
+    <string name="focus_activity_creative">Creative</string>
+    <string name="focus_activity_writing">Writing</string>
+
+    <!-- Difficulty stays subtle: one word, lowercase, never a badge. -->
+    <string name="difficulty_easy">easy</string>
+    <string name="difficulty_medium">medium</string>
+    <string name="difficulty_hard">hard</string>
 </resources>

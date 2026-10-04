@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ALIVE spacing scale. Everything is on a 4dp grid and in dp/sp so the
+         values mean what they say; the old code passed raw pixels to
+         setPadding(), which made spacing density-dependent. -->
+
+    <dimen name="space_xs">4dp</dimen>
+    <dimen name="space_s">8dp</dimen>
+    <dimen name="space_m">12dp</dimen>
+    <dimen name="space_l">16dp</dimen>
+    <dimen name="space_xl">24dp</dimen>
+    <dimen name="space_xxl">32dp</dimen>
+    <dimen name="space_xxxl">48dp</dimen>
+
+    <!-- Page gutters: generous whitespace is part of the design. -->
+    <dimen name="screen_h_padding">28dp</dimen>
+    <dimen name="screen_top_padding">40dp</dimen>
+    <dimen name="screen_bottom_padding">56dp</dimen>
+
+    <dimen name="hairline">1dp</dimen>
+    <dimen name="hairline_emphasis">2dp</dimen>
+    <dimen name="stroke_ink">1dp</dimen>
+    <dimen name="radius_ink">4dp</dimen>
+
+    <dimen name="touch_min">48dp</dimen>
+    <dimen name="character_size">72dp</dimen>
+    <dimen name="character_size_large">96dp</dimen>
+    <dimen name="nav_icon_size">22dp</dimen>
+
+    <dimen name="row_gap">6dp</dimen>
+    <dimen name="section_gap">28dp</dimen>
+
+</resources>

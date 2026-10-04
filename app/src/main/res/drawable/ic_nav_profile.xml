@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Nav: Profile. The same head-and-shoulders line as the ALIVE character,
+     so the person in the app stays one person. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:pathData="M8.7,8 A3.3,3.3 0 1,1 15.3,8 A3.3,3.3 0 1,1 8.7,8 Z" />
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:pathData="M5,19.6 Q12,13.4 19,19.6" />
+</vector>

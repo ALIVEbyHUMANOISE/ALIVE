@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Three destinations only. Do not rename or reorder the ids: MainActivity
+     binds nav_home / nav_quest / nav_profile to tabContent children 0 / 1 / 2. -->
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/nav_home"
+        android:icon="@drawable/ic_nav_home"
         android:title="@string/nav_home"/>
     <item
         android:id="@+id/nav_quest"
+        android:icon="@drawable/ic_nav_quest"
         android:title="@string/nav_quest"/>
     <item
         android:id="@+id/nav_profile"
+        android:icon="@drawable/ic_nav_profile"
         android:title="@string/nav_profile"/>
 </menu>

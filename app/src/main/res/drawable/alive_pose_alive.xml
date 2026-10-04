@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ALIVE character, pose: ALIVE. Arms open and lifted, head up, weight off
+     the ground. The only pose with no phone anywhere in it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- head -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M19.4,10 A4.6,4.6 0 1,1 28.6,10 A4.6,4.6 0 1,1 19.4,10 Z" />
+
+    <!-- spine -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M24,15 Q24.5,21 24,27" />
+
+    <!-- arms opened upward -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M24,19 Q20.2,15.4 17,11.4" />
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M24,19 Q27.8,15.4 31,11.4" />
+
+    <!-- legs, light on the ground -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M24,27 Q21.2,33 19.8,40" />
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M24,27 Q26.8,33 28.2,40" />
+</vector>

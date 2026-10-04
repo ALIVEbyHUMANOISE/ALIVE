@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ALIVE character, pose: Disconnected. Seated, head lowered, phone on the
+     floor beside. Same head radius and limb weight as every other pose. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- head -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M15.4,20 A4.6,4.6 0 1,1 24.6,20 A4.6,4.6 0 1,1 15.4,20 Z" />
+
+    <!-- hunched back -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M20,25 Q17.2,29 19,33" />
+
+    <!-- arm hanging loose -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M19,28 Q15.6,31 15.8,34.4" />
+
+    <!-- seated leg: thigh then shin -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M19,33 Q24,31.6 28,32.2 L28.4,41" />
+
+    <!-- phone, face down on the ground -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M33,38.4 L37.4,38 L37.6,42.4 L33.2,42.8 Z" />
+</vector>

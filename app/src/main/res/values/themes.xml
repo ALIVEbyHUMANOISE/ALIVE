@@ -1,6 +1,9 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- ALIVE base theme: paper background, ink text, forest identity.
-         ALIVE is a light editorial palette per the Design Constitution. -->
+         ALIVE is a light editorial palette per the Design Constitution.
+
+         values-night/themes.xml is intentionally identical to this file:
+         ALIVE stays on paper, so night mode must not diverge. Edit both. -->
     <style name="Theme.ProjectEgo" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="colorPrimary">@color/alive_forest</item>
         <item name="colorPrimaryVariant">@color/alive_forest</item>
@@ -11,11 +14,22 @@
         <item name="android:colorBackground">@color/alive_paper</item>
         <item name="colorSurface">@color/alive_paper</item>
         <item name="colorOnSurface">@color/alive_ink</item>
+        <item name="android:windowBackground">@color/alive_paper</item>
         <item name="android:statusBarColor">@color/alive_paper</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:navigationBarColor">@color/alive_paper</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
         <item name="android:textColorPrimary">@color/alive_ink</item>
-        <item name="android:textColorSecondary">@color/alive_ink</item>
+        <item name="android:textColorSecondary">@color/alive_ink_secondary</item>
+        <item name="android:textColorHint">@color/alive_ink_muted</item>
+
+        <!-- Ink strokes instead of the Material defaults. -->
+        <item name="colorControlActivated">@color/alive_forest</item>
+        <item name="colorControlHighlight">@color/alive_ink_ripple</item>
+        <item name="colorOnBackground">@color/alive_ink</item>
+
+        <!-- Every action button starts from this style. The outline and quiet
+             variants are built in AliveComponents. -->
+        <item name="materialButtonStyle">@style/Widget.ALIVE.Button.Primary</item>
     </style>
 </resources>

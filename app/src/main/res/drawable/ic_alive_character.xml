@@ -1,50 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ALIVE character, empty state: sitting easy, nothing happening.
+     Used when there is genuinely nothing to do - the pose must read as rest,
+     not as waiting or failure. Same head radius and 1.5 ink weight as the
+     six stage poses. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
- android:width="48dp"
-android:height="48dp"
-android:viewportWidth="48"
-android:viewportHeight="48">
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
 
- <!-- Simple humanfigure - aware/ALIVE state (standing tall) -->
- <!-- Head -->
-<path
- android:fillColor="@color/alive_ink"
- android:pathData="M24,13m-5,0a5,50,11,100a5,50,11,-100" />
+    <!-- head -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M17.4,15 A4.6,4.6 0 1,1 26.6,15 A4.6,4.6 0 1,1 17.4,15 Z" />
 
- <!-- Body -slightlyorganic line -->
-<path
- android:fillColor="@android:color/transparent"
-android:pathData="M24,19L24,31"
-android:strokeColor="@color/alive_ink"
-android:strokeWidth="1.5"
-android:strokeLineCap="round" />
+    <!-- spine, settled back -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M22,20 Q20.6,25.6 22,31" />
 
- <!-- Arms -openand confident -->
-<path
- android:fillColor="@android:color/transparent"
- android:pathData="M24,21 L18,26"
-android:strokeColor="@color/alive_ink"
-android:strokeWidth="1.5"
- android:strokeLineCap="round" />
-<path
- android:fillColor="@android:color/transparent"
- android:pathData="M24,21 L30,26"
- android:strokeColor="@color/alive_ink"
- android:strokeWidth="1.5"
- android:strokeLineCap="round" />
+    <!-- one arm resting on the knee, one loose behind -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M22,24 Q26,26.6 28.2,30" />
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M22,24 Q17.8,26.6 16.4,30.2" />
 
- <!-- Legs -standing tall-->
-<path
- android:fillColor="@android:color/transparent"
- android:pathData="M24,31 L20,42"
-android:strokeColor="@color/alive_ink"
- android:strokeWidth="1.5"
-android:strokeLineCap="round" />
-<path
-android:fillColor="@android:color/transparent"
- android:pathData="M24,31L28,42"
- android:strokeColor="@color/alive_ink"
- android:strokeWidth="1.5"
- android:strokeLineCap="round"/>
-
+    <!-- legs extended and crossed at the ankle -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M22,31 Q27,32.4 31.6,31" />
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M22,31 Q26.4,35 30.6,35.4" />
 </vector>

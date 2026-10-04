@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ALIVE character, pose: Reclaiming. Mid-stride, moving away from the phone
+     left behind at the edge. Effort in motion, not a celebration. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- head -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M21.4,11 A4.6,4.6 0 1,1 30.6,11 A4.6,4.6 0 1,1 21.4,11 Z" />
+
+    <!-- spine -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M26,16 Q26.6,22 25.2,28" />
+
+    <!-- arms swinging -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M25.8,20 Q22,22 19.8,25.4" />
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M25.8,20 Q29.6,23 31,27" />
+
+    <!-- legs, mid-stride -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M25.2,28 Q21.4,33 18.4,38" />
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M25.2,28 Q29,33.4 30.2,40.4" />
+
+    <!-- phone left behind on the ground -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M7.4,40 L11.6,39.4 L12.2,43.4 L8,44 Z" />
+</vector>

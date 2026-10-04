@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Soft-forest surface: subtle grouping area, no hard borders. -->
+<!-- Soft forest surface: the only filled block ALIVE uses, reserved for a
+     state that has actually landed (a reclaimed, verified session). -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="@color/alive_soft_forest"/>
-    <corners android:radius="8dp"/>
+    <solid android:color="@color/alive_soft_forest" />
+    <corners android:radius="@dimen/radius_ink" />
 </shape>

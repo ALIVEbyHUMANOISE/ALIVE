@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ALIVE character, pose: Controlled. Leaning into a phone held up in both
+     hands - the phone leads, the body follows. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- head, tipped toward the screen -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M16.4,12 A4.6,4.6 0 1,1 25.6,12 A4.6,4.6 0 1,1 16.4,12 Z" />
+
+    <!-- spine, leaning forward -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M21.4,16.6 Q23.6,22 24.4,28" />
+
+    <!-- both arms up to the phone -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M22.4,20.4 Q26,19.4 29.2,17.6" />
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M23.4,23 Q27.2,21.6 29.6,19" />
+
+    <!-- phone, held in front of the face -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M28.6,12.6 L33.8,11.4 L35.2,16.8 L30,18 Z" />
+
+    <!-- legs -->
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M24.4,28 Q22,34.4 20.8,41.4" />
+    <path
+        android:strokeColor="@color/alive_ink"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M24.4,28 Q27.4,34.2 28.6,41.2" />
+</vector>
