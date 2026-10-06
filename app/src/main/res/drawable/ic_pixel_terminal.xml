@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Terminal: Coding. Ink screen frame, white glass, forest prompt and cursor. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="@color/alive_ink"
+        android:pathData="M2,3h12v1h-12zM2,12h12v1h-12zM2,4h1v8h-1zM13,4h1v8h-1z" />
+    <path
+        android:fillColor="@color/alive_white"
+        android:pathData="M3,4h10v8h-10z" />
+    <path
+        android:fillColor="@color/alive_forest"
+        android:pathData="M4,6h1v1h-1zM5,7h1v1h-1zM4,8h1v1h-1zM7,9h3v1h-3z" />
+</vector>

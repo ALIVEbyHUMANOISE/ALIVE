@@ -1,36 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ALIVE launcher foreground: one character, arms opened upward.
-     Kept inside the 66dp adaptive safe zone (roughly 21..87 on each axis).
-     No text, no phone, no clock, no doodle clutter. -->
+<!-- ALIVE launcher foreground: the sprite, arms up, inside the safe zone. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-
-    <!-- head -->
+    android:viewportWidth="16"
+    android:viewportHeight="16">
     <path
-        android:strokeColor="@color/alive_ink"
-        android:strokeWidth="3.2"
-        android:strokeLineCap="round"
-        android:pathData="M44.5,40 A9.5,9.5 0 1,1 63.5,40 A9.5,9.5 0 1,1 44.5,40 Z" />
-
-    <!-- body -->
+        android:fillColor="@color/alive_ink"
+        android:pathData="M4,5h8v1h-8zM1,6h1v1h-1zM3,6h1v1h-1zM12,6h1v1h-1zM14,6h1v1h-1zM2,7h2v1h-2zM12,7h2v1h-2zM3,8h1v1h-1zM6,8h2v1h-2zM9,8h2v1h-2zM12,8h1v1h-1zM3,9h1v1h-1zM12,9h1v1h-1zM4,10h8v1h-8zM5,12h2v1h-2zM9,12h2v1h-2z" />
     <path
-        android:strokeColor="@color/alive_ink"
-        android:strokeWidth="3.2"
-        android:strokeLineCap="round"
-        android:pathData="M54,51 Q55,63 54,74" />
-
-    <!-- arms opened upward -->
-    <path
-        android:strokeColor="@color/alive_ink"
-        android:strokeWidth="3.2"
-        android:strokeLineCap="round"
-        android:pathData="M54,56 Q47,50 42.5,43.5" />
-    <path
-        android:strokeColor="@color/alive_ink"
-        android:strokeWidth="3.2"
-        android:strokeLineCap="round"
-        android:pathData="M54,56 Q61,50 65.5,43.5" />
+        android:fillColor="@color/alive_soft_forest"
+        android:pathData="M4,6h8v1h-8zM4,7h8v1h-8zM4,8h2v1h-2zM8,8h1v1h-1zM11,8h1v1h-1zM4,9h8v1h-8z" />
 </vector>

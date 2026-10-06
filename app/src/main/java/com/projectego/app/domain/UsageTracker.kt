@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
 import com.projectego.app.data.LockStateManager
 import com.projectego.app.data.TimeBankRepository
+import com.projectego.app.data.UsageHistoryRepository
 import com.projectego.app.model.AppCategory
 import com.projectego.app.model.DayType
 import com.projectego.app.model.TimeBank
@@ -29,6 +30,9 @@ class UsageTracker(private val context: Context) {
 
     val lockStateManager = LockStateManager(context)
     val timeBankRepository = TimeBankRepository(context)
+
+    /** Read-only archive of what this method already computed, for the chart. */
+    private val usageHistory = UsageHistoryRepository(context)
 
     fun getTodayStartTimestamp(): Long {
         val calendar = Calendar.getInstance()
@@ -118,6 +122,20 @@ class UsageTracker(private val context: Context) {
         }
 
         val remainingMinutes = if (limitMinutes > totalMinutes) limitMinutes - totalMinutes else 0L
+
+        // Archived last, and wrapped so a history write can never stop the
+        // report - and therefore the lock - from being returned. The key comes
+        // from the window that was actually queried rather than a fresh clock
+        // read: if the query straddled midnight, a new reading would stamp
+        // today with yesterday's number.
+        runCatching {
+            usageHistory.recordDay(
+                LockStateManager.dayKeyOf(startTime),
+                totalMillis,
+                limitMinutes,
+                details.toMap()
+            )
+        }
 
         return UsageReport(
             totalEntertainmentMinutes = totalMinutes,

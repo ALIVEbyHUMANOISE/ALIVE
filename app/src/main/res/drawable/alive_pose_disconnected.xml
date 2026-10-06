@@ -1,45 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ALIVE character, pose: Disconnected. Seated, head lowered, phone on the
-     floor beside. Same head radius and limb weight as every other pose. -->
+<!-- ALIVE sprite, stage: Disconnected. Curled up, eyes shut, alone. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="48dp"
     android:height="48dp"
-    android:viewportWidth="48"
-    android:viewportHeight="48">
-
-    <!-- head -->
+    android:viewportWidth="16"
+    android:viewportHeight="16">
     <path
-        android:strokeColor="@color/alive_ink"
-        android:strokeWidth="1.5"
-        android:strokeLineCap="round"
-        android:pathData="M15.4,20 A4.6,4.6 0 1,1 24.6,20 A4.6,4.6 0 1,1 15.4,20 Z" />
-
-    <!-- hunched back -->
+        android:fillColor="@color/alive_ink"
+        android:pathData="M5,6h6v1h-6zM4,7h1v1h-1zM11,7h1v1h-1zM4,8h1v1h-1zM11,8h1v1h-1zM4,9h1v1h-1zM7,9h2v1h-2zM11,9h2v1h-2zM4,10h1v1h-1zM11,10h1v1h-1zM4,11h1v1h-1zM11,11h1v1h-1zM5,12h6v1h-6z" />
     <path
-        android:strokeColor="@color/alive_ink"
-        android:strokeWidth="1.5"
-        android:strokeLineCap="round"
-        android:pathData="M20,25 Q17.2,29 19,33" />
-
-    <!-- arm hanging loose -->
+        android:fillColor="@color/alive_warm_gray"
+        android:pathData="M2,3h1v1h-1zM2,4h1v1h-1zM13,4h1v1h-1zM2,5h1v1h-1zM13,5h1v1h-1zM13,6h1v1h-1z" />
     <path
-        android:strokeColor="@color/alive_ink"
-        android:strokeWidth="1.5"
-        android:strokeLineCap="round"
-        android:pathData="M19,28 Q15.6,31 15.8,34.4" />
-
-    <!-- seated leg: thigh then shin -->
-    <path
-        android:strokeColor="@color/alive_ink"
-        android:strokeWidth="1.5"
-        android:strokeLineCap="round"
-        android:pathData="M19,33 Q24,31.6 28,32.2 L28.4,41" />
-
-    <!-- phone, face down on the ground -->
-    <path
-        android:strokeColor="@color/alive_ink"
-        android:strokeWidth="1.5"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M33,38.4 L37.4,38 L37.6,42.4 L33.2,42.8 Z" />
+        android:fillColor="@color/alive_white"
+        android:pathData="M5,7h6v1h-6zM5,8h6v1h-6zM5,9h2v1h-2zM9,9h2v1h-2zM5,10h6v1h-6zM5,11h6v1h-6z" />
 </vector>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pixel accent: plus, one palette colour, no outline. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="16dp"
+    android:height="16dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="@color/alive_forest"
+        android:pathData="M7,4h2v1h-2zM7,5h2v1h-2zM7,6h2v1h-2zM4,7h8v1h-8zM4,8h8v1h-8zM7,9h2v1h-2zM7,10h2v1h-2zM7,11h2v1h-2z" />
+</vector>

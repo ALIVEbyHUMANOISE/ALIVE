@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ALIVE shell: one content frame, one hairline, one calm nav bar.
+<!-- ALIVE shell: one content frame, one hard ink rule, one nav bar.
      Do not reorder or insert children into tabContent from XML: MainActivity
      addresses its tabs positionally (0 = home, 1 = quest, 2 = profile, and
      any overlay is appended at 3). -->
@@ -10,7 +10,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:fitsSystemWindows="true"
-    android:background="@color/alive_paper">
+    android:background="@drawable/bg_canvas">
 
     <FrameLayout
         android:id="@+id/tabContent"
@@ -20,8 +20,8 @@
 
     <View
         android:layout_width="match_parent"
-        android:layout_height="@dimen/hairline"
-        android:background="@color/alive_ink_hairline" />
+        android:layout_height="@dimen/border_bold"
+        android:background="@color/alive_ink" />
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNav"
@@ -29,6 +29,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/alive_paper"
+        android:paddingTop="@dimen/space_s"
+        android:paddingBottom="@dimen/space_s"
+        app:itemBackground="@drawable/bg_brutal_nav_item"
         app:itemIconTint="@color/nav_item_tint"
         app:itemTextColor="@color/nav_item_tint"
         app:labelVisibilityMode="labeled"

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Input field: an open ink frame. It must look like somewhere to write,
+     which the flat paper-on-paper treatment did not. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/alive_white" />
+            <stroke
+                android:width="@dimen/border_bold"
+                android:color="@color/alive_ink" />
+        </shape>
+    </item>
+</layer-list>

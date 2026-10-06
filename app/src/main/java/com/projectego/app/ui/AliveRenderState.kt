@@ -15,7 +15,10 @@ enum class AlivePanel {
     CURRENT_QUEST,
 
     /** A focus session already running. */
-    FOCUS_SESSION
+    FOCUS_SESSION,
+
+    /** Today, the last seven days, the month so far. Read-only. */
+    USAGE_CHART
 }
 
 /**
@@ -33,6 +36,11 @@ enum class AlivePanel {
  *
  * None of this is ever written to disk, and none of it is fed back to the
  * engine. If the process dies, the panel simply opens on Home again.
+ *
+ * The usage chart is the one surface that also reads `UsageHistoryRepository`
+ * directly. That store is allowed because it has no side effects at all - no
+ * day reset, no lock flag, no session clearing - unlike the two engine reads
+ * above, which is precisely the property this cache exists to protect.
  */
 class AliveRenderState {
 
@@ -50,6 +58,26 @@ class AliveRenderState {
 
     var dailyLimitMinutes: Long = 0L
     var usedMinutesToday: Long = 0L
+
+    /**
+     * Today's per-app entertainment minutes, exactly as the engine handed them
+     * over. A new *field*, not a new *read*: it is filled from the report the
+     * dashboard already holds, which is what keeps the chart off the engine.
+     */
+    var entertainmentAppDetails: List<Pair<String, Long>> = emptyList()
+
+    /** Which stretch of days the chart is showing. */
+    var chartRangeIndex: Int = 0
+
+    /**
+     * Today's guard state, read from `LockStateManager` during the render that
+     * already happens. [guardGapOpen] is true while the accessibility service is
+     * off and the repair has not landed yet; [guardGapRepairedToday] is the same
+     * day after a reward closed it, which still shows - that stretch really
+     * happened.
+     */
+    var guardGapOpen: Boolean = false
+    var guardGapRepairedToday: Boolean = false
 
     var panel: AlivePanel = AlivePanel.NONE
 

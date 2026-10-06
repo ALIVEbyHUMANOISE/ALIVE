@@ -32,6 +32,19 @@
             android:excludeFromRecents="true"
             android:noHistory="false" />
 
+        <!-- The critical-time note. singleInstance + empty taskAffinity keep it
+             out of the main task entirely, and noHistory means a stale card can
+             never be restored on top of something else later. Only the
+             accessibility service starts it, hence exported=false. -->
+        <activity
+            android:name=".ui.CriticalAlertActivity"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@style/Theme.ALIVE.CriticalAlert" />
+
         <service
             android:name=".service.EgoAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"

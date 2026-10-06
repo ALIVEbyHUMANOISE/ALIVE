@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ALIVE's canvas: cream ground with a faint, wide-spaced grid, so the screen
+     reads as a working surface rather than an empty white page. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/alive_canvas" />
+        </shape>
+    </item>
+    <item>
+        <bitmap
+            android:src="@drawable/grid_canvas"
+            android:tileMode="repeat"
+            android:gravity="top|left" />
+    </item>
+</layer-list>

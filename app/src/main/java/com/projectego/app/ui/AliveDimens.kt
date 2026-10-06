@@ -48,6 +48,22 @@ class AliveDimens(context: Context) {
     val character = px(R.dimen.character_size)
     val characterLarge = px(R.dimen.character_size_large)
 
+    /** Thick ink edge on a block. */
+    val borderBold = px(R.dimen.border_bold)
+
+    /** Edge of a button face. */
+    val borderButton = px(R.dimen.border_button)
+
+    /** Hairline edge on a quiet surface, and the rule inside a separator. */
+    val borderThin = px(R.dimen.border_hairline)
+
+    /** How far a hard shadow sits from its block. */
+    val shadow = px(R.dimen.shadow_offset)
+
+    val stepWidth = px(R.dimen.step_width)
+    val stepHeight = px(R.dimen.step_height)
+    val stepGap = px(R.dimen.step_gap)
+
     /** For one-off measurements that do not deserve their own dimen resource. */
     fun dp(value: Int): Int = (value * density).toInt()
 

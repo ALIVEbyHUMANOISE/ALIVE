@@ -2,6 +2,9 @@
 <resources>
     <!-- ALIVE Design Constitution palette (authoritative) -->
     <color name="alive_paper">#F5F1E8</color>
+    <!-- The working surface: paper taken one step deeper so the grid on top of
+         it stays faint, and blocks filled with alive_white read as laid on it. -->
+    <color name="alive_canvas">#F1EBDC</color>
     <color name="alive_ink">#1D1D1B</color>
     <color name="alive_forest">#315C45</color>
     <color name="alive_soft_forest">#DCE5DC</color>

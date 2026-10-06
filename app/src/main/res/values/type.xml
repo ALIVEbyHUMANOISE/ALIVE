@@ -1,57 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- ALIVE typography (Design Constitution sec.08).
+    <!-- ALIVE typography, neo-brutalist.
 
-         Three voices, deliberately limited:
-           editorial  = serif      -> headings, statements, storytelling
-           functional = sans-serif -> buttons, nav, timers, labels, data
-           annotation = cursive    -> small asides and emphasis ONLY
+         Two voices only:
+           sans-serif bold  -> everything readable: headings, body, buttons, nav
+           monospace        -> numbers, timers, small labels: the machine-read bits
 
-         Sizes are explicit rather than inherited so the scale does not shift
-         with the Material Components version, and every style stays at or
-         above 13sp so accessibility font scaling stays readable. -->
+         Sizes jump hard rather than stepping gently, because hierarchy is the
+         point. Nothing here is a pixel font: pixel art belongs to the
+         character, not to the paragraphs. -->
 
-    <!-- ============ EDITORIAL ============ -->
+    <!-- ============ VOICES ============ -->
 
-    <style name="TextAppearance.ALIVE.Display" parent="TextAppearance.MaterialComponents.Headline4">
-        <item name="android:fontFamily">serif</item>
+    <style name="TextAppearance.ALIVE.Display" parent="TextAppearance.MaterialComponents.Headline3">
+        <item name="android:fontFamily">sans-serif-black</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/alive_ink</item>
-        <item name="android:textSize">30sp</item>
-        <item name="android:letterSpacing">-0.02</item>
+        <item name="android:textSize">34sp</item>
+        <item name="android:letterSpacing">-0.03</item>
+        <item name="android:textAllCaps">true</item>
     </style>
 
     <style name="TextAppearance.ALIVE.Headline" parent="TextAppearance.MaterialComponents.Headline5">
-        <item name="android:fontFamily">serif</item>
+        <item name="android:fontFamily">sans-serif-black</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/alive_ink</item>
-        <item name="android:textSize">23sp</item>
-        <item name="android:letterSpacing">0</item>
+        <item name="android:textSize">24sp</item>
+        <item name="android:letterSpacing">-0.02</item>
     </style>
 
     <style name="TextAppearance.ALIVE.Statement" parent="TextAppearance.MaterialComponents.Headline6">
-        <item name="android:fontFamily">serif</item>
+        <item name="android:fontFamily">sans-serif-black</item>
+        <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/alive_ink</item>
         <item name="android:textSize">19sp</item>
-        <item name="android:letterSpacing">0</item>
+        <item name="android:letterSpacing">-0.01</item>
     </style>
 
-    <!-- ============ FUNCTIONAL ============ -->
-
     <style name="TextAppearance.ALIVE.SectionHeader" parent="TextAppearance.MaterialComponents.Subtitle1">
-        <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:textColor">@color/alive_forest</item>
-        <item name="android:textSize">15sp</item>
+        <item name="android:fontFamily">sans-serif-black</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/alive_ink</item>
+        <item name="android:textSize">13sp</item>
         <item name="android:textAllCaps">true</item>
-        <item name="android:letterSpacing">0.08</item>
+        <item name="android:letterSpacing">0.16</item>
     </style>
 
     <style name="TextAppearance.ALIVE.Body" parent="TextAppearance.MaterialComponents.Body1">
         <item name="android:fontFamily">sans-serif</item>
-        <item name="android:textColor">@color/alive_ink</item>
+        <item name="android:textColor">@color/alive_ink_secondary</item>
         <item name="android:textSize">16sp</item>
-        <item name="android:lineSpacingExtra">3sp</item>
+        <item name="android:lineSpacingExtra">4sp</item>
     </style>
 
     <style name="TextAppearance.ALIVE.BodySecondary" parent="TextAppearance.ALIVE.Body">
@@ -60,56 +60,89 @@
     </style>
 
     <style name="TextAppearance.ALIVE.QuestRowTitle" parent="TextAppearance.ALIVE.Body">
-        <item name="android:textSize">17sp</item>
+        <item name="android:textSize">19sp</item>
         <item name="android:textStyle">bold</item>
-    </style>
-
-    <style name="TextAppearance.ALIVE.Label" parent="TextAppearance.MaterialComponents.Caption">
-        <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:textColor">@color/alive_ink_secondary</item>
-        <item name="android:textSize">13sp</item>
-        <item name="android:textAllCaps">true</item>
-        <item name="android:letterSpacing">0.08</item>
-    </style>
-
-    <!-- Timers and minute counts: functional, tabular so digits do not jiggle. -->
-    <style name="TextAppearance.ALIVE.Timer" parent="TextAppearance.MaterialComponents.Headline5">
-        <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textColor">@color/alive_ink</item>
-        <item name="android:textSize">30sp</item>
         <item name="android:letterSpacing">-0.01</item>
     </style>
 
-    <!-- ============ ANNOTATION (selective only) ============ -->
-
-    <style name="TextAppearance.ALIVE.Annotation" parent="TextAppearance.MaterialComponents.Body2">
-        <item name="android:fontFamily">cursive</item>
+    <!-- Small machine-read label. Monospace, uppercase, wide tracking. -->
+    <style name="TextAppearance.ALIVE.Label" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:fontFamily">@font/press_start_2p</item>
         <item name="android:textColor">@color/alive_ink_secondary</item>
-        <item name="android:textSize">15sp</item>
-        <item name="android:letterSpacing">0.01</item>
+        <item name="android:textSize">10sp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <!-- Big numbers: the only place size is allowed to shout. -->
+    <style name="TextAppearance.ALIVE.Timer" parent="TextAppearance.MaterialComponents.Headline2">
+        <item name="android:fontFamily">@font/vt323</item>
+        <item name="android:textColor">@color/alive_ink</item>
+        <item name="android:textSize">56sp</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="TextAppearance.ALIVE.TimerSmall" parent="TextAppearance.ALIVE.Timer">
+        <item name="android:textSize">30sp</item>
+    </style>
+
+    <!-- A note, not a body paragraph. Monospace so it reads as annotation. -->
+    <style name="TextAppearance.ALIVE.Annotation" parent="TextAppearance.MaterialComponents.Body2">
+        <item name="android:fontFamily">@font/vt323</item>
+        <item name="android:textColor">@color/alive_ink_secondary</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <!-- A selectable list row. Without these two the radios and the goal field
+         fell back to the platform default face and looked like another app. -->
+    <style name="TextAppearance.ALIVE.Option" parent="TextAppearance.ALIVE.Body">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:textColor">@color/alive_ink</item>
+    </style>
+
+    <style name="TextAppearance.ALIVE.Input" parent="TextAppearance.ALIVE.Option">
+        <item name="android:textColor">@color/alive_ink</item>
+        <item name="android:textColorHint">@color/alive_ink_disabled</item>
     </style>
 
     <!-- ============ ACTIONS ============ -->
 
-    <!-- Restrained primary action: forest fill, warm-paper text, small radius. -->
+    <style name="TextAppearance.ALIVE.Button" parent="TextAppearance.MaterialComponents.Button">
+        <item name="android:fontFamily">sans-serif-black</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.08</item>
+    </style>
+
+    <!-- Restained primary action: forest fill, warm-paper text, small radius.
+         The hard shadow and the press behaviour live in the background
+         drawable, not here. -->
     <style name="Widget.ALIVE.Button.Primary" parent="Widget.MaterialComponents.Button">
         <item name="backgroundTint">@color/alive_forest</item>
         <item name="android:textColor">@color/alive_white</item>
         <item name="android:textSize">15sp</item>
-        <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:textAllCaps">false</item>
-        <item name="android:letterSpacing">0.03</item>
-        <item name="cornerRadius">4dp</item>
-        <item name="android:minHeight">48dp</item>
+        <item name="android:fontFamily">sans-serif-black</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="cornerRadius">@dimen/radius_none</item>
+        <item name="android:minHeight">52dp</item>
         <item name="android:minWidth">0dp</item>
         <item name="android:paddingLeft">20dp</item>
         <item name="android:paddingRight">20dp</item>
+        <item name="elevation">0dp</item>
+        <item name="android:stateListAnimator">@null</item>
         <item name="rippleColor">@color/alive_ink_ripple</item>
     </style>
 
     <!-- ============ NAVIGATION ============ -->
 
-    <!-- No active-indicator pill: selection is shown by ink vs muted ink. -->
     <style name="Widget.ALIVE.BottomNav" parent="Widget.MaterialComponents.BottomNavigationView">
         <item name="android:background">@color/alive_paper</item>
         <item name="elevation">0dp</item>
@@ -117,8 +150,12 @@
         <item name="itemTextColor">@color/nav_item_tint</item>
         <item name="itemActiveIndicatorStyle">@style/Widget.ALIVE.BottomNav.Indicator</item>
         <item name="labelVisibilityMode">labeled</item>
+        <item name="itemTextAppearanceActive">@style/TextAppearance.ALIVE.Label</item>
+        <item name="itemTextAppearanceInactive">@style/TextAppearance.ALIVE.Label</item>
     </style>
 
+    <!-- The selected state is a block behind the item, so the pill indicator
+         would fight it. -->
     <style name="Widget.ALIVE.BottomNav.Indicator" parent="">
         <item name="android:width">0dp</item>
         <item name="android:height">0dp</item>

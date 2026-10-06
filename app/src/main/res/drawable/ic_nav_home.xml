@@ -1,20 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Nav: Home. A roofline drawn in two strokes, deliberately not square. -->
+<!-- Nav icon, pixel: home. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
+    android:viewportWidth="16"
+    android:viewportHeight="16">
     <path
-        android:strokeColor="@color/alive_ink"
-        android:strokeWidth="1.6"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M4.6,11.2 Q12,4.4 19.4,11.4" />
+        android:fillColor="@color/alive_ink"
+        android:pathData="M8,2h1v1h-1zM7,3h1v1h-1zM9,3h1v1h-1zM5,4h2v1h-2zM10,4h1v1h-1zM4,5h1v1h-1zM11,5h2v1h-2zM3,6h1v1h-1zM13,6h1v1h-1zM2,7h1v1h-1zM4,7h9v1h-9zM14,7h1v1h-1zM4,8h1v1h-1zM12,8h1v1h-1zM4,9h1v1h-1zM12,9h1v1h-1zM4,10h1v1h-1zM7,10h3v1h-3zM12,10h1v1h-1zM4,11h1v1h-1zM7,11h3v1h-3zM12,11h1v1h-1zM4,12h1v1h-1zM7,12h3v1h-3zM12,12h1v1h-1zM4,13h9v1h-9z" />
     <path
-        android:strokeColor="@color/alive_ink"
-        android:strokeWidth="1.6"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M6.8,11 L6.6,19.4 Q12,20 17.4,19.4 L17.2,11" />
+        android:fillColor="@color/alive_white"
+        android:pathData="M5,8h7v1h-7zM5,9h7v1h-7zM5,10h2v1h-2zM10,10h2v1h-2zM5,11h2v1h-2zM10,11h2v1h-2zM5,12h2v1h-2zM10,12h2v1h-2z" />
 </vector>

@@ -10,4 +10,7 @@
    <include domain="sharedpref" path="."/>
    <exclude domain="sharedpref" path="device.xml"/>
 -->
+    <!-- The chart's store names apps and minutes. ALIVE tells the user that
+         what it knows stays on the device, so this one file does not travel. -->
+    <exclude domain="sharedpref" path="project_ego_usage_history.xml" />
 </full-backup-content>

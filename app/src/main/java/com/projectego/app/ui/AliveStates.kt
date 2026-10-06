@@ -198,6 +198,18 @@ object AliveStates {
         else -> StatusTone.NEUTRAL
     }
 
+    /**
+     * Headline for the critical alert.
+     *
+     * Deliberately not `timeHeadline`: that one can answer with the locked or
+     * recovery-day wording, and a card raised because time is *short* must
+     * never print a headline that contradicts why it exists. The last-minute
+     * string is reused so one minute reads identically everywhere in ALIVE.
+     */
+    @StringRes
+    fun alertHeadline(remainingMinutes: Long): Int =
+        if (remainingMinutes <= 1L) R.string.time_last_minute else R.string.alert_minutes_left
+
     // ---------- QUEST ATTEMPT ----------
 
     /**

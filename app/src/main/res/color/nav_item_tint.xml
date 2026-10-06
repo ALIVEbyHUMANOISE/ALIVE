@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Calm nav: selected destination is ink, unselected is faded ink.
-     Forest is reserved for identity and action, so it does not compete
-     with the paper. Never rely on color alone: the label text carries it. -->
+<!-- On the forest selected block the label must be paper; off it, ink. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:color="@color/alive_ink" android:state_checked="true"/>
-    <item android:color="@color/alive_ink" android:state_selected="true"/>
-    <item android:color="@color/alive_ink_disabled"/>
+    <item android:color="@color/alive_white" android:state_checked="true"/>
+    <item android:color="@color/alive_white" android:state_selected="true"/>
+    <item android:color="@color/alive_ink"/>
 </selector>

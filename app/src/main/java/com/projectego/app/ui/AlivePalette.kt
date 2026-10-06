@@ -19,6 +19,7 @@ class AlivePalette(context: Context) {
     private val appContext = context.applicationContext
 
     val paper = color(R.color.alive_paper)
+    val canvas = color(R.color.alive_canvas)
     val ink = color(R.color.alive_ink)
     val forest = color(R.color.alive_forest)
     val softForest = color(R.color.alive_soft_forest)
@@ -30,6 +31,16 @@ class AlivePalette(context: Context) {
     val inkDisabled = color(R.color.alive_ink_disabled)
     val inkHairline = color(R.color.alive_ink_hairline)
     val forestSoft = color(R.color.alive_forest_soft)
+
+    /**
+     * Fills the charts cycle through, in order.
+     *
+     * Six colors and no more, which is why the slices are separated by a thick
+     * ink edge rather than by hue alone: a light fill next to a light fill still
+     * reads as two slices, and every one of them is named in the legend beside
+     * it.
+     */
+    val chartSeries = listOf(forest, warmGray, softForest, ink, paper, white)
 
     private fun color(id: Int): Int = ContextCompat.getColor(appContext, id)
 }

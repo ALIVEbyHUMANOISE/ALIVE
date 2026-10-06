@@ -13,7 +13,6 @@ import android.view.View
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.Toast
@@ -25,6 +24,7 @@ import com.projectego.app.data.FocusSessionManager
 import com.projectego.app.data.LockStateManager
 import com.projectego.app.data.QuestRepository
 import com.projectego.app.data.TimeBankRepository
+import com.projectego.app.data.UsageHistoryRepository
 import com.projectego.app.domain.FocusAppPolicy
 import com.projectego.app.domain.QuestStartCoordinator
 import com.projectego.app.domain.QuestVerificationCoordinator
@@ -38,6 +38,7 @@ import com.projectego.app.model.QuestAttempt
 import com.projectego.app.model.QuestAttemptState
 import com.projectego.app.model.QuestStatus
 import com.projectego.app.model.TimeStatus
+import com.projectego.app.model.UsageDay
 import com.projectego.app.service.EgoAccessibilityService
 import com.projectego.app.ui.AliveComponents
 import com.projectego.app.ui.AlivePanel
@@ -45,10 +46,20 @@ import com.projectego.app.ui.AliveRenderState
 import com.projectego.app.ui.AliveSignals
 import com.projectego.app.ui.AliveStage
 import com.projectego.app.ui.AliveStates
+import com.projectego.app.ui.AppLabels
+import com.projectego.app.ui.BrutalistBarChart
+import com.projectego.app.ui.BrutalistDonut
+import com.projectego.app.ui.ChartRange
+import com.projectego.app.ui.DayBar
+import com.projectego.app.ui.DayBarKind
 import com.projectego.app.ui.HomeAction
+import com.projectego.app.ui.PixelMarks
 import com.projectego.app.ui.StatusTone
+import com.projectego.app.ui.UsageChartStates
 import com.projectego.app.ui.VerificationReasonClass
 import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.format.TextStyle
 import java.util.Calendar
 import java.util.Locale
 
@@ -86,6 +97,9 @@ class MainActivity : AppCompatActivity() {
 
     private val ui by lazy { AliveComponents(this) }
     private val state = AliveRenderState()
+
+    /** The chart's own store. Side-effect free, so panels may read it directly. */
+    private val usageHistory by lazy { UsageHistoryRepository(this) }
 
     private var focusSetupAnchor: View? = null
     private var goalInput: EditText? = null
@@ -241,9 +255,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun panelHeader(kicker: CharSequence): LinearLayout = ui.row().apply {
-        addView(ui.quiet(getString(R.string.action_back)).apply {
-            setOnClickListener { closeOverlay() }
-        })
+        addView(
+            ui.backButton(getString(R.string.action_back)).apply {
+                setOnClickListener { closeOverlay() }
+            }
+        )
         addView(
             ui.label(kicker).apply {
                 setPadding(ui.dimens.m, 0, 0, 0)
@@ -284,14 +300,20 @@ class MainActivity : AppCompatActivity() {
         state.spentMinutes = report.timeBank.spentMinutes
         state.dailyLimitMinutes = report.limitMinutes
         state.usedMinutesToday = report.totalEntertainmentMinutes
+        state.entertainmentAppDetails = report.entertainmentAppDetails
+        evaluateGuardState(report)
 
         renderHeader(signals)
+
+        if (state.guardGapOpen || state.guardGapRepairedToday) {
+            renderGuardCard()
+        }
 
         if (!hasUsageAccess() || !isAccessibilityServiceEnabled()) {
             renderPermissionsNotice()
         }
 
-        renderYourTime(report)
+        renderTodayCard(report, signals)
         renderCurrentAction(signals)
         renderCurrentQuestBlock(attempt, quests)
         renderTimeBank(signals)
@@ -315,9 +337,9 @@ class MainActivity : AppCompatActivity() {
 
         val line = ui.row()
         line.addView(
-            ui.pose(
+            ui.animatedPose(
                 AliveStates.poseFor(stage),
-                ui.dimens.character,
+                ui.dimens.characterLarge,
                 characterDescription(stage)
             )
         )
@@ -325,25 +347,33 @@ class MainActivity : AppCompatActivity() {
             ui.column().apply {
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                 setPadding(ui.dimens.l, 0, 0, 0)
-                addView(ui.display(getString(R.string.alive_wordmark)).apply {
-                    // Seven quick taps stays the only way into the dev panel.
-                    setOnClickListener {
-                        if (BuildConfig.DEBUG) {
-                            val now = System.currentTimeMillis()
-                            if (now - lastDevTapTime < 500) {
-                                devTapCount++
-                                if (devTapCount >= 7) {
-                                    showDevPanel = !showDevPanel
-                                    devTapCount = 0
-                                    renderDashboard()
+                addView(
+                    ui.row().apply {
+                        gravity = Gravity.BOTTOM
+                        addView(ui.display(getString(R.string.alive_wordmark)).apply {
+                            // Seven quick taps stays the only way into the dev panel.
+                            setOnClickListener {
+                                if (BuildConfig.DEBUG) {
+                                    val now = System.currentTimeMillis()
+                                    if (now - lastDevTapTime < 500) {
+                                        devTapCount++
+                                        if (devTapCount >= 7) {
+                                            showDevPanel = !showDevPanel
+                                            devTapCount = 0
+                                            renderDashboard()
+                                        }
+                                    } else {
+                                        devTapCount = 1
+                                    }
+                                    lastDevTapTime = now
                                 }
-                            } else {
-                                devTapCount = 1
                             }
-                            lastDevTapTime = now
-                        }
+                        })
+                        // A block cursor, so the wordmark reads as something that
+                        // is running rather than a printed title.
+                        addView(ui.caret(ui.dimens.dp(20)))
                     }
-                })
+                )
                 addView(ui.vgap(ui.dimens.s))
                 addView(ui.annotation(getString(AliveStates.annotationFor(signals))))
             }
@@ -352,9 +382,91 @@ class MainActivity : AppCompatActivity() {
 
         header.addView(ui.vgap(ui.dimens.l))
         header.addView(ui.bodySecondary(getString(R.string.alive_tagline)))
-        header.addView(ui.separator())
+        header.addView(ui.vgap(ui.dimens.m))
+        header.addView(ui.accents(seed = 1, count = 4))
+        // No rule here: the TODAY card below is the break, and a second one
+        // above it would read as a frame around empty paper.
 
         statusContainer.addView(header)
+    }
+
+    /**
+     * Notices that the guard is off, and notices when it comes back.
+     *
+     * Only a day that owed enforcement gets marked: when nothing was over the
+     * limit, a service that was off was hiding nothing, and charging for it
+     * would punish the phone's battery manager rather than the person. Detection
+     * lives here because this is the only moment ALIVE is on screen to look.
+     */
+    private fun evaluateGuardState(report: UsageReport) {
+        val today = LockStateManager.dayKeyOf(System.currentTimeMillis())
+        val owedEnforcement = report.isLimitExceeded || report.dayType == DayType.ZERO_ENTERTAINMENT_DAY
+
+        if (!isAccessibilityServiceEnabled()) {
+            if (owedEnforcement) lockStateManager.markGuardGap(today, report.timeBank.earnedMinutes)
+        } else {
+            lockStateManager.repairGuardGapIfEarned(report.timeBank.earnedMinutes)
+        }
+
+        state.guardGapOpen = lockStateManager.isGuardGapOpenOn(today)
+        state.guardGapRepairedToday = !state.guardGapOpen && lockStateManager.unguardedDay() == today
+    }
+
+    /**
+     * The one card that speaks before the numbers do.
+     *
+     * It states what is no longer true (nothing is being closed), what it costs
+     * (today is marked, and an unrepaired mark is not a kept day), and how to
+     * clear it - without pretending the mark can be erased. It also says out loud
+     * that ALIVE cannot tell who turned the service off, because a phone that
+     * kills services to save battery is a real possibility and a false accusation
+     * here would cost more trust than the mark ever recovers.
+     */
+    private fun renderGuardCard() {
+        val repaired = !state.guardGapOpen
+        val card = ui.bentoCard(
+            getString(if (repaired) R.string.guard_back_heading else R.string.guard_off_heading)
+        )
+
+        card.addView(
+            ui.mark(
+                R.drawable.ic_alive_character_aware,
+                ui.dimens.character,
+                getString(R.string.cd_guard_mark)
+            )
+        )
+        card.addView(ui.vgap(ui.dimens.m))
+        card.addView(
+            ui.bodySecondary(
+                getString(if (repaired) R.string.guard_back_body else R.string.guard_off_body)
+            )
+        )
+        card.addView(ui.vgap(ui.dimens.s))
+        card.addView(
+            ui.bodySecondary(
+                getString(if (repaired) R.string.guard_repair_done else R.string.guard_repair_needed)
+            )
+        )
+        card.addView(ui.vgap(ui.dimens.s))
+        card.addView(ui.quietText(getString(R.string.guard_who_turned_it_off)))
+
+        if (!repaired) {
+            card.addView(ui.vgap(ui.dimens.l))
+            card.addView(
+                ui.secondary(getString(R.string.guard_enable_action)).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    setOnClickListener {
+                        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    }
+                }
+            )
+        }
+
+        statusContainer.addView(card)
+        statusContainer.addView(ui.separator())
     }
 
     private fun characterDescription(stage: AliveStage): String =
@@ -374,6 +486,10 @@ class MainActivity : AppCompatActivity() {
             block.addView(ui.vgap(ui.dimens.s))
         }
         if (!isAccessibilityServiceEnabled()) {
+            // Named out loud, because this is the permission people are most
+            // wary of and the one they can walk away from - at a price.
+            block.addView(ui.quietText(getString(R.string.permissions_accessibility_why)))
+            block.addView(ui.vgap(ui.dimens.s))
             block.addView(ui.secondary(getString(R.string.permissions_accessibility_action)).apply {
                 setOnClickListener { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
             })
@@ -384,17 +500,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * How much of today's own allowance is left.
+     * The day, in one heavy card: the four numbers that explain what ALIVE
+     * tracks, then the figure that matters right now.
      *
      * The number always comes from remainingMinutes and the critical-zone tier
      * only picks the wording, because dev-test mode collapses the tier scale -
      * copy inferred from a tier would then lie. A recovery day never prints its
-     * zero limit as if it were an allowance.
+     * zero limit as if it were an allowance; the grid still shows the zero,
+     * because hiding it would hide the reason the day is closed.
      */
-    private fun renderYourTime(report: UsageReport) {
-        val block = ui.column()
-        block.addView(ui.label(getString(R.string.your_time_heading)))
-        block.addView(ui.vgap(ui.dimens.m))
+    private fun renderTodayCard(report: UsageReport, signals: AliveSignals) {
+        val card = ui.bentoCard(getString(R.string.today_card_title))
+
+        card.addView(statGrid(signals))
+        card.addView(ui.vgap(ui.dimens.l))
+        card.addView(ui.rule())
+        card.addView(ui.vgap(ui.dimens.l))
 
         val headlineRes = AliveStates.timeHeadline(
             report.timeStatus,
@@ -403,54 +524,34 @@ class MainActivity : AppCompatActivity() {
         )
         val printsANumber = headlineRes == R.string.time_minutes_left ||
             headlineRes == R.string.time_minutes_left_critical
-        val timeText = if (printsANumber) ui.timer(getString(headlineRes, report.remainingMinutes))
-        else ui.statement(getString(headlineRes))
 
         if (printsANumber) {
-            val timeLine = ui.row()
+            // Say what the big number is before showing it: a bare 75 means
+            // nothing to someone who opened the app for the first time.
+            card.addView(ui.bodySecondary(getString(R.string.time_hero_line)))
+            card.addView(ui.vgap(ui.dimens.s))
+
+            val timeLine = ui.row().apply { gravity = Gravity.BOTTOM }
+            timeLine.addView(ui.timer(getString(R.string.stat_minutes, report.remainingMinutes)))
             timeLine.addView(
-                ui.mark(
-                    R.drawable.ic_time_indicator,
-                    ui.dimens.xl,
-                    getString(R.string.cd_time_state, timeText.text)
-                )
-            )
-            timeLine.addView(
-                timeText.apply {
-                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                    setPadding(ui.dimens.m, 0, 0, 0)
+                ui.label(getString(R.string.stat_min_left)).apply {
+                    setPadding(ui.dimens.m, 0, 0, ui.dimens.l)
                 }
             )
-            block.addView(timeLine)
+            timeLine.addView(
+                ui.weighted(
+                    ui.quietText(getString(R.string.time_of_allowance, report.limitMinutes))
+                ).apply { gravity = Gravity.BOTTOM or Gravity.END }
+            )
+            card.addView(timeLine)
+            card.addView(ui.vgap(ui.dimens.s))
+            card.addView(ui.timeBar(report.remainingMinutes, report.limitMinutes))
         } else {
-            block.addView(timeText)
-        }
-
-        block.addView(ui.vgap(ui.dimens.s))
-        block.addView(
-            ui.bodySecondary(
-                getString(AliveStates.timeSupportLine(report.timeStatus, report.criticalZoneTier))
-            )
-        )
-
-        if (report.dayType == DayType.NORMAL_DAY && report.limitMinutes > 0) {
-            block.addView(ui.vgap(ui.dimens.m))
-            block.addView(
-                ui.quietText(
-                    getString(
-                        R.string.time_allowance_and_used,
-                        report.limitMinutes,
-                        report.totalEntertainmentMinutes
-                    )
-                )
-            )
-        }
-
-        if (report.timeStatus == TimeStatus.LOCKED ||
-            report.timeStatus == TimeStatus.ZERO_ENTERTAINMENT_DAY
-        ) {
-            block.addView(ui.vgap(ui.dimens.l))
-            block.addView(
+            // Closed, or a recovery day: a statement, not a number, and the
+            // figure walking toward something else.
+            card.addView(ui.headline(getString(headlineRes)))
+            card.addView(ui.vgap(ui.dimens.m))
+            card.addView(
                 ui.mark(
                     R.drawable.ic_alive_character_aware,
                     ui.dimens.character,
@@ -459,8 +560,52 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        block.addView(ui.separator())
-        statusContainer.addView(block)
+        card.addView(ui.vgap(ui.dimens.m))
+        card.addView(
+            ui.bodySecondary(
+                getString(AliveStates.timeSupportLine(report.timeStatus, report.criticalZoneTier))
+            )
+        )
+
+        // The chart opens from here because this is where the eye is already on
+        // the number the chart then explains.
+        card.addView(ui.vgap(ui.dimens.l))
+        card.addView(
+            ui.secondary(getString(R.string.chart_open)).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                setOnClickListener { openUsageChartPanel() }
+            }
+        )
+
+        statusContainer.addView(card)
+        statusContainer.addView(ui.separator())
+    }
+
+    /**
+     * The four facts a first run has no other way to learn: how many clean days
+     * in a row, what today's allowance is, how much of it went, and how much
+     * reclaimed time is banked. Ruled like a table so the numbers read as a
+     * ledger, not as decoration.
+     */
+    private fun statGrid(signals: AliveSignals): LinearLayout = ui.column().apply {
+        addView(
+            ui.row().apply {
+                addView(ui.weighted(ui.statTile(getString(R.string.stat_streak), getString(R.string.stat_minutes, signals.currentStreak))))
+                addView(ui.ruleVertical())
+                addView(ui.weighted(ui.statTile(getString(R.string.stat_allowance), getString(R.string.stat_minutes, state.dailyLimitMinutes))))
+            }
+        )
+        addView(ui.rule())
+        addView(
+            ui.row().apply {
+                addView(ui.weighted(ui.statTile(getString(R.string.stat_used), getString(R.string.stat_minutes, state.usedMinutesToday))))
+                addView(ui.ruleVertical())
+                addView(ui.weighted(ui.statTile(getString(R.string.stat_bank), getString(R.string.stat_minutes, signals.reclaimedAvailableMinutes))))
+            }
+        )
     }
 
     /**
@@ -525,6 +670,15 @@ class MainActivity : AppCompatActivity() {
             block.addView(ui.vgap(ui.dimens.m))
         }
 
+        block.addView(
+            ui.pose(
+                PixelMarks.quest(quest.category),
+                ui.dimens.character,
+                getString(PixelMarks.description(quest.category))
+            )
+        )
+        block.addView(ui.vgap(ui.dimens.m))
+
         block.addView(ui.questRowTitle(quest.title))
         block.addView(ui.vgap(ui.dimens.xs))
         block.addView(ui.bodySecondary(quest.description))
@@ -571,33 +725,75 @@ class MainActivity : AppCompatActivity() {
     // ------------------------------------------------------------------
 
     /** Reclaimed time, stated as time - never as a currency or a score. */
+    /**
+     * The Time Bank, as a card with its own sprite and its own ledger.
+     *
+     * It used to be a label and one quiet line, which is why nobody knew the
+     * feature existed: the thing that pays for Focus extensions looked like a
+     * footnote. The clock says "time is kept here", the ledger says how much
+     * came in and went out, and the figure says what is spendable now.
+     */
     private fun renderTimeBank(signals: AliveSignals) {
         val available = signals.reclaimedAvailableMinutes
-        val block = ui.column()
-        block.addView(ui.label(getString(R.string.time_bank_heading)))
-        block.addView(ui.vgap(ui.dimens.m))
+        val card = ui.bentoCard(getString(R.string.time_bank_heading))
 
-        if (available <= 0L) {
-            block.addView(ui.bodySecondary(getString(R.string.time_bank_empty)))
-        } else {
-            block.addView(ui.timer(getString(R.string.time_bank_minutes, available)))
-            block.addView(ui.vgap(ui.dimens.s))
-            block.addView(ui.bodySecondary(getString(R.string.time_body)))
-            renderTimeBankUse(block, available)
+        val head = ui.row()
+        head.addView(
+            ui.pose(
+                R.drawable.ic_time_indicator,
+                ui.dimens.character,
+                getString(R.string.cd_time_bank)
+            )
+        )
+        head.addView(
+            ui.column().apply {
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                setPadding(ui.dimens.l, 0, 0, 0)
+                if (available <= 0L) {
+                    addView(ui.bodySecondary(getString(R.string.time_bank_empty)))
+                } else {
+                    val bankLine = ui.row().apply { gravity = Gravity.BOTTOM }
+                    bankLine.addView(ui.timer(getString(R.string.stat_minutes, available)))
+                    bankLine.addView(
+                        ui.label(getString(R.string.stat_reclaimed)).apply {
+                            setPadding(ui.dimens.m, 0, 0, ui.dimens.m)
+                        }
+                    )
+                    addView(bankLine)
+                }
+            }
+        )
+        card.addView(head)
+
+        card.addView(ui.vgap(ui.dimens.l))
+        card.addView(ui.rule())
+        card.addView(
+            ui.row().apply {
+                addView(ui.weighted(ui.statTile(getString(R.string.stat_bank_earned), getString(R.string.stat_minutes, state.earnedMinutes))))
+                addView(ui.ruleVertical())
+                addView(ui.weighted(ui.statTile(getString(R.string.stat_bank_spent), getString(R.string.stat_minutes, state.spentMinutes))))
+            }
+        )
+
+        card.addView(ui.vgap(ui.dimens.l))
+        card.addView(ui.bodySecondary(getString(R.string.time_bank_explain)))
+
+        if (available > 0L) {
+            renderTimeBankUse(card, available)
         }
 
-        block.addView(ui.separator())
-        statusContainer.addView(block)
+        statusContainer.addView(card)
+        statusContainer.addView(ui.separator())
     }
 
     private fun renderTimeBankUse(block: LinearLayout, available: Long) {
-        block.addView(ui.vgap(ui.dimens.xl))
+        block.addView(ui.vgap(ui.dimens.l))
         block.addView(ui.bodySecondary(getString(R.string.time_bank_use_intro)))
         block.addView(ui.vgap(ui.dimens.m))
 
         val row = ui.row()
         row.addView(
-            ui.quiet(getString(R.string.time_bank_use_10)).apply {
+            ui.secondary(getString(R.string.time_bank_use_10)).apply {
                 isEnabled = available >= 10
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                 setOnClickListener {
@@ -610,8 +806,9 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         )
+        row.addView(ui.hgap(ui.dimens.m))
         row.addView(
-            ui.quiet(getString(R.string.time_bank_use_15)).apply {
+            ui.secondary(getString(R.string.time_bank_use_15)).apply {
                 isEnabled = available >= 15
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                 setOnClickListener {
@@ -635,26 +832,37 @@ class MainActivity : AppCompatActivity() {
         focusSetupAnchor = null
         goalInput = null
 
-        val block = ui.column()
-        block.addView(ui.label(getString(R.string.focus_heading)))
-        block.addView(ui.vgap(ui.dimens.m))
+        // A card like the rest of Home's blocks: the form was floating on bare
+        // canvas, which made the one thing a new user is meant to try look like
+        // leftover text.
+        val card = ui.bentoCard(getString(R.string.focus_heading))
 
         if (session != null && session.isActive) {
-            block.addView(ui.statement(getString(R.string.focus_active_heading, activityLabel(session.activityType))))
-            block.addView(ui.vgap(ui.dimens.s))
-            block.addView(ui.bodySecondary(focusRemainingLine(session)))
-            block.addView(ui.vgap(ui.dimens.l))
-            block.addView(ui.secondary(getString(R.string.action_return_session)).apply {
+            card.addView(
+                ui.pose(
+                    PixelMarks.focus(session.activityType),
+                    ui.dimens.character,
+                    getString(R.string.cd_focus_mark, activityLabel(session.activityType))
+                )
+            )
+            card.addView(ui.vgap(ui.dimens.m))
+            card.addView(ui.statement(getString(R.string.focus_active_heading, activityLabel(session.activityType))))
+            card.addView(ui.vgap(ui.dimens.s))
+            card.addView(ui.bodySecondary(focusRemainingLine(session)))
+            card.addView(ui.vgap(ui.dimens.l))
+            card.addView(ui.secondary(getString(R.string.action_return_session)).apply {
                 setOnClickListener { openFocusSessionPanel() }
             })
         } else {
-            block.addView(ui.bodySecondary(getString(R.string.focus_intro)))
-            block.addView(ui.vgap(ui.dimens.xl))
-            renderFocusSetup(block)
+            card.addView(ui.bodySecondary(getString(R.string.focus_intro)))
+            card.addView(ui.vgap(ui.dimens.m))
+            card.addView(ui.accents(seed = 5, count = 3))
+            card.addView(ui.vgap(ui.dimens.l))
+            renderFocusSetup(card)
         }
 
-        block.addView(ui.separator())
-        statusContainer.addView(block)
+        statusContainer.addView(card)
+        statusContainer.addView(ui.separator())
     }
 
     /**
@@ -672,27 +880,42 @@ class MainActivity : AppCompatActivity() {
         val activities = FocusActivityType.values()
         val durations = listOf(30L, 60L, 90L, 120L)
 
+        // The mark above the list is the answer to "what am I about to pick":
+        // it changes the moment another activity is chosen.
+        val markType = activities.getOrNull(state.selectedActivityIndex) ?: FocusActivityType.STUDY
+        val mark = ui.pose(
+            PixelMarks.focus(markType),
+            ui.dimens.character,
+            getString(R.string.cd_focus_mark, activityLabel(markType))
+        )
+        anchor.addView(mark)
+        anchor.addView(ui.vgap(ui.dimens.l))
+
         anchor.addView(ui.label(getString(R.string.focus_activity_heading)))
         anchor.addView(ui.vgap(ui.dimens.s))
 
         val actGroup = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
         activities.forEachIndexed { index, type ->
             actGroup.addView(
-                RadioButton(this).apply {
-                    id = index + 100
-                    text = getString(
+                ui.option(
+                    getString(
                         R.string.focus_activity_option,
                         activityLabel(type),
                         FocusAppPolicy.getApprovedPackages(type).size
                     )
-                    setTextColor(ui.palette.inkSecondary)
-                    minimumHeight = ui.dimens.touchMin
+                ).apply {
+                    id = index + 100
                     isChecked = index == state.selectedActivityIndex
                 }
             )
         }
         actGroup.setOnCheckedChangeListener { _, checkedId ->
             state.selectedActivityIndex = (checkedId - 100).coerceAtLeast(0)
+            val type = activities.getOrNull(state.selectedActivityIndex)
+            if (type != null) {
+                mark.setImageResource(PixelMarks.focus(type))
+                mark.contentDescription = getString(R.string.cd_focus_mark, activityLabel(type))
+            }
         }
         anchor.addView(actGroup)
 
@@ -700,13 +923,8 @@ class MainActivity : AppCompatActivity() {
         anchor.addView(ui.label(getString(R.string.focus_goal_heading)))
         anchor.addView(ui.vgap(ui.dimens.s))
 
-        val goalField = EditText(this).apply {
-            hint = getString(R.string.focus_goal_hint)
+        val goalField = ui.input(getString(R.string.focus_goal_hint)).apply {
             setText(state.focusGoalDraft)
-            setTextColor(ui.palette.ink)
-            setHintTextColor(ui.palette.inkDisabled)
-            setBackgroundColor(ui.palette.paper)
-            setPadding(ui.dimens.m, ui.dimens.m, ui.dimens.m, ui.dimens.m)
             addTextChangedListener(afterTextChanged = { text ->
                 state.focusGoalDraft = text?.toString()?.trim().orEmpty()
             })
@@ -721,16 +939,15 @@ class MainActivity : AppCompatActivity() {
         val durGroup = RadioGroup(this).apply { orientation = RadioGroup.HORIZONTAL }
         durations.forEachIndexed { index, duration ->
             durGroup.addView(
-                RadioButton(this).apply {
+                // A bare number, with the unit in the heading: four "60 min"
+                // radios will not fit a 320dp screen, and these four values are
+                // the only ones the engine accepts.
+                ui.option(getString(R.string.focus_duration_value, duration)).apply {
                     id = index + 200
-                    // A bare number, with the unit in the heading: four "60 min"
-                    // radios will not fit a 320dp screen, and these four values
-                    // are the only ones the engine accepts.
-                    text = getString(R.string.focus_duration_value, duration)
-                    setTextColor(ui.palette.inkSecondary)
                     gravity = Gravity.CENTER_HORIZONTAL
-                    minimumHeight = ui.dimens.touchMin
-                    layoutParams = RadioGroup.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                    layoutParams = RadioGroup.LayoutParams(
+                        0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f
+                    )
                     isChecked = index == state.selectedDurationIndex
                 }
             )
@@ -810,6 +1027,8 @@ class MainActivity : AppCompatActivity() {
         header.addView(ui.display(getString(R.string.quest_heading)))
         header.addView(ui.vgap(ui.dimens.s))
         header.addView(ui.annotation(getString(R.string.quest_subhead)))
+        header.addView(ui.vgap(ui.dimens.m))
+        header.addView(ui.accents(seed = 2, count = 5))
         header.addView(ui.separator())
         questContainer.addView(header)
 
@@ -828,12 +1047,14 @@ class MainActivity : AppCompatActivity() {
                 )
             )
         } else {
-            questContainer.addView(ui.label(getString(R.string.quest_yours)))
-            questContainer.addView(ui.vgap(ui.dimens.l))
+            // One ruled card for the whole board: separate floating rows read as
+            // leftovers, and the hairlines inside give each quest its own line.
+            val listCard = ui.bentoCard(getString(R.string.quest_yours))
             others.forEachIndexed { index, quest ->
-                questContainer.addView(buildQuestRow(quest))
-                if (index < others.lastIndex) questContainer.addView(ui.hairline())
+                if (index > 0) listCard.addView(ui.hairline())
+                listCard.addView(buildQuestRow(quest))
             }
+            questContainer.addView(listCard)
         }
     }
 
@@ -850,6 +1071,17 @@ class MainActivity : AppCompatActivity() {
             setPadding(0, ui.dimens.m, 0, ui.dimens.m)
             setBackgroundResource(android.R.color.transparent)
         }
+
+        // The mark goes first: on a board of similar rows it is what lets the
+        // eye find "the walking one" without reading four titles.
+        row.addView(
+            ui.pose(
+                PixelMarks.quest(quest.category),
+                ui.dimens.touchMin,
+                getString(PixelMarks.description(quest.category))
+            )
+        )
+        row.addView(ui.hgap(ui.dimens.m))
 
         val info = ui.column().apply {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -904,7 +1136,13 @@ class MainActivity : AppCompatActivity() {
     private fun buildQuestDetailInto(column: LinearLayout, quest: Quest) {
         val verifiable = AliveStates.isSelfVerifiable(quest.category)
 
-        column.addView(ui.pose(R.drawable.ic_alive_journal_figure, ui.dimens.characterLarge, quest.title))
+        column.addView(
+            ui.pose(
+                PixelMarks.quest(quest.category),
+                ui.dimens.characterLarge,
+                getString(PixelMarks.description(quest.category))
+            )
+        )
         column.addView(ui.vgap(ui.dimens.xl))
 
         column.addView(ui.headline(quest.title))
@@ -1005,6 +1243,14 @@ class MainActivity : AppCompatActivity() {
      * open, what happens when time runs out. No celebration, no counter to beat.
      */
     private fun buildFocusSessionInto(column: LinearLayout, session: FocusSession) {
+        column.addView(
+            ui.pose(
+                PixelMarks.focus(session.activityType),
+                ui.dimens.characterLarge,
+                getString(R.string.cd_focus_mark, activityLabel(session.activityType))
+            )
+        )
+        column.addView(ui.vgap(ui.dimens.l))
         column.addView(ui.headline(getString(R.string.focus_active_heading, activityLabel(session.activityType))))
         column.addView(ui.vgap(ui.dimens.xl))
 
@@ -1054,78 +1300,330 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ------------------------------------------------------------------
+    // USAGE CHART - reads the history store, never the engine
+    // ------------------------------------------------------------------
+
+    /**
+     * Today, the last seven days, the month so far.
+     *
+     * The only figure that comes from the engine is today's, and it comes from
+     * [state] rather than a fresh read. Everything older comes from
+     * [usageHistory], a store with no side effects at all: it cannot roll the
+     * day, set the lock, or clear a session.
+     */
+    private fun openUsageChartPanel() {
+        state.panel = AlivePanel.USAGE_CHART
+
+        val (scroll, column) = panel()
+        column.addView(panelHeader(getString(R.string.chart_heading)))
+        column.addView(ui.vgap(ui.dimens.l))
+        column.addView(ui.annotation(getString(R.string.chart_subhead)))
+        column.addView(ui.vgap(ui.dimens.m))
+        column.addView(ui.accents(seed = 3, count = 4))
+        column.addView(ui.separator())
+
+        val ranges = ChartRange.values()
+        val switch = RadioGroup(this)
+        ranges.forEachIndexed { index, range ->
+            switch.addView(
+                // Stacked rather than side by side: "Last 7 days" and "This
+                // month" cannot share a 320dp row with their radio circles.
+                ui.option(getString(UsageChartStates.rangeLabel(range))).apply {
+                    id = CHART_RANGE_ID_BASE + index
+                    isChecked = index == state.chartRangeIndex
+                }
+            )
+        }
+
+        val body = ui.column()
+        switch.setOnCheckedChangeListener { _, checkedId ->
+            state.chartRangeIndex = (checkedId - CHART_RANGE_ID_BASE).coerceIn(0, ranges.size - 1)
+            renderChartBody(body)
+        }
+
+        column.addView(switch)
+        column.addView(body)
+        renderChartBody(body)
+
+        openOverlay(scroll)
+    }
+
+    /** Redrawn in place when the range changes, so the panel keeps its scroll. */
+    private fun renderChartBody(body: LinearLayout) {
+        body.removeAllViews()
+
+        val range = ChartRange.values().getOrNull(state.chartRangeIndex) ?: ChartRange.TODAY
+        val today = LocalDate.now()
+        val todayKey = today.toString()
+        val bars = chartBars(UsageChartStates.dateKeys(range, today), todayKey)
+
+        body.addView(ui.vgap(ui.dimens.l))
+        body.addView(buildDayCard(range, todayKey, bars))
+
+        // Per-app time is only ever stated for today. It is stored for other
+        // days, but a month of package names reads as surveillance, which is
+        // not what ALIVE claims to do.
+        if (range == ChartRange.TODAY) {
+            buildAppCard()?.let { card ->
+                body.addView(ui.vgap(ui.dimens.l))
+                body.addView(card)
+            }
+        }
+    }
+
+    /** The days card: bars, what the marks mean, and how much of the range is real. */
+    private fun buildDayCard(range: ChartRange, todayKey: String, bars: List<DayBar>): LinearLayout {
+        val card = ui.bentoCard(getString(R.string.chart_days_heading))
+        val detail = ui.bodySecondary(getString(R.string.chart_tap_hint))
+
+        val chart = BrutalistBarChart(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                ui.dimens.dp(if (range == ChartRange.THIS_MONTH) CHART_HEIGHT_MONTH else CHART_HEIGHT_DAY)
+            )
+            contentDescription = getString(R.string.cd_usage_chart)
+            setData(
+                bars.map { bar ->
+                    BrutalistBarChart.Column(
+                        label = chartLabel(bar, todayKey, range),
+                        minutes = bar.minutes,
+                        fraction = bar.fraction,
+                        kind = bar.kind
+                    )
+                }
+            )
+            onColumnTapped = { index ->
+                detail.text = if (index < 0) {
+                    getString(R.string.chart_tap_hint)
+                } else {
+                    dayDetail(bars[index])
+                }
+            }
+        }
+        card.addView(chart)
+        card.addView(ui.vgap(ui.dimens.m))
+        card.addView(detail)
+
+        val (totalMinutes, recordedCount) = UsageChartStates.totals(bars)
+        card.addView(ui.vgap(ui.dimens.l))
+        card.addView(ui.bodySecondary(getString(R.string.chart_total_minutes, totalMinutes)))
+        if (bars.size > 1) {
+            card.addView(ui.vgap(ui.dimens.xs))
+            card.addView(ui.quietText(getString(R.string.chart_days_recorded, recordedCount, bars.size)))
+        }
+        if (recordedCount < bars.size) {
+            card.addView(ui.vgap(ui.dimens.s))
+            card.addView(ui.annotation(getString(UsageChartStates.coverageCopy(recordedCount, bars.size))))
+        }
+
+        card.addView(ui.vgap(ui.dimens.l))
+        card.addView(ui.quietText(getString(R.string.chart_axis_note)))
+        card.addView(ui.vgap(ui.dimens.xs))
+        // The two marks that are not self-evident, named rather than left to
+        // guesswork: a gap in the record and a day with nothing to spend.
+        card.addView(ui.quietText(getString(R.string.chart_shape_note)))
+        if (range == ChartRange.THIS_MONTH) {
+            card.addView(ui.vgap(ui.dimens.xs))
+            // A month has no room for 31 readable labels, so the row is
+            // explained as a whole instead of named day by day.
+            card.addView(ui.quietText(getString(R.string.chart_month_axis)))
+        }
+        return card
+    }
+
+    /**
+     * Today's time by app: a ring, and the legend that names every slice.
+     *
+     * Null when the device reported no entertainment apps, because a card that
+     * says "today, by app" with nothing in it is a card that should not exist.
+     */
+    private fun buildAppCard(): LinearLayout? {
+        val apps = state.entertainmentAppDetails
+            .filter { it.second > 0L }
+            .take(MAX_CHART_APPS)
+        if (apps.isEmpty()) return null
+
+        val total = apps.sumOf { it.second }
+        val series = ui.palette.chartSeries
+        val card = ui.bentoCard(getString(R.string.chart_apps_heading))
+
+        val donut = BrutalistDonut(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                ui.dimens.dp(CHART_HEIGHT_DAY)
+            )
+            totalCaption = getString(R.string.chart_total_label)
+            contentDescription = getString(R.string.cd_app_donut)
+            setData(
+                apps.mapIndexed { index, (_, minutes) ->
+                    BrutalistDonut.Slice(
+                        label = AppLabels.labelFor(this@MainActivity, apps[index].first),
+                        minutes = minutes,
+                        color = series[index % series.size]
+                    )
+                },
+                total
+            )
+        }
+        card.addView(donut)
+
+        card.addView(ui.vgap(ui.dimens.l))
+        apps.forEachIndexed { index, (packageName, minutes) ->
+            val row = ui.row().apply {
+                setPadding(0, ui.dimens.s, 0, ui.dimens.s)
+                // Tapping a name selects its slice, which is the same thing the
+                // ring does when tapped: the two never disagree.
+                setOnClickListener { donut.select(index) }
+            }
+            row.addView(ui.swatch(series[index % series.size]))
+            row.addView(ui.weighted(ui.body(AppLabels.labelFor(this, packageName))))
+            row.addView(ui.label(getString(R.string.chart_app_minutes, minutes)))
+            card.addView(row)
+        }
+
+        card.addView(ui.vgap(ui.dimens.m))
+        // A fallback label is still printed as a label, so this says where the
+        // names come from instead of pretending every one of them resolved.
+        card.addView(ui.annotation(getString(R.string.chart_labels_note)))
+        return card
+    }
+
+    /**
+     * One bar per requested day. Today is the figure Home is showing, not the
+     * last snapshot the engine wrote; a day ALIVE never recorded stays MISSING
+     * rather than being drawn as a zero.
+     */
+    private fun chartBars(dateKeys: List<String>, todayKey: String): List<DayBar> {
+        val recorded = usageHistory.daysFor(dateKeys).toMutableMap()
+        if (dateKeys.contains(todayKey)) {
+            recorded[todayKey] = UsageDay(
+                date = todayKey,
+                totalMinutes = state.usedMinutesToday,
+                limitMinutes = state.dailyLimitMinutes,
+                perAppMinutes = state.entertainmentAppDetails.toMap()
+            )
+        }
+        return UsageChartStates.bars(dateKeys, recorded)
+    }
+
+    /** Under a bar: which day it was, and what that day's number means. */
+    private fun dayDetail(bar: DayBar): String {
+        val date = LocalDate.parse(bar.date)
+        val name = getString(
+            R.string.chart_day_name,
+            date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+            date.dayOfMonth
+        )
+        return when (bar.kind) {
+            DayBarKind.MISSING -> getString(R.string.chart_day_missing_detail, name)
+            DayBarKind.RECOVERY -> getString(R.string.chart_day_recovery_detail, name)
+            else -> getString(R.string.chart_day_detail, name, bar.minutes, bar.limitMinutes)
+        }
+    }
+
+    /**
+     * What sits under each bar. Today is named, the week says the weekday, the
+     * month says the day of the month - and only on the first and every fifth,
+     * because 31 labels do not fit and a truncated one is worse than none.
+     */
+    private fun chartLabel(bar: DayBar, todayKey: String, range: ChartRange): String = when {
+        bar.date == todayKey -> getString(R.string.chart_label_today)
+        range == ChartRange.LAST_7_DAYS ->
+            LocalDate.parse(bar.date).dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+        range == ChartRange.THIS_MONTH -> {
+            val dayOfMonth = LocalDate.parse(bar.date).dayOfMonth
+            if (dayOfMonth == 1 || dayOfMonth % 5 == 0) dayOfMonth.toString() else ""
+        }
+        else -> ""
+    }
+
+    // ------------------------------------------------------------------
     // PROFILE - read only, from what the dashboard already read
     // ------------------------------------------------------------------
 
     private fun renderProfile() {
         profileContainer.removeAllViews()
 
+        // Masthead on bare canvas, like Home and Quest: the identity lines are
+        // the one place Profile is allowed to stay quiet.
         profileContainer.addView(ui.display(getString(R.string.profile_heading)))
         profileContainer.addView(ui.vgap(ui.dimens.s))
         profileContainer.addView(ui.annotation(getString(R.string.profile_identity)))
         profileContainer.addView(ui.vgap(ui.dimens.s))
         profileContainer.addView(ui.bodySecondary(getString(R.string.profile_identity_support)))
-        profileContainer.addView(ui.separator())
+        profileContainer.addView(ui.vgap(ui.dimens.m))
+        profileContainer.addView(ui.accents(seed = 6, count = 4))
 
-        // Everything here comes from state.*; nothing re-polls the engine.
+        // Everything below comes from state.*; nothing re-polls the engine.
         val signals = state.signals
         if (signals != null) {
-            val stage = AliveStates.stageOf(signals)
-            val block = ui.column()
-            block.addView(ui.label(getString(R.string.profile_state_heading)))
-            block.addView(ui.vgap(ui.dimens.m))
-
-            val line = ui.row()
-            line.addView(ui.pose(AliveStates.poseFor(stage), ui.dimens.character, characterDescription(stage)))
-            line.addView(
-                ui.column().apply {
-                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                    setPadding(ui.dimens.l, 0, 0, 0)
-                    addView(ui.body(getString(AliveStates.annotationFor(signals))))
-                    addView(ui.vgap(ui.dimens.s))
-                    addView(ui.quietText(streakLine(signals.currentStreak)))
-                    if (signals.dayType == DayType.NORMAL_DAY && state.dailyLimitMinutes > 0) {
-                        addView(ui.vgap(ui.dimens.s))
-                        addView(
-                            ui.quietText(
-                                getString(
-                                    R.string.time_allowance_and_used,
-                                    state.dailyLimitMinutes,
-                                    state.usedMinutesToday
-                                )
-                            )
-                        )
-                    }
-                }
-            )
-            block.addView(line)
-            block.addView(ui.separator())
-            profileContainer.addView(block)
+            profileContainer.addView(ui.vgap(ui.dimens.l))
+            profileContainer.addView(buildStateCard(signals))
         }
 
-        val bankBlock = ui.column()
-        bankBlock.addView(ui.label(getString(R.string.time_bank_heading)))
-        bankBlock.addView(ui.vgap(ui.dimens.m))
-        bankBlock.addView(ui.bodySecondary(getString(R.string.time_bank_earned_total, state.earnedMinutes)))
-        bankBlock.addView(ui.vgap(ui.dimens.xs))
-        bankBlock.addView(ui.bodySecondary(getString(R.string.time_bank_spent_total, state.spentMinutes)))
-        bankBlock.addView(ui.vgap(ui.dimens.xs))
-        bankBlock.addView(
-            ui.body(
-                getString(R.string.time_bank_available_total, state.signals?.reclaimedAvailableMinutes ?: 0L)
-            )
-        )
-        bankBlock.addView(ui.separator())
-        profileContainer.addView(bankBlock)
+        profileContainer.addView(ui.vgap(ui.dimens.l))
+        profileContainer.addView(buildBankCard())
 
         renderProfilePermissions()
         renderProfileHistory()
 
-        val how = ui.block(StatusTone.HELD)
-        how.addView(ui.label(getString(R.string.profile_how_title)))
-        how.addView(ui.vgap(ui.dimens.m))
+        profileContainer.addView(ui.vgap(ui.dimens.l))
+        val how = ui.bentoCard(getString(R.string.profile_how_title))
         how.addView(ui.bodySecondary(getString(R.string.profile_how_body)))
         profileContainer.addView(how)
+    }
+
+    /** Where the day stands: the pose, the sentence, and the two day facts. */
+    private fun buildStateCard(signals: AliveSignals): LinearLayout {
+        val card = ui.bentoCard(getString(R.string.profile_state_heading))
+        val stage = AliveStates.stageOf(signals)
+
+        val line = ui.row()
+        line.addView(ui.animatedPose(AliveStates.poseFor(stage), ui.dimens.character, characterDescription(stage)))
+        line.addView(
+            ui.column().apply {
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                setPadding(ui.dimens.l, 0, 0, 0)
+                addView(ui.body(getString(AliveStates.annotationFor(signals))))
+                addView(ui.vgap(ui.dimens.s))
+                addView(ui.quietText(streakLine(signals.currentStreak)))
+                if (state.guardGapOpen || state.guardGapRepairedToday) {
+                    addView(ui.vgap(ui.dimens.s))
+                    addView(ui.quietText(getString(R.string.guard_profile_line)))
+                }
+            }
+        )
+        card.addView(line)
+
+        card.addView(ui.vgap(ui.dimens.l))
+        card.addView(ui.rule())
+        card.addView(
+            ui.row().apply {
+                addView(ui.weighted(ui.statTile(getString(R.string.stat_allowance), getString(R.string.stat_minutes, state.dailyLimitMinutes))))
+                addView(ui.ruleVertical())
+                addView(ui.weighted(ui.statTile(getString(R.string.stat_used), getString(R.string.stat_minutes, state.usedMinutesToday))))
+            }
+        )
+        return card
+    }
+
+    /** The bank, as a ledger rather than three stacked sentences. */
+    private fun buildBankCard(): LinearLayout {
+        val card = ui.bentoCard(getString(R.string.time_bank_heading))
+        card.addView(
+            ui.row().apply {
+                addView(ui.weighted(ui.statTile(getString(R.string.stat_bank_earned), getString(R.string.stat_minutes, state.earnedMinutes))))
+                addView(ui.ruleVertical())
+                addView(ui.weighted(ui.statTile(getString(R.string.stat_bank_spent), getString(R.string.stat_minutes, state.spentMinutes))))
+            }
+        )
+        card.addView(ui.vgap(ui.dimens.l))
+        card.addView(
+            ui.body(
+                getString(R.string.time_bank_available_total, state.signals?.reclaimedAvailableMinutes ?: 0L)
+            )
+        )
+        return card
     }
 
     /** A streak is a fact about days, not a badge. */
@@ -1136,26 +1634,24 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderProfilePermissions() {
-        val block = ui.column()
-        block.addView(ui.label(getString(R.string.profile_permissions_heading)))
-        block.addView(ui.vgap(ui.dimens.m))
-        block.addView(
+        val card = ui.bentoCard(getString(R.string.profile_permissions_heading))
+        card.addView(
             permissionLine(
                 getString(R.string.permissions_usage_action),
                 hasUsageAccess(),
                 Settings.ACTION_USAGE_ACCESS_SETTINGS
             )
         )
-        block.addView(ui.vgap(ui.dimens.s))
-        block.addView(
+        card.addView(ui.vgap(ui.dimens.s))
+        card.addView(
             permissionLine(
                 getString(R.string.permissions_accessibility_action),
                 isAccessibilityServiceEnabled(),
                 Settings.ACTION_ACCESSIBILITY_SETTINGS
             )
         )
-        block.addView(ui.separator())
-        profileContainer.addView(block)
+        profileContainer.addView(ui.vgap(ui.dimens.l))
+        profileContainer.addView(card)
     }
 
     private fun permissionLine(label: String, granted: Boolean, settingsAction: String): View {
@@ -1173,25 +1669,37 @@ class MainActivity : AppCompatActivity() {
         return button
     }
 
+    /** What already landed, each row carrying the mark of the quest it was. */
     private fun renderProfileHistory() {
         val completed = state.questCatalog.filter { it.status == QuestStatus.COMPLETED }
 
-        val block = ui.column()
-        block.addView(ui.label(getString(R.string.profile_history_heading)))
-        block.addView(ui.vgap(ui.dimens.m))
-
+        val card = ui.bentoCard(getString(R.string.profile_history_heading))
         if (completed.isEmpty()) {
-            block.addView(ui.bodySecondary(getString(R.string.profile_history_empty)))
+            card.addView(ui.bodySecondary(getString(R.string.profile_history_empty)))
         } else {
-            completed.forEach { quest ->
-                block.addView(
-                    ui.bodySecondary(getString(R.string.profile_history_row, quest.title, quest.rewardMinutes))
+            completed.forEachIndexed { index, quest ->
+                if (index > 0) card.addView(ui.hairline())
+                val row = ui.row().apply { setPadding(0, ui.dimens.s, 0, ui.dimens.s) }
+                row.addView(
+                    ui.pose(
+                        PixelMarks.quest(quest.category),
+                        ui.dimens.dp(24),
+                        getString(PixelMarks.description(quest.category))
+                    )
                 )
-                block.addView(ui.vgap(ui.dimens.xs))
+                row.addView(ui.hgap(ui.dimens.m))
+                row.addView(
+                    ui.weighted(
+                        ui.bodySecondary(
+                            getString(R.string.profile_history_row, quest.title, quest.rewardMinutes)
+                        )
+                    )
+                )
+                card.addView(row)
             }
         }
-        block.addView(ui.separator())
-        profileContainer.addView(block)
+        profileContainer.addView(ui.vgap(ui.dimens.l))
+        profileContainer.addView(card)
     }
 
     // ------------------------------------------------------------------
@@ -1280,3 +1788,13 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
     }
 }
+
+/** Kept clear of the focus form's 100/200 offsets, which are also view ids. */
+private const val CHART_RANGE_ID_BASE = 300
+
+/** More than this and the list stops being readable on one screen. */
+private const val MAX_CHART_APPS = 5
+
+/** Chart heights in dp. A month is shorter: 31 columns need width, not height. */
+private const val CHART_HEIGHT_DAY = 200
+private const val CHART_HEIGHT_MONTH = 150

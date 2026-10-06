@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Open book: Study. Ink covers and spine, white pages, forest text lines. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="@color/alive_ink"
+        android:pathData="M2,4h6v1h-6zM9,4h6v1h-6zM8,4h1v9h-1zM2,5h1v7h-1zM14,5h1v7h-1zM2,12h13v1h-13z" />
+    <path
+        android:fillColor="@color/alive_white"
+        android:pathData="M3,5h5v7h-5zM9,5h5v7h-5z" />
+    <path
+        android:fillColor="@color/alive_forest"
+        android:pathData="M4,6h3v1h-3zM10,6h3v1h-3zM4,8h3v1h-3zM10,8h3v1h-3zM4,10h2v1h-2zM10,10h2v1h-2z" />
+</vector>

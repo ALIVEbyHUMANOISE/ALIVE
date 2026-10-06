@@ -84,7 +84,9 @@ class LockActivity : AppCompatActivity() {
         page.addView(ui.vgap(ui.dimens.l))
         page.addView(ui.annotation(getString(R.string.lock_intent)))
 
-        page.addView(ui.vgap(ui.dimens.xxl))
+        page.addView(ui.vgap(ui.dimens.l))
+        page.addView(ui.accents(seed = 5, count = 4))
+        page.addView(ui.vgap(ui.dimens.xl))
 
         if (isFocusSession) {
             page.addView(ui.body(getString(R.string.lock_focus_body, focusActivityName)))
@@ -170,7 +172,7 @@ class LockActivity : AppCompatActivity() {
         setContentView(
             ScrollView(this).apply {
                 addView(page)
-                setBackgroundColor(ui.palette.paper)
+                setBackgroundResource(R.drawable.bg_canvas)
                 isFillViewport = true
             }
         )

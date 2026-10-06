@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Stacked books: Reading. Two closed volumes, forest spine tabs. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="@color/alive_ink"
+        android:pathData="M3,4h10v1h-10zM3,7h10v1h-10zM3,5h1v2h-1zM12,5h1v2h-1zM2,8h12v1h-12zM2,12h12v1h-12zM2,9h1v3h-1zM13,9h1v3h-1z" />
+    <path
+        android:fillColor="@color/alive_white"
+        android:pathData="M4,5h8v2h-8zM3,9h10v3h-10z" />
+    <path
+        android:fillColor="@color/alive_forest"
+        android:pathData="M4,5h1v2h-1zM3,9h1v3h-1z" />
+</vector>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tactile primary action. Resting: the face sits up and left with a hard ink
+     shadow showing. Pressed: the shadow collapses and the face fills its
+     bounds, which reads as physically pushed down. Disabled: outline only. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:state_pressed="true">
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/alive_ink" />
+                </shape>
+            </item>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/alive_forest" />
+                    <stroke
+                        android:width="@dimen/border_bold"
+                        android:color="@color/alive_ink" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+
+    <item android:state_enabled="false">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/alive_warm_gray" />
+            <stroke
+                android:width="@dimen/border_hairline"
+                android:color="@color/alive_ink_disabled" />
+        </shape>
+    </item>
+
+    <item>
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/alive_ink" />
+                </shape>
+            </item>
+            <item
+                android:right="@dimen/shadow_offset"
+                android:bottom="@dimen/shadow_offset">
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/alive_forest" />
+                    <stroke
+                        android:width="@dimen/border_bold"
+                        android:color="@color/alive_ink" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+</selector>

@@ -1,49 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ALIVE character, empty state: sitting easy, nothing happening.
-     Used when there is genuinely nothing to do - the pose must read as rest,
-     not as waiting or failure. Same head radius and 1.5 ink weight as the
-     six stage poses. -->
+<!-- ALIVE sprite, empty state: settled on the ground, at ease. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="48dp"
     android:height="48dp"
-    android:viewportWidth="48"
-    android:viewportHeight="48">
-
-    <!-- head -->
+    android:viewportWidth="16"
+    android:viewportHeight="16">
     <path
-        android:strokeColor="@color/alive_ink"
-        android:strokeWidth="1.5"
-        android:strokeLineCap="round"
-        android:pathData="M17.4,15 A4.6,4.6 0 1,1 26.6,15 A4.6,4.6 0 1,1 17.4,15 Z" />
-
-    <!-- spine, settled back -->
+        android:fillColor="@color/alive_ink"
+        android:pathData="M5,7h7v1h-7zM4,8h1v1h-1zM12,8h1v1h-1zM4,9h1v1h-1zM12,9h1v1h-1zM4,10h1v1h-1zM7,10h2v1h-2zM11,10h2v1h-2zM4,11h1v1h-1zM12,11h1v1h-1zM2,12h2v1h-2zM5,12h7v1h-7zM13,12h2v1h-2z" />
     <path
-        android:strokeColor="@color/alive_ink"
-        android:strokeWidth="1.5"
-        android:strokeLineCap="round"
-        android:pathData="M22,20 Q20.6,25.6 22,31" />
-
-    <!-- one arm resting on the knee, one loose behind -->
-    <path
-        android:strokeColor="@color/alive_ink"
-        android:strokeWidth="1.5"
-        android:strokeLineCap="round"
-        android:pathData="M22,24 Q26,26.6 28.2,30" />
-    <path
-        android:strokeColor="@color/alive_ink"
-        android:strokeWidth="1.5"
-        android:strokeLineCap="round"
-        android:pathData="M22,24 Q17.8,26.6 16.4,30.2" />
-
-    <!-- legs extended and crossed at the ankle -->
-    <path
-        android:strokeColor="@color/alive_ink"
-        android:strokeWidth="1.5"
-        android:strokeLineCap="round"
-        android:pathData="M22,31 Q27,32.4 31.6,31" />
-    <path
-        android:strokeColor="@color/alive_ink"
-        android:strokeWidth="1.5"
-        android:strokeLineCap="round"
-        android:pathData="M22,31 Q26.4,35 30.6,35.4" />
+        android:fillColor="@color/alive_white"
+        android:pathData="M5,8h7v1h-7zM5,9h7v1h-7zM5,10h2v1h-2zM9,10h2v1h-2zM5,11h7v1h-7z" />
 </vector>

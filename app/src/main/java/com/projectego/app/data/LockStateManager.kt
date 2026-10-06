@@ -22,13 +22,29 @@ class LockStateManager(context: Context) {
         private const val KEY_DAY_TYPE = "key_day_type"
         private const val KEY_LAST_DAY_FAILED = "key_last_day_failed"
 
+        // The guard gap: a stretch during one day when the accessibility service
+        // that does the closing was off. Keyed by day so it scopes itself, and so
+        // no reset has to remember to clear it.
+        private const val KEY_UNGUARDED_DAY = "key_unguarded_day"
+        private const val KEY_GUARD_REPAIR_BASELINE = "key_guard_repair_baseline"
+        private const val KEY_GUARD_REPAIRED = "key_guard_repaired"
+
         const val PRODUCTION_LIMIT_MINUTES = 120L
         const val DEV_TEST_LIMIT_MINUTES = 1L
+
+        /**
+         * The single `yyyy-MM-dd` key for a moment in time.
+         *
+         * The usage history is keyed by this, and the day-rollover check below
+         * compares against it. Two separate date formatters in those two places
+         * would drift silently and the chart would look empty to the engine, so
+         * both use this one.
+         */
+        fun dayKeyOf(timeMillis: Long): String =
+            SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(timeMillis))
     }
 
-    private fun getTodayDateString(): String {
-        return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-    }
+    private fun getTodayDateString(): String = dayKeyOf(System.currentTimeMillis())
 
     /**
      * Checks if a new day has arrived.
@@ -64,6 +80,12 @@ class LockStateManager(context: Context) {
             var dayFailed = wasLocked
             if (!dayFailed && evaluateUsageCallback != null) {
                 dayFailed = evaluateUsageCallback(lastDate)
+            }
+            // A day that ended with the guard off and never repaired is not a kept
+            // day, even if nothing about its usage crossed the limit. A repaired
+            // gap is left alone: the price was already paid that day.
+            if (!dayFailed && isGuardGapOpenOn(lastDate)) {
+                dayFailed = true
             }
 
             val newStreak: Int
@@ -109,6 +131,53 @@ class LockStateManager(context: Context) {
 
     fun wasLastDayFailed(): Boolean {
         return prefs.getBoolean(KEY_LAST_DAY_FAILED, false)
+    }
+
+    /**
+     * Records that the guard was found off during [dayKey].
+     *
+     * [earnedAtDiscovery] is the Time Bank's lifetime earned total at that
+     * moment, and it is the repair receipt: a quest reward is the only thing
+     * that ever moves that number, so "finish one quest to clear this" needs no
+     * new path into the reward pipeline.
+     *
+     * Calling this again on the same day keeps the original baseline, so a user
+     * who opens ALIVE ten times while the service is off cannot push the goalpost
+     * further away.
+     */
+    @Synchronized
+    fun markGuardGap(dayKey: String, earnedAtDiscovery: Long) {
+        if (dayKey.isBlank()) return
+        if (prefs.getString(KEY_UNGUARDED_DAY, null) == dayKey) return
+        prefs.edit()
+            .putString(KEY_UNGUARDED_DAY, dayKey)
+            .putLong(KEY_GUARD_REPAIR_BASELINE, earnedAtDiscovery)
+            .putBoolean(KEY_GUARD_REPAIRED, false)
+            .apply()
+    }
+
+    /** The day the guard was last found off, or null if it never has been. */
+    @Synchronized
+    fun unguardedDay(): String? = prefs.getString(KEY_UNGUARDED_DAY, null)
+
+    @Synchronized
+    fun isGuardGapOpenOn(dayKey: String): Boolean =
+        prefs.getString(KEY_UNGUARDED_DAY, null) == dayKey && !prefs.getBoolean(KEY_GUARD_REPAIRED, false)
+
+    /**
+     * Closes the repair once a quest reward has actually landed.
+     *
+     * Strictly greater, never equal: the baseline is the total at the moment the
+     * gap was noticed, and a reward that has not arrived yet must not count as
+     * though it had.
+     */
+    @Synchronized
+    fun repairGuardGapIfEarned(earnedMinutes: Long): Boolean {
+        if (prefs.getString(KEY_UNGUARDED_DAY, null) == null) return false
+        if (prefs.getBoolean(KEY_GUARD_REPAIRED, false)) return false
+        if (earnedMinutes <= prefs.getLong(KEY_GUARD_REPAIR_BASELINE, 0L)) return false
+        prefs.edit().putBoolean(KEY_GUARD_REPAIRED, true).apply()
+        return true
     }
 
     fun isDevTestModeEnabled(): Boolean {

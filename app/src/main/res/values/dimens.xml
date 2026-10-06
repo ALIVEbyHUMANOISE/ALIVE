@@ -23,6 +23,16 @@
     <dimen name="stroke_ink">1dp</dimen>
     <dimen name="radius_ink">4dp</dimen>
 
+    <!-- Neo-brutalist structure: thick edges, hard offset shadow, no radius. -->
+    <dimen name="border_bold">3dp</dimen>
+    <dimen name="border_button">2dp</dimen>
+    <dimen name="border_hairline">1dp</dimen>
+    <dimen name="shadow_offset">4dp</dimen>
+    <dimen name="radius_none">0dp</dimen>
+    <dimen name="step_width">10dp</dimen>
+    <dimen name="step_height">18dp</dimen>
+    <dimen name="step_gap">2dp</dimen>
+
     <dimen name="touch_min">48dp</dimen>
     <dimen name="character_size">72dp</dimen>
     <dimen name="character_size_large">96dp</dimen>

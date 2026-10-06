@@ -21,13 +21,25 @@
     <string name="alive_tagline">Wake up to your life.</string>
 
     <!-- ============ HOME: YOUR TIME ============ -->
-    <string name="your_time_heading">Your time</string>
     <string name="time_minutes_left">%1$d minutes left today</string>
     <string name="time_minutes_left_critical">About %1$d minutes left.</string>
     <string name="time_last_minute">The last minute.</string>
+    <string name="stat_minutes">%1$d</string>
+    <string name="stat_min_left">min\nleft</string>
+    <string name="stat_closed">CLOSED</string>
+    <string name="stat_reclaimed">reclaimed</string>
+    <string name="stat_min_short">%1$d min</string>
+    <string name="stat_reclaimed_short">+%1$d min</string>
     <string name="time_no_panic">No alarm in this. It is just what is left.</string>
     <string name="time_allowance_support">Your own daily allowance — separate from reclaimed time.</string>
     <string name="time_allowance_and_used">Allowance %1$d min a day · %2$d min used</string>
+    <string name="today_card_title">Today</string>
+    <string name="stat_streak">Streak · days</string>
+    <string name="stat_allowance">Allowance · min</string>
+    <string name="stat_used">Used · min</string>
+    <string name="stat_bank">Time bank · min</string>
+    <string name="time_hero_line">Entertainment minutes left before ALIVE closes them.</string>
+    <string name="time_of_allowance">of %1$d</string>
     <string name="time_closed">Entertainment time is closed for today.</string>
     <string name="time_closed_support">It opens again tomorrow. Nothing needs fixing tonight.</string>
     <string name="zero_day_heading">Today is a no-entertainment day.</string>
@@ -57,7 +69,6 @@
     <!-- ============ TIME BANK ============ -->
     <string name="time_bank_heading">Time Bank</string>
     <string name="time_bank_minutes">%1$d min</string>
-    <string name="time_body">Time you\'ve reclaimed.</string>
     <string name="time_bank_empty">Nothing reclaimed yet. A verified session gives you time back.</string>
     <string name="time_bank_use_intro">Use reclaimed time to extend a session.</string>
     <string name="time_bank_use_10">Use 10 minutes</string>
@@ -67,6 +78,10 @@
     <string name="time_bank_earned_total">Earned %1$d min</string>
     <string name="time_bank_spent_total">Used %1$d min</string>
     <string name="time_bank_available_total">%1$d min available</string>
+    <string name="stat_bank_earned">Earned · min</string>
+    <string name="stat_bank_spent">Spent · min</string>
+    <string name="time_bank_explain">Verified quests pay minutes in. Extending a Focus session pays them out.</string>
+    <string name="cd_time_bank">Pixel clock: the Time Bank, where reclaimed minutes are kept.</string>
 
     <!-- ============ QUEST BOARD ============ -->
     <string name="quest_heading">Quest</string>
@@ -219,4 +234,74 @@
     <string name="difficulty_easy">easy</string>
     <string name="difficulty_medium">medium</string>
     <string name="difficulty_hard">hard</string>
+
+    <!-- ============ USAGE CHART ============
+
+         Chart copy has one job beyond naming the view: it must never let a
+         short history look like a complete one. Days ALIVE never saw are
+         counted and stated, never filled in. -->
+    <string name="chart_heading">Usage</string>
+    <string name="chart_subhead">Where the time went.</string>
+    <string name="chart_open">Today\'s usage</string>
+    <string name="chart_range_today">Today</string>
+    <string name="chart_range_week">Last 7 days</string>
+    <string name="chart_range_month">This month</string>
+    <string name="chart_axis_note">Each bar is a share of that day\'s own allowance.</string>
+    <string name="chart_month_axis">One column per day, left to right, first of the month to today.</string>
+    <string name="chart_days_heading">Days</string>
+    <string name="chart_label_today">Today</string>
+    <string name="chart_tap_hint">Tap a bar for that day.</string>
+    <string name="chart_day_name">%1$s %2$d</string>
+    <string name="chart_day_detail">%1$s — %2$d of %3$d min.</string>
+    <string name="chart_day_missing_detail">%1$s — ALIVE did not see this day.</string>
+    <string name="chart_day_recovery_detail">%1$s — no entertainment time to spend.</string>
+    <string name="chart_shape_note">Hollow means ALIVE never saw the day. Hatched means there was no allowance to spend.</string>
+    <string name="chart_total_label">Total</string>
+    <string name="cd_usage_chart">Bar chart: entertainment minutes for each day in this range.</string>
+    <string name="cd_app_donut">Ring chart: today\'s entertainment time, split by app.</string>
+    <string name="cd_mark_exercise">Pixel dumbbell: an exercise quest.</string>
+    <string name="cd_mark_study">Pixel open book: a study quest.</string>
+    <string name="cd_mark_reading">Pixel book stack: a reading quest.</string>
+    <string name="cd_mark_walking">Pixel footprints: a walking quest.</string>
+    <string name="cd_mark_cleaning">Pixel broom: a cleaning quest.</string>
+    <string name="cd_mark_creative">Pixel paintbrush: a creative quest.</string>
+    <string name="cd_mark_coding">Pixel terminal: a coding quest.</string>
+    <string name="cd_mark_writing">Pixel pen: a writing quest.</string>
+    <string name="cd_mark_other">Pixel star: an uncategorised quest.</string>
+    <string name="cd_focus_mark">Pixel mark: %1$s focus.</string>
+    <string name="chart_apps_heading">Today, by app</string>
+    <string name="chart_labels_note">ALIVE only gets the names the device is willing to give it. Some show as part of their package name.</string>
+    <string name="chart_total_minutes">%1$d min across the days ALIVE saw</string>
+    <string name="chart_days_recorded">%1$d of %2$d days recorded</string>
+    <string name="chart_none">ALIVE hasn\'t recorded a day yet.</string>
+    <string name="chart_just_started">This is the first day ALIVE has recorded.</string>
+    <string name="chart_partial">Only the days ALIVE saw are counted. Nothing is filled in.</string>
+    <string name="chart_complete">Every day in this range was recorded.</string>
+    <string name="chart_app_minutes">%1$d min</string>
+
+    <!-- ============ CRITICAL ALERT ============
+
+         A note, not an alarm: no red, no threat, no claim about what happened
+         inside an app. The figure is always the real remaining minutes. -->
+    <string name="chart_alert_eyebrow">Today\'s time</string>
+    <string name="alert_minutes_left">%1$d minutes of entertainment left today.</string>
+    <string name="alert_support">Nothing is about to close. This is just where the number is.</string>
+
+    <!-- ============ GUARD GAP ============
+
+         The service that closes apps can be turned off, and Android will not let
+         an app prevent that. So the price is charged inside ALIVE instead: the
+         day is marked, the mark is visible until a quest pays for it, and the
+         copy never claims to know who flipped the switch. -->
+    <string name="guard_off_heading">ALIVE isn\'t watching</string>
+    <string name="guard_off_body">The service that closes apps is off, so nothing is being closed right now.</string>
+    <string name="guard_repair_needed">Turn it back on and finish one quest. Until then today is not a kept day.</string>
+    <string name="guard_back_heading">The guard is back on</string>
+    <string name="guard_back_body">Nothing is being missed any more. Today still shows as unguarded, because that stretch happened.</string>
+    <string name="guard_repair_done">The mark stays on today. The streak is intact.</string>
+    <string name="guard_who_turned_it_off">ALIVE can\'t tell whether you turned it off or the phone did to save battery.</string>
+    <string name="guard_enable_action">Turn the guard back on</string>
+    <string name="guard_profile_line">Today had a stretch with the guard off.</string>
+    <string name="cd_guard_mark">Pixel figure, awake and looking sideways.</string>
+    <string name="permissions_accessibility_why">Accessibility is how ALIVE closes an app when its time is up. Without it nothing is closed, and the day is marked as unguarded.</string>
 </resources>

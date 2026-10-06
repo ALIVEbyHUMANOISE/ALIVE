@@ -27,27 +27,38 @@ import org.junit.Test
  */
 class DigitalQuestVerifierTest {
 
+    /**
+     * One fixed evaluation moment for the whole file.
+     *
+     * The verifier reads no wall clock of its own - it only compares the two
+     * timestamps inside the evidence - so pinning both makes every duration
+     * assertion exact. Reading `System.currentTimeMillis()` twice (once for the
+     * fixture, once inside a test) made "exactly 30 minutes" depend on whether
+     * the two calls landed in the same millisecond.
+     */
+    private val now = 1_760_000_000_000L
+
     private val baseEvidence = DigitalQuestEvidence(
         attemptId = "quest-attempt-123",
         questId = "quest-456",
         questCategory = QuestCategory.STUDY,
         method = VerificationMethod.DIGITAL,
         committedDurationMinutes = 30L,
-        activityStartTimestamp = System.currentTimeMillis() - (30L * 60_000L), // exactly 30 minutes ago
+        activityStartTimestamp = now - (30L * 60_000L), // exactly 30 minutes ago
         linkedFocusSessionId = "focus-session-789",
         focusSessionId = "focus-session-789",
         linkedQuestAttemptId = "quest-attempt-123",
         focusActivityType = FocusActivityType.STUDY,
         violationCount = 0,
         wasMonitoringActiveDuringAttempt = true,
-        evaluationTimestamp = System.currentTimeMillis()
+        evaluationTimestamp = now
     )
 
     @Test
     fun `A - valid digital quest with exact committed duration returns verified`() {
         val evidence = baseEvidence.copy(
-            activityStartTimestamp = System.currentTimeMillis() - (30L * 60_000L),
-            evaluationTimestamp = System.currentTimeMillis()
+            activityStartTimestamp = now - (30L * 60_000L),
+            evaluationTimestamp = now
         )
         val result = DigitalQuestVerifier.verify(evidence)
         assertTrue(result is DigitalQuestVerificationResult.Verified)
@@ -57,8 +68,8 @@ class DigitalQuestVerifierTest {
     @Test
     fun `B - duration incomplete returns not ready`() {
         val evidence = baseEvidence.copy(
-            activityStartTimestamp = System.currentTimeMillis() - (15L * 60_000L), // only 15 minutes elapsed
-            evaluationTimestamp = System.currentTimeMillis()
+            activityStartTimestamp = now - (15L * 60_000L), // only 15 minutes elapsed
+            evaluationTimestamp = now
         )
         val result = DigitalQuestVerifier.verify(evidence)
         assertTrue(result is DigitalQuestVerificationResult.NotReady)
@@ -134,7 +145,7 @@ class DigitalQuestVerifierTest {
         // Even if Time Bank extended available minutes, verifier checks committedDurationMinutes
         val evidence = baseEvidence.copy(
             committedDurationMinutes = 60L, // committed to 60 minutes
-            activityStartTimestamp = System.currentTimeMillis() - (30L * 60_000L) // only 30 elapsed
+            activityStartTimestamp = now - (30L * 60_000L) // only 30 elapsed
         )
         val result = DigitalQuestVerifier.verify(evidence)
         assertTrue(result is DigitalQuestVerificationResult.NotReady)
@@ -143,7 +154,7 @@ class DigitalQuestVerifierTest {
     @Test
     fun `L - focus expiration alone does not produce verified`() {
         // If violations exist, even after expiration, should fail
-        val oldTimestamp = System.currentTimeMillis() - (120L * 60_000L) // 2 hours ago
+        val oldTimestamp = now - (120L * 60_000L) // 2 hours ago
         val evidence = baseEvidence.copy(
             committedDurationMinutes = 30L,
             activityStartTimestamp = oldTimestamp,
@@ -201,7 +212,7 @@ class DigitalQuestVerifierTest {
         val evidence = baseEvidence.copy(
             questCategory = QuestCategory.CODING,
             focusActivityType = FocusActivityType.CODING,
-            activityStartTimestamp = System.currentTimeMillis() - (30L * 60_000L)
+            activityStartTimestamp = now - (30L * 60_000L)
         )
         val result = DigitalQuestVerifier.verify(evidence)
         assertTrue(result is DigitalQuestVerificationResult.Verified)
@@ -212,7 +223,7 @@ class DigitalQuestVerifierTest {
         val evidence = baseEvidence.copy(
             questCategory = QuestCategory.WRITING,
             focusActivityType = FocusActivityType.WRITING,
-            activityStartTimestamp = System.currentTimeMillis() - (30L * 60_000L)
+            activityStartTimestamp = now - (30L * 60_000L)
         )
         val result = DigitalQuestVerifier.verify(evidence)
         assertTrue(result is DigitalQuestVerificationResult.Verified)
@@ -223,7 +234,7 @@ class DigitalQuestVerifierTest {
         val evidence = baseEvidence.copy(
             questCategory = QuestCategory.CREATIVE,
             focusActivityType = FocusActivityType.CREATIVE,
-            activityStartTimestamp = System.currentTimeMillis() - (30L * 60_000L)
+            activityStartTimestamp = now - (30L * 60_000L)
         )
         val result = DigitalQuestVerifier.verify(evidence)
         assertTrue(result is DigitalQuestVerificationResult.Verified)
@@ -232,7 +243,7 @@ class DigitalQuestVerifierTest {
     @Test
     fun `additional - more than committed duration returns verified`() {
         val evidence = baseEvidence.copy(
-            activityStartTimestamp = System.currentTimeMillis() - (60L * 60_000L), // 1 hour ago
+            activityStartTimestamp = now - (60L * 60_000L), // 1 hour ago
             committedDurationMinutes = 30L
         )
         val result = DigitalQuestVerifier.verify(evidence)
@@ -241,7 +252,6 @@ class DigitalQuestVerifierTest {
 
     @Test
     fun `additional - exactly at boundary returns verified`() {
-        val now = System.currentTimeMillis()
         val evidence = DigitalQuestEvidence(
             attemptId = "attempt-boundary",
             questId = "quest-boundary",
@@ -263,7 +273,6 @@ class DigitalQuestVerifierTest {
 
     @Test
     fun `additional - one minute short returns not ready`() {
-        val now = System.currentTimeMillis()
         val evidence = DigitalQuestEvidence(
             attemptId = "attempt-short",
             questId = "quest-short",

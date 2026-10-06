@@ -11,10 +11,10 @@
         <item name="colorSecondary">@color/alive_forest</item>
         <item name="colorSecondaryVariant">@color/alive_forest</item>
         <item name="colorOnSecondary">@color/alive_white</item>
-        <item name="android:colorBackground">@color/alive_paper</item>
+        <item name="android:colorBackground">@color/alive_canvas</item>
         <item name="colorSurface">@color/alive_paper</item>
         <item name="colorOnSurface">@color/alive_ink</item>
-        <item name="android:windowBackground">@color/alive_paper</item>
+        <item name="android:windowBackground">@drawable/bg_canvas</item>
         <item name="android:statusBarColor">@color/alive_paper</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:navigationBarColor">@color/alive_paper</item>
@@ -31,5 +31,21 @@
         <!-- Every action button starts from this style. The outline and quiet
              variants are built in AliveComponents. -->
         <item name="materialButtonStyle">@style/Widget.ALIVE.Button.Primary</item>
+    </style>
+    <!-- The critical-time note: a floating card, centred, that dims the app
+         underneath without hiding or stopping it. No entry animation on
+         purpose - a card that arrives is an alarm; a card that is simply there
+         is a note. -->
+    <style name="Theme.ALIVE.CriticalAlert" parent="Theme.ProjectEgo">
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:backgroundDimAmount">0.28</item>
+        <item name="android:windowCloseOnTouchOutside">true</item>
+        <item name="android:windowMinWidthMajor">86%</item>
+        <item name="android:windowMinWidthMinor">86%</item>
+        <item name="android:windowAnimationStyle">@null</item>
     </style>
 </resources>

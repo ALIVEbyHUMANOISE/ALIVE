@@ -9,6 +9,9 @@
         <include .../>
         <exclude .../>
         -->
+        <!-- Same reason as backup_rules.xml, for API 31 and newer: the app's
+             per-app usage history is the one file that must not leave. -->
+        <exclude domain="sharedpref" path="project_ego_usage_history.xml" />
     </cloud-backup>
     <!--
     <device-transfer>

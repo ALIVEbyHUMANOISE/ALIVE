@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Nib pen: Writing. Forest shaft running to an ink nib, one white glint. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="@color/alive_forest"
+        android:pathData="M11,4h1v1h-1zM10,5h1v1h-1zM9,6h1v1h-1zM8,7h1v1h-1zM7,8h1v1h-1zM6,9h1v1h-1z" />
+    <path
+        android:fillColor="@color/alive_ink"
+        android:pathData="M11,3h2v1h-2zM5,10h2v1h-2zM4,11h2v2h-2z" />
+    <path
+        android:fillColor="@color/alive_white"
+        android:pathData="M12,6h1v1h-1z" />
+</vector>
