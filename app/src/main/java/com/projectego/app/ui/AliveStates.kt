@@ -29,18 +29,24 @@ import com.projectego.app.model.TimeStatus
 /** The character's emotional state. A display heuristic, not an engine fact. */
 enum class AliveStage { DISCONNECTED, UNAWARE, CONTROLLED, AWARE, RECLAIMING, ALIVE }
 
-/** How a block of the interface is dressed. Drives surface, not hue alone. */
+/**
+ * How a block of the interface is dressed - what happened, not how heavy it is.
+ *
+ * Weight (`SurfaceWeight`) is a separate axis: this enum picks the face colour
+ * and whether the door is open at all. The two are described apart because a
+ * screen that put every card on the heaviest edge had no hierarchy left.
+ */
 enum class StatusTone {
-    /** Paper only. Most of the screen. */
+    /** No surface at all: type straight on the canvas. */
     NEUTRAL,
 
-    /** Ink hairline outline: something is in flight and unfinished. */
+    /** A white face with an ink edge: something is in flight and unfinished. */
     HELD,
 
-    /** Soft forest fill: something has actually landed. */
+    /** A soft forest face: something has actually landed. */
     LANDED,
 
-    /** Faded ink, no container: a closed door, stated flatly. */
+    /** A hairline and no shadow: a closed door, stated flatly. */
     QUIET
 }
 
@@ -191,11 +197,13 @@ object AliveStates {
     /**
      * LOCKED and a recovery day both close the door, and both are QUIET - but
      * they never share a headline, a support line, or a surface, which is what
-     * keeps them distinguishable without relying on color.
+     * keeps them distinguishable without relying on color. An open day is HELD:
+     * the allowance is still in flight, and that is the only reason its card has
+     * a face at all.
      */
     fun timeTone(status: TimeStatus): StatusTone = when (status) {
         TimeStatus.LOCKED, TimeStatus.ZERO_ENTERTAINMENT_DAY -> StatusTone.QUIET
-        else -> StatusTone.NEUTRAL
+        else -> StatusTone.HELD
     }
 
     /**

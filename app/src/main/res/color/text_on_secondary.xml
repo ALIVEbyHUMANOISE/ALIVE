@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Text on a paper or flat face: ink when live, ink_secondary when not.
+     Still about 5.7:1 disabled, because a control must look like a control -
+     the "dead" signal comes from the missing shadow and the thinner edge, not
+     from making the words unreadable. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/alive_ink_secondary" android:state_enabled="false" />
+    <item android:color="@color/alive_ink" />
+</selector>

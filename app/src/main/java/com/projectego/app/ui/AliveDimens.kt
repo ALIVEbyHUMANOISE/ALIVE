@@ -41,24 +41,35 @@ class AliveDimens(context: Context) {
     val pageTop = px(R.dimen.screen_top_padding)
     val pageBottom = px(R.dimen.screen_bottom_padding)
 
-    val hairline = px(R.dimen.hairline)
-    val sectionGap = px(R.dimen.section_gap)
-    val rowGap = px(R.dimen.row_gap)
+    /**
+     * Rhythm, one value per relationship. See res/values/dimens.xml for why
+     * `cardGap` is as wide as it is and why nothing inside a card reaches it.
+     */
+    val cardGap = px(R.dimen.card_gap)
+    val groupGap = px(R.dimen.group_gap)
+    val lineGap = px(R.dimen.line_gap)
+    val pairGap = px(R.dimen.pair_gap)
+    val cardInset = px(R.dimen.card_inset)
+    val ledgerInset = px(R.dimen.ledger_inset)
+
     val touchMin = px(R.dimen.touch_min)
     val character = px(R.dimen.character_size)
     val characterLarge = px(R.dimen.character_size_large)
 
-    /** Thick ink edge on a block. */
+    /** Thick ink edge on a MAJOR block. */
     val borderBold = px(R.dimen.border_bold)
 
-    /** Edge of a button face. */
+    /** Edge of a button face, and of a MINOR card - the same object family. */
     val borderButton = px(R.dimen.border_button)
 
-    /** Hairline edge on a quiet surface, and the rule inside a separator. */
+    /** Hairline edge on a quiet surface. */
     val borderThin = px(R.dimen.border_hairline)
 
-    /** How far a hard shadow sits from its block. */
+    /** How far a MAJOR shadow sits from its face. */
     val shadow = px(R.dimen.shadow_offset)
+
+    /** How far a MINOR shadow sits: present, so the face still lifts, quiet. */
+    val shadowMinor = px(R.dimen.shadow_minor)
 
     val stepWidth = px(R.dimen.step_width)
     val stepHeight = px(R.dimen.step_height)

@@ -52,7 +52,7 @@ class LockActivity : AppCompatActivity() {
         val isFocusSession = lockReason == "FOCUS_SESSION"
         val isRecoveryDay = report.dayType == DayType.ZERO_ENTERTAINMENT_DAY
 
-        val page = ui.column().apply {
+        val page = ui.stack(ui.dimens.cardGap).apply {
             setPadding(
                 ui.dimens.xxxl,
                 ui.dimens.xxxl,
@@ -68,9 +68,14 @@ class LockActivity : AppCompatActivity() {
                 getString(R.string.lock_intent)
             )
         )
-        page.addView(ui.vgap(ui.dimens.xxl))
 
-        page.addView(
+        // The notice is the one heavy frame on this screen: what happened, and
+        // the numbers behind it, inside one edge. It is untitled on purpose - the
+        // sentence itself is the heading, and a card title above it would demote
+        // the one thing this screen exists to say. The actions below sit on the
+        // canvas because they are not news; they are what to do about it.
+        val notice = ui.block(SurfaceWeight.MAJOR)
+        notice.addView(
             ui.headline(
                 getString(
                     when {
@@ -81,48 +86,45 @@ class LockActivity : AppCompatActivity() {
                 )
             )
         )
-        page.addView(ui.vgap(ui.dimens.l))
-        page.addView(ui.annotation(getString(R.string.lock_intent)))
-
-        page.addView(ui.vgap(ui.dimens.l))
-        page.addView(ui.accents(seed = 5, count = 4))
-        page.addView(ui.vgap(ui.dimens.xl))
+        notice.addView(ui.vgap(ui.dimens.lineGap))
+        notice.addView(ui.annotation(getString(R.string.lock_intent)))
+        notice.addView(ui.vgap(ui.dimens.groupGap))
+        notice.addView(ui.accents(seed = 5))
+        notice.addView(ui.vgap(ui.dimens.groupGap))
 
         if (isFocusSession) {
-            page.addView(ui.body(getString(R.string.lock_focus_body, focusActivityName)))
+            notice.addView(ui.body(getString(R.string.lock_focus_body, focusActivityName)))
         } else if (isRecoveryDay) {
             // A recovery day has no numbers to show: there was no allowance to
             // spend, so printing "0 min of 0 min" would be noise.
-            page.addView(ui.body(getString(R.string.lock_zero_body)))
-            page.addView(ui.vgap(ui.dimens.s))
-            page.addView(ui.bodySecondary(getString(R.string.lock_zero_support)))
+            notice.addView(ui.body(getString(R.string.lock_zero_body)))
+            notice.addView(ui.vgap(ui.dimens.lineGap))
+            notice.addView(ui.note(getString(R.string.lock_zero_support)))
         } else {
-            page.addView(ui.body(getString(R.string.lock_over_body)))
-            page.addView(ui.vgap(ui.dimens.m))
-            page.addView(ui.bodySecondary(getString(R.string.lock_allowance_line, report.limitMinutes)))
-            page.addView(ui.vgap(ui.dimens.xs))
-            page.addView(ui.bodySecondary(getString(R.string.lock_used_line, report.totalEntertainmentMinutes)))
+            notice.addView(ui.body(getString(R.string.lock_over_body)))
+            notice.addView(ui.vgap(ui.dimens.lineGap))
+            notice.addView(ui.note(getString(R.string.lock_allowance_line, report.limitMinutes)))
+            notice.addView(ui.vgap(ui.dimens.pairGap))
+            notice.addView(ui.note(getString(R.string.lock_used_line, report.totalEntertainmentMinutes)))
         }
 
-        page.addView(ui.vgap(ui.dimens.xl))
-        page.addView(ui.hairline())
-        page.addView(ui.vgap(ui.dimens.xl))
-
-        page.addView(
-            ui.quietText(
+        notice.addView(ui.vgap(ui.dimens.groupGap))
+        notice.addView(ui.rowRule())
+        notice.addView(ui.vgap(ui.dimens.lineGap))
+        notice.addView(
+            ui.note(
                 if (isFocusSession) getString(R.string.lock_focus_blocked, blockedPkg)
                 else getString(R.string.lock_blocked_app, blockedPkg)
             )
         )
-        page.addView(ui.vgap(ui.dimens.s))
-        page.addView(ui.quietText(getString(R.string.lock_days_row, report.currentStreak)))
-        page.addView(ui.vgap(ui.dimens.s))
-        page.addView(ui.quietText(getString(R.string.lock_essential)))
+        notice.addView(ui.vgap(ui.dimens.pairGap))
+        notice.addView(ui.note(getString(R.string.lock_days_row, report.currentStreak)))
+        notice.addView(ui.vgap(ui.dimens.pairGap))
+        notice.addView(ui.note(getString(R.string.lock_essential)))
+        page.addView(notice)
 
         if (!isFocusSession) {
-            page.addView(ui.vgap(ui.dimens.xxl))
-            page.addView(ui.label(getString(R.string.lock_do_instead)))
-            page.addView(ui.vgap(ui.dimens.m))
+            page.addView(ui.lead(getString(R.string.lock_do_instead)))
             page.addView(
                 ui.primary(getString(R.string.lock_action_focus)).apply {
                     layoutParams = matchWidth()
@@ -138,7 +140,6 @@ class LockActivity : AppCompatActivity() {
             )
         }
 
-        page.addView(ui.vgap(ui.dimens.l))
         page.addView(
             ui.secondary(getString(R.string.lock_action_home)).apply {
                 layoutParams = matchWidth()
@@ -153,7 +154,6 @@ class LockActivity : AppCompatActivity() {
             }
         )
 
-        page.addView(ui.vgap(ui.dimens.s))
         page.addView(
             ui.quiet(getString(R.string.lock_action_dashboard)).apply {
                 layoutParams = matchWidth()

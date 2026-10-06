@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Text on a forest fill.
+     The disabled case used to stay white on warm gray, which measured about
+     1.5:1 - a label nobody could read. A state list makes that impossible to
+     forget at the call site, which is why six `isEnabled =` assignments need no
+     matching `ui.disabled()` call. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/alive_ink_secondary" android:state_enabled="false" />
+    <item android:color="@color/alive_white" />
+</selector>

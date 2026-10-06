@@ -1,17 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- ALIVE typography, neo-brutalist.
+    <!-- ALIVE typography. Three faces, each with exactly one job:
 
-         Two voices only:
-           sans-serif bold  -> everything readable: headings, body, buttons, nav
-           monospace        -> numbers, timers, small labels: the machine-read bits
+           sans-serif-black  -> the reading ladder: display, headings, body, buttons, nav
+           vt323 (terminal)  -> numbers and notes: the machine-read voice
+           press_start_2p    -> tags ONLY. Ten glyphs maximum, one line, never a
+                                sentence and never a heading.
 
-         Sizes jump hard rather than stepping gently, because hierarchy is the
-         point. Nothing here is a pixel font: pixel art belongs to the
-         character, not to the paragraphs. -->
+         The ladder is six sizes with a real step between each (34 / 26 / 20 / 16 /
+         13 / 10). It used to have Statement 19, QuestRowTitle 19 and Annotation 18
+         side by side, plus 15 / 15 / 16 / 17 in one band - four "levels" of type
+         that read as one size, which is how a screen ends up flat.
 
-    <!-- ============ VOICES ============ -->
+         The pixel face is the one that got demoted by this file. It is ALIVE's
+         game voice and it is beautiful at four or five glyphs; at ten sp it took
+         32-to-96-character sentences and the bottom navigation, and those became
+         the hardest things on the screen to read. -->
+
+    <!-- ============ READING LADDER ============ -->
 
     <style name="TextAppearance.ALIVE.Display" parent="TextAppearance.MaterialComponents.Headline3">
         <item name="android:fontFamily">sans-serif-black</item>
@@ -22,51 +29,53 @@
         <item name="android:textAllCaps">true</item>
     </style>
 
+    <!-- The one sentence a card leads with. -->
     <style name="TextAppearance.ALIVE.Headline" parent="TextAppearance.MaterialComponents.Headline5">
         <item name="android:fontFamily">sans-serif-black</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/alive_ink</item>
-        <item name="android:textSize">24sp</item>
+        <item name="android:textSize">26sp</item>
         <item name="android:letterSpacing">-0.02</item>
     </style>
 
-    <style name="TextAppearance.ALIVE.Statement" parent="TextAppearance.MaterialComponents.Headline6">
+    <!-- Row titles and in-flight statements: what Statement and QuestRowTitle used
+         to be, at one size instead of two that were indistinguishable. -->
+    <style name="TextAppearance.ALIVE.Lead" parent="TextAppearance.MaterialComponents.Headline6">
         <item name="android:fontFamily">sans-serif-black</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/alive_ink</item>
-        <item name="android:textSize">19sp</item>
+        <item name="android:textSize">20sp</item>
         <item name="android:letterSpacing">-0.01</item>
-    </style>
-
-    <style name="TextAppearance.ALIVE.SectionHeader" parent="TextAppearance.MaterialComponents.Subtitle1">
-        <item name="android:fontFamily">sans-serif-black</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:textColor">@color/alive_ink</item>
-        <item name="android:textSize">13sp</item>
-        <item name="android:textAllCaps">true</item>
-        <item name="android:letterSpacing">0.16</item>
     </style>
 
     <style name="TextAppearance.ALIVE.Body" parent="TextAppearance.MaterialComponents.Body1">
         <item name="android:fontFamily">sans-serif</item>
-        <item name="android:textColor">@color/alive_ink_secondary</item>
+        <item name="android:textColor">@color/alive_ink</item>
         <item name="android:textSize">16sp</item>
         <item name="android:lineSpacingExtra">4sp</item>
     </style>
 
-    <style name="TextAppearance.ALIVE.BodySecondary" parent="TextAppearance.ALIVE.Body">
-        <item name="android:textSize">15sp</item>
+    <!-- Support lines, disclosures, secondary prose. Same size as Body on purpose:
+         it is the same kind of thing, said quieter. It replaces BodySecondary and
+         quietText, and it is ink_secondary rather than ink_muted because these are
+         real sentences and ink_muted sits under 4.5:1 on the canvas. -->
+    <style name="TextAppearance.ALIVE.Note" parent="TextAppearance.ALIVE.Body">
         <item name="android:textColor">@color/alive_ink_secondary</item>
     </style>
 
-    <style name="TextAppearance.ALIVE.QuestRowTitle" parent="TextAppearance.ALIVE.Body">
-        <item name="android:textSize">19sp</item>
+    <!-- Card titles, field labels, meta lines. The tracking came down from 0.16:
+         at that width "TIME BANK · MIN" could not fit a ledger cell on one line. -->
+    <style name="TextAppearance.ALIVE.SectionHeader" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:fontFamily">sans-serif-black</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:textColor">@color/alive_ink</item>
-        <item name="android:letterSpacing">-0.01</item>
+        <item name="android:textColor">@color/alive_ink_secondary</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.08</item>
     </style>
 
-    <!-- Small machine-read label. Monospace, uppercase, wide tracking. -->
+    <!-- ============ TAGS: the pixel voice, and its limit ============ -->
+
     <style name="TextAppearance.ALIVE.Label" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:fontFamily">@font/press_start_2p</item>
         <item name="android:textColor">@color/alive_ink_secondary</item>
@@ -74,9 +83,11 @@
         <item name="android:textAllCaps">true</item>
         <item name="android:letterSpacing">0</item>
         <item name="android:includeFontPadding">false</item>
+        <item name="android:maxLines">1</item>
     </style>
 
-    <!-- Big numbers: the only place size is allowed to shout. -->
+    <!-- ============ NUMBERS AND NOTES: the terminal voice ============ -->
+
     <style name="TextAppearance.ALIVE.Timer" parent="TextAppearance.MaterialComponents.Headline2">
         <item name="android:fontFamily">@font/vt323</item>
         <item name="android:textColor">@color/alive_ink</item>
@@ -85,23 +96,27 @@
         <item name="android:includeFontPadding">false</item>
     </style>
 
-    <style name="TextAppearance.ALIVE.TimerSmall" parent="TextAppearance.ALIVE.Timer">
-        <item name="android:textSize">30sp</item>
+    <!-- A ledger number: the same face as the hero, one step down. -->
+    <style name="TextAppearance.ALIVE.Number" parent="TextAppearance.ALIVE.Timer">
+        <item name="android:textSize">28sp</item>
     </style>
 
-    <!-- A note, not a body paragraph. Monospace so it reads as annotation. -->
+    <!-- A note, not a paragraph. Sized at the Lead step so the reading ladder
+         stays six sizes; it looks smaller than 20sp because vt323 is narrow,
+         which is why a terminal line reads as an aside and not a shout. -->
     <style name="TextAppearance.ALIVE.Annotation" parent="TextAppearance.MaterialComponents.Body2">
         <item name="android:fontFamily">@font/vt323</item>
         <item name="android:textColor">@color/alive_ink_secondary</item>
-        <item name="android:textSize">18sp</item>
+        <item name="android:textSize">20sp</item>
         <item name="android:letterSpacing">0</item>
     </style>
 
-    <!-- A selectable list row. Without these two the radios and the goal field
-         fell back to the platform default face and looked like another app. -->
+    <!-- ============ FORM ============ -->
+
+    <!-- 16sp, the Body size. It used to be 17, which made a fourth value inside
+         the 15-17 band and gave the form its own near-duplicate step. -->
     <style name="TextAppearance.ALIVE.Option" parent="TextAppearance.ALIVE.Body">
         <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:textSize">17sp</item>
         <item name="android:textColor">@color/alive_ink</item>
     </style>
 
@@ -120,9 +135,9 @@
         <item name="android:letterSpacing">0.08</item>
     </style>
 
-    <!-- Restained primary action: forest fill, warm-paper text, small radius.
-         The hard shadow and the press behaviour live in the background
-         drawable, not here. -->
+    <!-- The theme's default button. ALIVE's own buttons are AppCompat over
+         hard-shadow drawables and set their own appearance; this exists so any
+         Material control inherits the same voice instead of the platform one. -->
     <style name="Widget.ALIVE.Button.Primary" parent="Widget.MaterialComponents.Button">
         <item name="backgroundTint">@color/alive_forest</item>
         <item name="android:textColor">@color/alive_white</item>
@@ -143,6 +158,16 @@
 
     <!-- ============ NAVIGATION ============ -->
 
+    <!-- Permanent navigation in a 10sp pixel face was the least legible text on
+         the screen and it could not be skipped by scrolling past it. -->
+    <style name="TextAppearance.ALIVE.NavLabel" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:fontFamily">sans-serif-black</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.06</item>
+    </style>
+
     <style name="Widget.ALIVE.BottomNav" parent="Widget.MaterialComponents.BottomNavigationView">
         <item name="android:background">@color/alive_paper</item>
         <item name="elevation">0dp</item>
@@ -150,8 +175,8 @@
         <item name="itemTextColor">@color/nav_item_tint</item>
         <item name="itemActiveIndicatorStyle">@style/Widget.ALIVE.BottomNav.Indicator</item>
         <item name="labelVisibilityMode">labeled</item>
-        <item name="itemTextAppearanceActive">@style/TextAppearance.ALIVE.Label</item>
-        <item name="itemTextAppearanceInactive">@style/TextAppearance.ALIVE.Label</item>
+        <item name="itemTextAppearanceActive">@style/TextAppearance.ALIVE.NavLabel</item>
+        <item name="itemTextAppearanceInactive">@style/TextAppearance.ALIVE.NavLabel</item>
     </style>
 
     <!-- The selected state is a block behind the item, so the pill indicator

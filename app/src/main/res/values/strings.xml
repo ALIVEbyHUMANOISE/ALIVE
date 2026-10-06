@@ -26,18 +26,21 @@
     <string name="time_last_minute">The last minute.</string>
     <string name="stat_minutes">%1$d</string>
     <string name="stat_min_left">min\nleft</string>
-    <string name="stat_closed">CLOSED</string>
     <string name="stat_reclaimed">reclaimed</string>
-    <string name="stat_min_short">%1$d min</string>
-    <string name="stat_reclaimed_short">+%1$d min</string>
     <string name="time_no_panic">No alarm in this. It is just what is left.</string>
     <string name="time_allowance_support">Your own daily allowance — separate from reclaimed time.</string>
-    <string name="time_allowance_and_used">Allowance %1$d min a day · %2$d min used</string>
     <string name="today_card_title">Today</string>
-    <string name="stat_streak">Streak · days</string>
-    <string name="stat_allowance">Allowance · min</string>
-    <string name="stat_used">Used · min</string>
-    <string name="stat_bank">Time bank · min</string>
+    <!-- Ledger labels. Deliberately one word: a tile is about 88dp wide on a
+         320dp screen, and "Allowance · min" wrapped while its neighbour did not,
+         which made a ruled table of numbers come out uneven. The unit is stated
+         once per card by stat_unit_note instead of once per label. -->
+    <string name="stat_streak">Streak</string>
+    <string name="stat_allowance">Allowance</string>
+    <string name="stat_used">Used</string>
+    <string name="stat_bank">Bank</string>
+    <string name="stat_unit_note">Every number here is minutes.</string>
+    <string name="unit_minutes">%1$d min</string>
+    <string name="unit_minutes_gain">+%1$d min</string>
     <string name="time_hero_line">Entertainment minutes left before ALIVE closes them.</string>
     <string name="time_of_allowance">of %1$d</string>
     <string name="time_closed">Entertainment time is closed for today.</string>
@@ -68,18 +71,15 @@
 
     <!-- ============ TIME BANK ============ -->
     <string name="time_bank_heading">Time Bank</string>
-    <string name="time_bank_minutes">%1$d min</string>
     <string name="time_bank_empty">Nothing reclaimed yet. A verified session gives you time back.</string>
     <string name="time_bank_use_intro">Use reclaimed time to extend a session.</string>
     <string name="time_bank_use_10">Use 10 minutes</string>
     <string name="time_bank_use_15">Use 15 minutes</string>
     <string name="time_bank_spent_toast">%1$d minutes moved out of your Time Bank.</string>
     <string name="time_bank_not_enough">Not enough reclaimed time for that.</string>
-    <string name="time_bank_earned_total">Earned %1$d min</string>
-    <string name="time_bank_spent_total">Used %1$d min</string>
     <string name="time_bank_available_total">%1$d min available</string>
-    <string name="stat_bank_earned">Earned · min</string>
-    <string name="stat_bank_spent">Spent · min</string>
+    <string name="stat_bank_earned">Earned</string>
+    <string name="stat_bank_spent">Spent</string>
     <string name="time_bank_explain">Verified quests pay minutes in. Extending a Focus session pays them out.</string>
     <string name="cd_time_bank">Pixel clock: the Time Bank, where reclaimed minutes are kept.</string>
 
@@ -88,8 +88,6 @@
     <string name="quest_subhead">What do you want to make time for?</string>
     <string name="quest_yours">Your quests</string>
     <string name="quest_current">Current quest</string>
-    <string name="quest_duration">%1$d min</string>
-    <string name="quest_reclaimed">+%1$d min reclaimed</string>
     <string name="quest_reclaimed_label">Reclaimed</string>
     <string name="quest_detail_open">Details</string>
     <string name="quest_not_verifiable">ALIVE can\'t verify this kind of session automatically yet.</string>
@@ -210,7 +208,6 @@
     <string name="pose_streak_note">You\'ve done this before.</string>
 
     <string name="cd_character_pose">ALIVE character, %1$s</string>
-    <string name="cd_time_state">Time remaining: %1$s</string>
 
     <!-- Quest kind, in the user's words. The engine enum names are never shown. -->
     <string name="category_exercise">Move</string>
@@ -249,7 +246,9 @@
     <string name="chart_axis_note">Each bar is a share of that day\'s own allowance.</string>
     <string name="chart_month_axis">One column per day, left to right, first of the month to today.</string>
     <string name="chart_days_heading">Days</string>
-    <string name="chart_label_today">Today</string>
+    <!-- Three glyphs, not five: a week's column is about 32dp wide and "TODAY"
+         does not fit a pixel label at the floor size. -->
+    <string name="chart_label_today">NOW</string>
     <string name="chart_tap_hint">Tap a bar for that day.</string>
     <string name="chart_day_name">%1$s %2$d</string>
     <string name="chart_day_detail">%1$s — %2$d of %3$d min.</string>
@@ -277,7 +276,6 @@
     <string name="chart_just_started">This is the first day ALIVE has recorded.</string>
     <string name="chart_partial">Only the days ALIVE saw are counted. Nothing is filled in.</string>
     <string name="chart_complete">Every day in this range was recorded.</string>
-    <string name="chart_app_minutes">%1$d min</string>
 
     <!-- ============ CRITICAL ALERT ============
 

@@ -24,7 +24,12 @@
         <item name="android:textColorSecondary">@color/alive_ink_secondary</item>
         <item name="android:textColorHint">@color/alive_ink_muted</item>
 
-        <!-- Ink strokes instead of the Material defaults. -->
+        <!-- Ink strokes instead of the Material defaults. The unselected ring is
+             a hairline of ink so an empty radio matches every other hairline on
+             the screen; the selected one is forest, which is the same colour the
+             primary action and the selected nav block use - one meaning, one
+             colour. -->
+        <item name="colorControlNormal">@color/alive_ink_hairline</item>
         <item name="colorControlActivated">@color/alive_forest</item>
         <item name="colorControlHighlight">@color/alive_ink_ripple</item>
         <item name="colorOnBackground">@color/alive_ink</item>

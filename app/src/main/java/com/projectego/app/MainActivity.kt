@@ -55,6 +55,7 @@ import com.projectego.app.ui.DayBarKind
 import com.projectego.app.ui.HomeAction
 import com.projectego.app.ui.PixelMarks
 import com.projectego.app.ui.StatusTone
+import com.projectego.app.ui.SurfaceWeight
 import com.projectego.app.ui.UsageChartStates
 import com.projectego.app.ui.VerificationReasonClass
 import java.text.SimpleDateFormat
@@ -103,6 +104,17 @@ class MainActivity : AppCompatActivity() {
 
     private var focusSetupAnchor: View? = null
     private var goalInput: EditText? = null
+
+    /**
+     * Which of Home's cards owns the screen's one MAJOR frame this render.
+     *
+     * A budget, not a decoration: with twelve cards all asking for the heaviest
+     * edge, nothing on the screen was louder than anything else. The order is
+     * what is broken first, then what is in flight, then the day itself.
+     */
+    private enum class HomeMajor { GUARD, PERMISSIONS, ATTEMPT, TODAY }
+
+    private var homeMajor = HomeMajor.TODAY
 
     // Hidden developer trigger state
     private var devTapCount = 0
@@ -222,7 +234,11 @@ class MainActivity : AppCompatActivity() {
     // SHELL
     // ------------------------------------------------------------------
 
-    private fun pageColumn(): LinearLayout = ui.column().apply {
+    /**
+     * A page is a stack with `card_gap` between its blocks, so a card's hard
+     * shadow always lands on clean canvas instead of on the next card's edge.
+     */
+    private fun pageColumn(): LinearLayout = ui.stack(ui.dimens.cardGap).apply {
         setPadding(
             ui.dimens.pageHorizontal,
             ui.dimens.pageTop,
@@ -244,9 +260,23 @@ class MainActivity : AppCompatActivity() {
         overlayContainer.visibility = View.GONE
     }
 
-    /** A panel scrolls with the same gutter as the tabs. */
+    /**
+     * A panel scrolls with the same gutter as the tabs.
+     *
+     * A plain column, not a `stack`: panel content is one continuous flow that is
+     * authored with its own rhythm (a journal page, a session read-out), whereas
+     * the tabs are genuinely stacks of cards. Automatic gaps here would stack on
+     * top of the deliberate ones.
+     */
     private fun panel(): Pair<ScrollView, LinearLayout> {
-        val column = pageColumn()
+        val column = ui.column().apply {
+            setPadding(
+                ui.dimens.pageHorizontal,
+                ui.dimens.pageTop,
+                ui.dimens.pageHorizontal,
+                ui.dimens.pageBottom
+            )
+        }
         val scroll = ScrollView(this).apply {
             addView(column)
             isFillViewport = true
@@ -261,7 +291,7 @@ class MainActivity : AppCompatActivity() {
             }
         )
         addView(
-            ui.label(kicker).apply {
+            ui.sectionHeader(kicker).apply {
                 setPadding(ui.dimens.m, 0, 0, 0)
             }
         )
@@ -303,14 +333,29 @@ class MainActivity : AppCompatActivity() {
         state.entertainmentAppDetails = report.entertainmentAppDetails
         evaluateGuardState(report)
 
+        // Read once per render and handed down: these reach AppOps and Settings,
+        // and calling them again inside each block would poll the system twice
+        // for the same frame.
+        val usageMissing = !hasUsageAccess()
+        val guardMissing = !isAccessibilityServiceEnabled()
+
+        // Home gets exactly one heavy frame, and what earns it is what is broken
+        // or in flight - not whatever happens to be rendered first.
+        homeMajor = when {
+            state.guardGapOpen -> HomeMajor.GUARD
+            usageMissing || guardMissing -> HomeMajor.PERMISSIONS
+            AliveStates.isAttemptActive(attempt?.state) -> HomeMajor.ATTEMPT
+            else -> HomeMajor.TODAY
+        }
+
         renderHeader(signals)
 
         if (state.guardGapOpen || state.guardGapRepairedToday) {
             renderGuardCard()
         }
 
-        if (!hasUsageAccess() || !isAccessibilityServiceEnabled()) {
-            renderPermissionsNotice()
+        if (usageMissing || guardMissing) {
+            renderPermissionsNotice(usageMissing, guardMissing)
         }
 
         renderTodayCard(report, signals)
@@ -374,16 +419,16 @@ class MainActivity : AppCompatActivity() {
                         addView(ui.caret(ui.dimens.dp(20)))
                     }
                 )
-                addView(ui.vgap(ui.dimens.s))
+                addView(ui.vgap(ui.dimens.lineGap))
                 addView(ui.annotation(getString(AliveStates.annotationFor(signals))))
             }
         )
         header.addView(line)
 
-        header.addView(ui.vgap(ui.dimens.l))
-        header.addView(ui.bodySecondary(getString(R.string.alive_tagline)))
-        header.addView(ui.vgap(ui.dimens.m))
-        header.addView(ui.accents(seed = 1, count = 4))
+        header.addView(ui.vgap(ui.dimens.groupGap))
+        header.addView(ui.note(getString(R.string.alive_tagline)))
+        header.addView(ui.vgap(ui.dimens.lineGap))
+        header.addView(ui.accents(seed = 1))
         // No rule here: the TODAY card below is the break, and a second one
         // above it would read as a frame around empty paper.
 
@@ -425,7 +470,8 @@ class MainActivity : AppCompatActivity() {
     private fun renderGuardCard() {
         val repaired = !state.guardGapOpen
         val card = ui.bentoCard(
-            getString(if (repaired) R.string.guard_back_heading else R.string.guard_off_heading)
+            getString(if (repaired) R.string.guard_back_heading else R.string.guard_off_heading),
+            weight = if (homeMajor == HomeMajor.GUARD) SurfaceWeight.MAJOR else SurfaceWeight.MINOR
         )
 
         card.addView(
@@ -435,23 +481,23 @@ class MainActivity : AppCompatActivity() {
                 getString(R.string.cd_guard_mark)
             )
         )
-        card.addView(ui.vgap(ui.dimens.m))
+        card.addView(ui.vgap(ui.dimens.lineGap))
         card.addView(
-            ui.bodySecondary(
+            ui.note(
                 getString(if (repaired) R.string.guard_back_body else R.string.guard_off_body)
             )
         )
-        card.addView(ui.vgap(ui.dimens.s))
+        card.addView(ui.vgap(ui.dimens.pairGap))
         card.addView(
-            ui.bodySecondary(
+            ui.note(
                 getString(if (repaired) R.string.guard_repair_done else R.string.guard_repair_needed)
             )
         )
-        card.addView(ui.vgap(ui.dimens.s))
-        card.addView(ui.quietText(getString(R.string.guard_who_turned_it_off)))
+        card.addView(ui.vgap(ui.dimens.pairGap))
+        card.addView(ui.note(getString(R.string.guard_who_turned_it_off)))
 
         if (!repaired) {
-            card.addView(ui.vgap(ui.dimens.l))
+            card.addView(ui.vgap(ui.dimens.groupGap))
             card.addView(
                 ui.secondary(getString(R.string.guard_enable_action)).apply {
                     layoutParams = LinearLayout.LayoutParams(
@@ -466,37 +512,57 @@ class MainActivity : AppCompatActivity() {
         }
 
         statusContainer.addView(card)
-        statusContainer.addView(ui.separator())
     }
 
     private fun characterDescription(stage: AliveStage): String =
         getString(R.string.cd_character_pose, getString(AliveStates.stageLabel(stage)))
 
-    private fun renderPermissionsNotice() {
-        val block = ui.block(StatusTone.HELD)
-        block.addView(ui.label(getString(R.string.permissions_heading)))
-        block.addView(ui.vgap(ui.dimens.m))
-        block.addView(ui.bodySecondary(getString(R.string.permissions_body)))
-        block.addView(ui.vgap(ui.dimens.l))
+    /**
+     * What ALIVE cannot see, and how to let it.
+     *
+     * A titled card rather than a bare block, because the heading was a sentence
+     * in a 10sp pixel face - the one place on the screen where the words that
+     * mattered most were the hardest to read.
+     */
+    private fun renderPermissionsNotice(usageMissing: Boolean, guardMissing: Boolean) {
+        val card = ui.bentoCard(
+            getString(R.string.permissions_heading),
+            weight = if (homeMajor == HomeMajor.PERMISSIONS) SurfaceWeight.MAJOR else SurfaceWeight.MINOR
+        )
+        card.addView(ui.note(getString(R.string.permissions_body)))
+        card.addView(ui.vgap(ui.dimens.groupGap))
 
-        if (!hasUsageAccess()) {
-            block.addView(ui.secondary(getString(R.string.permissions_usage_action)).apply {
-                setOnClickListener { startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) }
-            })
-            block.addView(ui.vgap(ui.dimens.s))
+        if (usageMissing) {
+            card.addView(
+                ui.secondary(getString(R.string.permissions_usage_action)).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    setOnClickListener { startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) }
+                }
+            )
+            card.addView(ui.vgap(ui.dimens.lineGap))
         }
-        if (!isAccessibilityServiceEnabled()) {
+        if (guardMissing) {
             // Named out loud, because this is the permission people are most
             // wary of and the one they can walk away from - at a price.
-            block.addView(ui.quietText(getString(R.string.permissions_accessibility_why)))
-            block.addView(ui.vgap(ui.dimens.s))
-            block.addView(ui.secondary(getString(R.string.permissions_accessibility_action)).apply {
-                setOnClickListener { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
-            })
+            card.addView(ui.note(getString(R.string.permissions_accessibility_why)))
+            card.addView(ui.vgap(ui.dimens.lineGap))
+            card.addView(
+                ui.secondary(getString(R.string.permissions_accessibility_action)).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    setOnClickListener {
+                        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    }
+                }
+            )
         }
 
-        statusContainer.addView(block)
-        statusContainer.addView(ui.separator())
+        statusContainer.addView(card)
     }
 
     /**
@@ -510,12 +576,18 @@ class MainActivity : AppCompatActivity() {
      * because hiding it would hide the reason the day is closed.
      */
     private fun renderTodayCard(report: UsageReport, signals: AliveSignals) {
-        val card = ui.bentoCard(getString(R.string.today_card_title))
+        val card = ui.bentoCard(
+            getString(R.string.today_card_title),
+            weight = if (homeMajor == HomeMajor.TODAY) SurfaceWeight.MAJOR else SurfaceWeight.MINOR,
+            tone = AliveStates.timeTone(report.timeStatus)
+        )
 
         card.addView(statGrid(signals))
-        card.addView(ui.vgap(ui.dimens.l))
+        card.addView(ui.vgap(ui.dimens.pairGap))
+        card.addView(ui.note(getString(R.string.stat_unit_note)))
+        card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(ui.rule())
-        card.addView(ui.vgap(ui.dimens.l))
+        card.addView(ui.vgap(ui.dimens.groupGap))
 
         val headlineRes = AliveStates.timeHeadline(
             report.timeStatus,
@@ -528,29 +600,29 @@ class MainActivity : AppCompatActivity() {
         if (printsANumber) {
             // Say what the big number is before showing it: a bare 75 means
             // nothing to someone who opened the app for the first time.
-            card.addView(ui.bodySecondary(getString(R.string.time_hero_line)))
-            card.addView(ui.vgap(ui.dimens.s))
+            card.addView(ui.note(getString(R.string.time_hero_line)))
+            card.addView(ui.vgap(ui.dimens.lineGap))
 
             val timeLine = ui.row().apply { gravity = Gravity.BOTTOM }
             timeLine.addView(ui.timer(getString(R.string.stat_minutes, report.remainingMinutes)))
             timeLine.addView(
-                ui.label(getString(R.string.stat_min_left)).apply {
+                ui.tag(getString(R.string.stat_min_left)).apply {
                     setPadding(ui.dimens.m, 0, 0, ui.dimens.l)
                 }
             )
             timeLine.addView(
                 ui.weighted(
-                    ui.quietText(getString(R.string.time_of_allowance, report.limitMinutes))
+                    ui.note(getString(R.string.time_of_allowance, report.limitMinutes))
                 ).apply { gravity = Gravity.BOTTOM or Gravity.END }
             )
             card.addView(timeLine)
-            card.addView(ui.vgap(ui.dimens.s))
+            card.addView(ui.vgap(ui.dimens.lineGap))
             card.addView(ui.timeBar(report.remainingMinutes, report.limitMinutes))
         } else {
             // Closed, or a recovery day: a statement, not a number, and the
             // figure walking toward something else.
             card.addView(ui.headline(getString(headlineRes)))
-            card.addView(ui.vgap(ui.dimens.m))
+            card.addView(ui.vgap(ui.dimens.lineGap))
             card.addView(
                 ui.mark(
                     R.drawable.ic_alive_character_aware,
@@ -560,16 +632,16 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        card.addView(ui.vgap(ui.dimens.m))
+        card.addView(ui.vgap(ui.dimens.lineGap))
         card.addView(
-            ui.bodySecondary(
+            ui.note(
                 getString(AliveStates.timeSupportLine(report.timeStatus, report.criticalZoneTier))
             )
         )
 
         // The chart opens from here because this is where the eye is already on
         // the number the chart then explains.
-        card.addView(ui.vgap(ui.dimens.l))
+        card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(
             ui.secondary(getString(R.string.chart_open)).apply {
                 layoutParams = LinearLayout.LayoutParams(
@@ -581,7 +653,6 @@ class MainActivity : AppCompatActivity() {
         )
 
         statusContainer.addView(card)
-        statusContainer.addView(ui.separator())
     }
 
     /**
@@ -637,7 +708,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         statusContainer.addView(button)
-        statusContainer.addView(ui.separator())
     }
 
     private fun revealFocusSetup() {
@@ -654,20 +724,27 @@ class MainActivity : AppCompatActivity() {
         if (attempt == null || attempt.state == QuestAttemptState.AVAILABLE) return
         val quest = quests.find { it.id == attempt.questId } ?: return
 
-        statusContainer.addView(buildQuestStatusBlock(attempt, quest, withHeader = true))
-        statusContainer.addView(ui.separator())
+        statusContainer.addView(
+            buildQuestStatusBlock(
+                attempt,
+                quest,
+                withHeader = true,
+                weight = if (homeMajor == HomeMajor.ATTEMPT) SurfaceWeight.MAJOR else SurfaceWeight.MINOR
+            )
+        )
     }
 
     private fun buildQuestStatusBlock(
         attempt: QuestAttempt,
         quest: Quest,
-        withHeader: Boolean
+        withHeader: Boolean,
+        weight: SurfaceWeight = SurfaceWeight.MINOR
     ): LinearLayout {
-        val block = ui.block(AliveStates.attemptTone(attempt.state))
+        val block = ui.block(weight, AliveStates.attemptTone(attempt.state))
 
         if (withHeader) {
-            block.addView(ui.label(getString(R.string.quest_current)))
-            block.addView(ui.vgap(ui.dimens.m))
+            block.addView(ui.sectionHeader(getString(R.string.quest_current)))
+            block.addView(ui.vgap(ui.dimens.lineGap))
         }
 
         block.addView(
@@ -677,12 +754,12 @@ class MainActivity : AppCompatActivity() {
                 getString(PixelMarks.description(quest.category))
             )
         )
-        block.addView(ui.vgap(ui.dimens.m))
+        block.addView(ui.vgap(ui.dimens.lineGap))
 
-        block.addView(ui.questRowTitle(quest.title))
-        block.addView(ui.vgap(ui.dimens.xs))
-        block.addView(ui.bodySecondary(quest.description))
-        block.addView(ui.vgap(ui.dimens.l))
+        block.addView(ui.lead(quest.title))
+        block.addView(ui.vgap(ui.dimens.pairGap))
+        block.addView(ui.note(quest.description))
+        block.addView(ui.vgap(ui.dimens.groupGap))
 
         val available = state.signals?.reclaimedAvailableMinutes ?: 0L
         val headline = when (attempt.state) {
@@ -690,7 +767,7 @@ class MainActivity : AppCompatActivity() {
                 getString(R.string.attempt_rewarded, attempt.rewardMinutes ?: quest.rewardMinutes)
             else -> getString(AliveStates.attemptHeadline(attempt.state))
         }
-        block.addView(ui.statement(headline))
+        block.addView(ui.lead(headline))
 
         val support = when (attempt.state) {
             // VERIFIED is not REWARDED: the minutes have counted, not landed.
@@ -698,20 +775,20 @@ class MainActivity : AppCompatActivity() {
             QuestAttemptState.REWARDED -> getString(R.string.attempt_rewarded_total, available)
             else -> getString(AliveStates.attemptSupport(attempt.state))
         }
-        block.addView(ui.vgap(ui.dimens.s))
-        block.addView(ui.bodySecondary(support))
+        block.addView(ui.vgap(ui.dimens.lineGap))
+        block.addView(ui.note(support))
 
         if (attempt.state == QuestAttemptState.FAILED) {
             // A raw engine reason is never shown; only its honest family is.
             val reason = AliveStates.classifyFailure(attempt.verificationResult?.reason)
             if (reason != VerificationReasonClass.UNKNOWN) {
-                block.addView(ui.vgap(ui.dimens.s))
-                block.addView(ui.bodySecondary(getString(AliveStates.failureSupport(reason))))
+                block.addView(ui.vgap(ui.dimens.lineGap))
+                block.addView(ui.note(getString(AliveStates.failureSupport(reason))))
             }
         }
 
         if (AliveStates.offersAction(attempt.state)) {
-            block.addView(ui.vgap(ui.dimens.l))
+            block.addView(ui.vgap(ui.dimens.groupGap))
             block.addView(ui.secondary(getString(R.string.action_continue)).apply {
                 setOnClickListener { openCurrentQuestPanel() }
             })
@@ -750,12 +827,12 @@ class MainActivity : AppCompatActivity() {
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                 setPadding(ui.dimens.l, 0, 0, 0)
                 if (available <= 0L) {
-                    addView(ui.bodySecondary(getString(R.string.time_bank_empty)))
+                    addView(ui.note(getString(R.string.time_bank_empty)))
                 } else {
                     val bankLine = ui.row().apply { gravity = Gravity.BOTTOM }
                     bankLine.addView(ui.timer(getString(R.string.stat_minutes, available)))
                     bankLine.addView(
-                        ui.label(getString(R.string.stat_reclaimed)).apply {
+                        ui.tag(getString(R.string.stat_reclaimed)).apply {
                             setPadding(ui.dimens.m, 0, 0, ui.dimens.m)
                         }
                     )
@@ -765,7 +842,7 @@ class MainActivity : AppCompatActivity() {
         )
         card.addView(head)
 
-        card.addView(ui.vgap(ui.dimens.l))
+        card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(ui.rule())
         card.addView(
             ui.row().apply {
@@ -775,21 +852,20 @@ class MainActivity : AppCompatActivity() {
             }
         )
 
-        card.addView(ui.vgap(ui.dimens.l))
-        card.addView(ui.bodySecondary(getString(R.string.time_bank_explain)))
+        card.addView(ui.vgap(ui.dimens.groupGap))
+        card.addView(ui.note(getString(R.string.time_bank_explain)))
 
         if (available > 0L) {
             renderTimeBankUse(card, available)
         }
 
         statusContainer.addView(card)
-        statusContainer.addView(ui.separator())
     }
 
     private fun renderTimeBankUse(block: LinearLayout, available: Long) {
-        block.addView(ui.vgap(ui.dimens.l))
-        block.addView(ui.bodySecondary(getString(R.string.time_bank_use_intro)))
-        block.addView(ui.vgap(ui.dimens.m))
+        block.addView(ui.vgap(ui.dimens.groupGap))
+        block.addView(ui.note(getString(R.string.time_bank_use_intro)))
+        block.addView(ui.vgap(ui.dimens.lineGap))
 
         val row = ui.row()
         row.addView(
@@ -845,24 +921,21 @@ class MainActivity : AppCompatActivity() {
                     getString(R.string.cd_focus_mark, activityLabel(session.activityType))
                 )
             )
-            card.addView(ui.vgap(ui.dimens.m))
-            card.addView(ui.statement(getString(R.string.focus_active_heading, activityLabel(session.activityType))))
-            card.addView(ui.vgap(ui.dimens.s))
-            card.addView(ui.bodySecondary(focusRemainingLine(session)))
-            card.addView(ui.vgap(ui.dimens.l))
+            card.addView(ui.vgap(ui.dimens.lineGap))
+            card.addView(ui.lead(getString(R.string.focus_active_heading, activityLabel(session.activityType))))
+            card.addView(ui.vgap(ui.dimens.lineGap))
+            card.addView(ui.note(focusRemainingLine(session)))
+            card.addView(ui.vgap(ui.dimens.groupGap))
             card.addView(ui.secondary(getString(R.string.action_return_session)).apply {
                 setOnClickListener { openFocusSessionPanel() }
             })
         } else {
-            card.addView(ui.bodySecondary(getString(R.string.focus_intro)))
-            card.addView(ui.vgap(ui.dimens.m))
-            card.addView(ui.accents(seed = 5, count = 3))
-            card.addView(ui.vgap(ui.dimens.l))
+            card.addView(ui.note(getString(R.string.focus_intro)))
+            card.addView(ui.vgap(ui.dimens.groupGap))
             renderFocusSetup(card)
         }
 
         statusContainer.addView(card)
-        statusContainer.addView(ui.separator())
     }
 
     /**
@@ -889,10 +962,10 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.cd_focus_mark, activityLabel(markType))
         )
         anchor.addView(mark)
-        anchor.addView(ui.vgap(ui.dimens.l))
+        anchor.addView(ui.vgap(ui.dimens.groupGap))
 
-        anchor.addView(ui.label(getString(R.string.focus_activity_heading)))
-        anchor.addView(ui.vgap(ui.dimens.s))
+        anchor.addView(ui.sectionHeader(getString(R.string.focus_activity_heading)))
+        anchor.addView(ui.vgap(ui.dimens.lineGap))
 
         val actGroup = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
         activities.forEachIndexed { index, type ->
@@ -919,9 +992,9 @@ class MainActivity : AppCompatActivity() {
         }
         anchor.addView(actGroup)
 
-        anchor.addView(ui.vgap(ui.dimens.xl))
-        anchor.addView(ui.label(getString(R.string.focus_goal_heading)))
-        anchor.addView(ui.vgap(ui.dimens.s))
+        anchor.addView(ui.vgap(ui.dimens.groupGap))
+        anchor.addView(ui.sectionHeader(getString(R.string.focus_goal_heading)))
+        anchor.addView(ui.vgap(ui.dimens.lineGap))
 
         val goalField = ui.input(getString(R.string.focus_goal_hint)).apply {
             setText(state.focusGoalDraft)
@@ -932,9 +1005,9 @@ class MainActivity : AppCompatActivity() {
         goalInput = goalField
         anchor.addView(goalField)
 
-        anchor.addView(ui.vgap(ui.dimens.xl))
-        anchor.addView(ui.label(getString(R.string.focus_duration_heading)))
-        anchor.addView(ui.vgap(ui.dimens.s))
+        anchor.addView(ui.vgap(ui.dimens.groupGap))
+        anchor.addView(ui.sectionHeader(getString(R.string.focus_duration_heading)))
+        anchor.addView(ui.vgap(ui.dimens.lineGap))
 
         val durGroup = RadioGroup(this).apply { orientation = RadioGroup.HORIZONTAL }
         durations.forEachIndexed { index, duration ->
@@ -957,7 +1030,7 @@ class MainActivity : AppCompatActivity() {
         }
         anchor.addView(durGroup)
 
-        anchor.addView(ui.vgap(ui.dimens.l))
+        anchor.addView(ui.vgap(ui.dimens.groupGap))
         anchor.addView(
             ui.primary(getString(R.string.focus_start)).apply {
                 layoutParams = LinearLayout.LayoutParams(
@@ -987,7 +1060,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         )
-        anchor.addView(ui.vgap(ui.dimens.m))
+        anchor.addView(ui.vgap(ui.dimens.lineGap))
         anchor.addView(ui.annotation(getString(R.string.focus_setup_hint)))
 
         block.addView(anchor)
@@ -1025,16 +1098,24 @@ class MainActivity : AppCompatActivity() {
 
         val header = ui.column()
         header.addView(ui.display(getString(R.string.quest_heading)))
-        header.addView(ui.vgap(ui.dimens.s))
+        header.addView(ui.vgap(ui.dimens.lineGap))
         header.addView(ui.annotation(getString(R.string.quest_subhead)))
-        header.addView(ui.vgap(ui.dimens.m))
-        header.addView(ui.accents(seed = 2, count = 5))
-        header.addView(ui.separator())
+        header.addView(ui.vgap(ui.dimens.lineGap))
+        header.addView(ui.accents(seed = 2))
         questContainer.addView(header)
 
+        // On this screen the attempt is the news, so it takes the one heavy
+        // frame; with nothing in flight the board takes it instead.
+        val attemptIsLive = currentAttempt != null && activeQuest != null
         if (currentAttempt != null && activeQuest != null) {
-            questContainer.addView(buildQuestStatusBlock(currentAttempt, activeQuest, withHeader = true))
-            questContainer.addView(ui.separator())
+            questContainer.addView(
+                buildQuestStatusBlock(
+                    currentAttempt,
+                    activeQuest,
+                    withHeader = true,
+                    weight = SurfaceWeight.MAJOR
+                )
+            )
         }
 
         val others = allQuests.filter { it.id != activeQuestId }
@@ -1049,9 +1130,12 @@ class MainActivity : AppCompatActivity() {
         } else {
             // One ruled card for the whole board: separate floating rows read as
             // leftovers, and the hairlines inside give each quest its own line.
-            val listCard = ui.bentoCard(getString(R.string.quest_yours))
+            val listCard = ui.bentoCard(
+                getString(R.string.quest_yours),
+                weight = if (attemptIsLive) SurfaceWeight.MINOR else SurfaceWeight.MAJOR
+            )
             others.forEachIndexed { index, quest ->
-                if (index > 0) listCard.addView(ui.hairline())
+                if (index > 0) listCard.addView(ui.rowRule())
                 listCard.addView(buildQuestRow(quest))
             }
             questContainer.addView(listCard)
@@ -1086,26 +1170,25 @@ class MainActivity : AppCompatActivity() {
         val info = ui.column().apply {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
-        info.addView(ui.questRowTitle(quest.title))
-        info.addView(ui.vgap(ui.dimens.xs))
-        info.addView(ui.bodySecondary(quest.description))
-        info.addView(ui.vgap(ui.dimens.m))
+        info.addView(ui.lead(quest.title))
+        info.addView(ui.vgap(ui.dimens.pairGap))
+        info.addView(ui.note(quest.description))
+        info.addView(ui.vgap(ui.dimens.lineGap))
 
         val meta = ui.row()
-        meta.addView(ui.label(getString(R.string.quest_duration, quest.estimatedDurationMinutes)))
-        meta.addView(ui.label(getString(R.string.quest_reclaimed, quest.rewardMinutes)).apply {
-            setPadding(ui.dimens.l, 0, 0, 0)
-        })
+        meta.addView(ui.tag(getString(R.string.unit_minutes, quest.estimatedDurationMinutes)))
+        meta.addView(ui.hgap(ui.dimens.m))
+        meta.addView(ui.tag(getString(R.string.unit_minutes_gain, quest.rewardMinutes)))
         info.addView(meta)
 
         if (!verifiable) {
-            info.addView(ui.vgap(ui.dimens.s))
-            info.addView(ui.quietText(getString(R.string.quest_not_verifiable)))
+            info.addView(ui.vgap(ui.dimens.lineGap))
+            info.addView(ui.note(getString(R.string.quest_not_verifiable)))
         }
         row.addView(info)
 
         row.addView(
-            if (completed) ui.quietText(getString(R.string.quest_reclaimed_label))
+            if (completed) ui.note(getString(R.string.quest_reclaimed_label))
             else ui.quiet(getString(R.string.quest_detail_open)).apply {
                 // A row never starts a quest in one tap: it opens the page that
                 // explains it first, so a tap here cannot fail silently.
@@ -1143,46 +1226,46 @@ class MainActivity : AppCompatActivity() {
                 getString(PixelMarks.description(quest.category))
             )
         )
-        column.addView(ui.vgap(ui.dimens.xl))
+        column.addView(ui.vgap(ui.dimens.groupGap))
 
         column.addView(ui.headline(quest.title))
-        column.addView(ui.vgap(ui.dimens.s))
-        column.addView(ui.statement(getString(R.string.quest_detail_duration, quest.estimatedDurationMinutes)))
-        column.addView(ui.vgap(ui.dimens.l))
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        column.addView(ui.lead(getString(R.string.quest_detail_duration, quest.estimatedDurationMinutes)))
+        column.addView(ui.vgap(ui.dimens.groupGap))
         column.addView(ui.body(quest.description))
 
-        column.addView(ui.vgap(ui.dimens.xxl))
+        column.addView(ui.vgap(ui.dimens.groupGap))
         column.addView(ui.sectionHeader(getString(R.string.quest_detail_how_title)))
-        column.addView(ui.vgap(ui.dimens.s))
+        column.addView(ui.vgap(ui.dimens.lineGap))
         column.addView(
-            ui.bodySecondary(
+            ui.note(
                 getString(if (verifiable) R.string.quest_detail_how_body else R.string.quest_detail_how_body_unsupported)
             )
         )
 
-        column.addView(ui.vgap(ui.dimens.xl))
+        column.addView(ui.vgap(ui.dimens.groupGap))
         column.addView(ui.sectionHeader(getString(R.string.quest_detail_reward_title)))
-        column.addView(ui.vgap(ui.dimens.s))
-        column.addView(ui.bodySecondary(getString(R.string.quest_detail_reward_body, quest.rewardMinutes)))
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        column.addView(ui.note(getString(R.string.quest_detail_reward_body, quest.rewardMinutes)))
 
-        column.addView(ui.vgap(ui.dimens.l))
+        column.addView(ui.vgap(ui.dimens.groupGap))
         column.addView(
-            ui.quietText(
+            ui.note(
                 getString(AliveStates.categoryLabel(quest.category)) + "  ·  " +
                     getString(AliveStates.difficultyLabel(quest.difficulty))
             )
         )
 
-        column.addView(ui.vgap(ui.dimens.xxl))
+        column.addView(ui.vgap(ui.dimens.groupGap))
 
         when {
-            !verifiable -> column.addView(ui.bodySecondary(getString(R.string.quest_not_verifiable)))
+            !verifiable -> column.addView(ui.note(getString(R.string.quest_not_verifiable)))
 
             AliveStates.isAttemptActive(state.attempt?.state) -> {
                 val blocked = ui.primary(getString(R.string.action_start_quest))
                 blocked.isEnabled = false
                 column.addView(blocked)
-                column.addView(ui.vgap(ui.dimens.s))
+                column.addView(ui.vgap(ui.dimens.lineGap))
                 column.addView(ui.annotation(getString(R.string.quest_cannot_start)))
             }
 
@@ -1215,10 +1298,10 @@ class MainActivity : AppCompatActivity() {
         column.addView(panelHeader(getString(AliveStates.categoryLabel(quest.category))))
         column.addView(buildQuestStatusBlock(attempt, quest, withHeader = false))
 
-        column.addView(ui.vgap(ui.dimens.xxl))
+        column.addView(ui.vgap(ui.dimens.groupGap))
         column.addView(ui.sectionHeader(getString(R.string.quest_detail_how_title)))
-        column.addView(ui.vgap(ui.dimens.s))
-        column.addView(ui.bodySecondary(getString(R.string.focus_monitors)))
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        column.addView(ui.note(getString(R.string.focus_monitors)))
 
         openOverlay(scroll)
     }
@@ -1250,36 +1333,36 @@ class MainActivity : AppCompatActivity() {
                 getString(R.string.cd_focus_mark, activityLabel(session.activityType))
             )
         )
-        column.addView(ui.vgap(ui.dimens.l))
+        column.addView(ui.vgap(ui.dimens.groupGap))
         column.addView(ui.headline(getString(R.string.focus_active_heading, activityLabel(session.activityType))))
-        column.addView(ui.vgap(ui.dimens.xl))
+        column.addView(ui.vgap(ui.dimens.groupGap))
 
         column.addView(ui.timer(focusRemainingLine(session)))
-        column.addView(ui.vgap(ui.dimens.xs))
-        column.addView(ui.bodySecondary(getString(R.string.focus_of_total, session.durationMinutes)))
+        column.addView(ui.vgap(ui.dimens.pairGap))
+        column.addView(ui.note(getString(R.string.focus_of_total, session.durationMinutes)))
 
-        column.addView(ui.vgap(ui.dimens.xl))
-        column.addView(ui.bodySecondary(getString(R.string.focus_goal_quoted, session.goal)))
+        column.addView(ui.vgap(ui.dimens.groupGap))
+        column.addView(ui.note(getString(R.string.focus_goal_quoted, session.goal)))
 
-        column.addView(ui.vgap(ui.dimens.xxl))
+        column.addView(ui.vgap(ui.dimens.groupGap))
         column.addView(ui.sectionHeader(getString(R.string.focus_allowed_heading)))
-        column.addView(ui.vgap(ui.dimens.s))
+        column.addView(ui.vgap(ui.dimens.lineGap))
         column.addView(
-            ui.bodySecondary(
+            ui.note(
                 getString(
                     R.string.focus_allowed_body,
                     FocusAppPolicy.getApprovedPackages(session.activityType).size
                 )
             )
         )
-        column.addView(ui.vgap(ui.dimens.m))
+        column.addView(ui.vgap(ui.dimens.lineGap))
         // ALIVE watches which app is foregrounded. That is the whole claim.
-        column.addView(ui.quietText(getString(R.string.focus_monitors)))
-        column.addView(ui.vgap(ui.dimens.s))
+        column.addView(ui.note(getString(R.string.focus_monitors)))
+        column.addView(ui.vgap(ui.dimens.lineGap))
         column.addView(ui.annotation(getString(R.string.focus_next)))
 
         val bank = state.signals?.reclaimedAvailableMinutes ?: 0L
-        column.addView(ui.vgap(ui.dimens.xxl))
+        column.addView(ui.vgap(ui.dimens.groupGap))
         column.addView(
             ui.secondary(getString(R.string.focus_extend)).apply {
                 isEnabled = bank >= 15
@@ -1295,8 +1378,8 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         )
-        column.addView(ui.vgap(ui.dimens.s))
-        column.addView(ui.quietText(getString(R.string.focus_extend_support)))
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        column.addView(ui.note(getString(R.string.focus_extend_support)))
     }
 
     // ------------------------------------------------------------------
@@ -1316,11 +1399,10 @@ class MainActivity : AppCompatActivity() {
 
         val (scroll, column) = panel()
         column.addView(panelHeader(getString(R.string.chart_heading)))
-        column.addView(ui.vgap(ui.dimens.l))
+        column.addView(ui.vgap(ui.dimens.groupGap))
         column.addView(ui.annotation(getString(R.string.chart_subhead)))
-        column.addView(ui.vgap(ui.dimens.m))
-        column.addView(ui.accents(seed = 3, count = 4))
-        column.addView(ui.separator())
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        column.addView(ui.accents(seed = 3))
 
         val ranges = ChartRange.values()
         val switch = RadioGroup(this)
@@ -1357,7 +1439,7 @@ class MainActivity : AppCompatActivity() {
         val todayKey = today.toString()
         val bars = chartBars(UsageChartStates.dateKeys(range, today), todayKey)
 
-        body.addView(ui.vgap(ui.dimens.l))
+        body.addView(ui.vgap(ui.dimens.cardGap))
         body.addView(buildDayCard(range, todayKey, bars))
 
         // Per-app time is only ever stated for today. It is stored for other
@@ -1365,7 +1447,7 @@ class MainActivity : AppCompatActivity() {
         // not what ALIVE claims to do.
         if (range == ChartRange.TODAY) {
             buildAppCard()?.let { card ->
-                body.addView(ui.vgap(ui.dimens.l))
+                body.addView(ui.vgap(ui.dimens.cardGap))
                 body.addView(card)
             }
         }
@@ -1373,8 +1455,11 @@ class MainActivity : AppCompatActivity() {
 
     /** The days card: bars, what the marks mean, and how much of the range is real. */
     private fun buildDayCard(range: ChartRange, todayKey: String, bars: List<DayBar>): LinearLayout {
-        val card = ui.bentoCard(getString(R.string.chart_days_heading))
-        val detail = ui.bodySecondary(getString(R.string.chart_tap_hint))
+        val card = ui.bentoCard(
+            getString(R.string.chart_days_heading),
+            weight = SurfaceWeight.MAJOR
+        )
+        val detail = ui.note(getString(R.string.chart_tap_hint))
 
         val chart = BrutalistBarChart(this).apply {
             layoutParams = LinearLayout.LayoutParams(
@@ -1401,32 +1486,32 @@ class MainActivity : AppCompatActivity() {
             }
         }
         card.addView(chart)
-        card.addView(ui.vgap(ui.dimens.m))
+        card.addView(ui.vgap(ui.dimens.lineGap))
         card.addView(detail)
 
         val (totalMinutes, recordedCount) = UsageChartStates.totals(bars)
-        card.addView(ui.vgap(ui.dimens.l))
-        card.addView(ui.bodySecondary(getString(R.string.chart_total_minutes, totalMinutes)))
+        card.addView(ui.vgap(ui.dimens.groupGap))
+        card.addView(ui.note(getString(R.string.chart_total_minutes, totalMinutes)))
         if (bars.size > 1) {
-            card.addView(ui.vgap(ui.dimens.xs))
-            card.addView(ui.quietText(getString(R.string.chart_days_recorded, recordedCount, bars.size)))
+            card.addView(ui.vgap(ui.dimens.pairGap))
+            card.addView(ui.note(getString(R.string.chart_days_recorded, recordedCount, bars.size)))
         }
         if (recordedCount < bars.size) {
-            card.addView(ui.vgap(ui.dimens.s))
+            card.addView(ui.vgap(ui.dimens.lineGap))
             card.addView(ui.annotation(getString(UsageChartStates.coverageCopy(recordedCount, bars.size))))
         }
 
-        card.addView(ui.vgap(ui.dimens.l))
-        card.addView(ui.quietText(getString(R.string.chart_axis_note)))
-        card.addView(ui.vgap(ui.dimens.xs))
+        card.addView(ui.vgap(ui.dimens.groupGap))
+        card.addView(ui.note(getString(R.string.chart_axis_note)))
+        card.addView(ui.vgap(ui.dimens.pairGap))
         // The two marks that are not self-evident, named rather than left to
         // guesswork: a gap in the record and a day with nothing to spend.
-        card.addView(ui.quietText(getString(R.string.chart_shape_note)))
+        card.addView(ui.note(getString(R.string.chart_shape_note)))
         if (range == ChartRange.THIS_MONTH) {
-            card.addView(ui.vgap(ui.dimens.xs))
+            card.addView(ui.vgap(ui.dimens.pairGap))
             // A month has no room for 31 readable labels, so the row is
             // explained as a whole instead of named day by day.
-            card.addView(ui.quietText(getString(R.string.chart_month_axis)))
+            card.addView(ui.note(getString(R.string.chart_month_axis)))
         }
         return card
     }
@@ -1467,7 +1552,7 @@ class MainActivity : AppCompatActivity() {
         }
         card.addView(donut)
 
-        card.addView(ui.vgap(ui.dimens.l))
+        card.addView(ui.vgap(ui.dimens.groupGap))
         apps.forEachIndexed { index, (packageName, minutes) ->
             val row = ui.row().apply {
                 setPadding(0, ui.dimens.s, 0, ui.dimens.s)
@@ -1477,11 +1562,11 @@ class MainActivity : AppCompatActivity() {
             }
             row.addView(ui.swatch(series[index % series.size]))
             row.addView(ui.weighted(ui.body(AppLabels.labelFor(this, packageName))))
-            row.addView(ui.label(getString(R.string.chart_app_minutes, minutes)))
+            row.addView(ui.tag(getString(R.string.unit_minutes, minutes)))
             card.addView(row)
         }
 
-        card.addView(ui.vgap(ui.dimens.m))
+        card.addView(ui.vgap(ui.dimens.lineGap))
         // A fallback label is still printed as a label, so this says where the
         // names come from instead of pretending every one of them resolved.
         card.addView(ui.annotation(getString(R.string.chart_labels_note)))
@@ -1547,29 +1632,34 @@ class MainActivity : AppCompatActivity() {
         // Masthead on bare canvas, like Home and Quest: the identity lines are
         // the one place Profile is allowed to stay quiet.
         profileContainer.addView(ui.display(getString(R.string.profile_heading)))
-        profileContainer.addView(ui.vgap(ui.dimens.s))
+        profileContainer.addView(ui.vgap(ui.dimens.lineGap))
         profileContainer.addView(ui.annotation(getString(R.string.profile_identity)))
-        profileContainer.addView(ui.vgap(ui.dimens.s))
-        profileContainer.addView(ui.bodySecondary(getString(R.string.profile_identity_support)))
-        profileContainer.addView(ui.vgap(ui.dimens.m))
-        profileContainer.addView(ui.accents(seed = 6, count = 4))
+        profileContainer.addView(ui.vgap(ui.dimens.lineGap))
+        profileContainer.addView(ui.note(getString(R.string.profile_identity_support)))
+        profileContainer.addView(ui.vgap(ui.dimens.lineGap))
+        profileContainer.addView(ui.accents(seed = 4))
 
         // Everything below comes from state.*; nothing re-polls the engine.
         val signals = state.signals
         if (signals != null) {
-            profileContainer.addView(ui.vgap(ui.dimens.l))
+            profileContainer.addView(ui.vgap(ui.dimens.groupGap))
             profileContainer.addView(buildStateCard(signals))
         }
 
-        profileContainer.addView(ui.vgap(ui.dimens.l))
+        profileContainer.addView(ui.vgap(ui.dimens.groupGap))
         profileContainer.addView(buildBankCard())
 
         renderProfilePermissions()
         renderProfileHistory()
 
-        profileContainer.addView(ui.vgap(ui.dimens.l))
-        val how = ui.bentoCard(getString(R.string.profile_how_title))
-        how.addView(ui.bodySecondary(getString(R.string.profile_how_body)))
+        profileContainer.addView(ui.vgap(ui.dimens.groupGap))
+        // PLAIN on purpose: one sentence about how the app decides does not need
+        // the same frame as the numbers it is explaining.
+        val how = ui.bentoCard(
+            getString(R.string.profile_how_title),
+            weight = SurfaceWeight.PLAIN
+        )
+        how.addView(ui.note(getString(R.string.profile_how_body)))
         profileContainer.addView(how)
     }
 
@@ -1585,17 +1675,17 @@ class MainActivity : AppCompatActivity() {
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                 setPadding(ui.dimens.l, 0, 0, 0)
                 addView(ui.body(getString(AliveStates.annotationFor(signals))))
-                addView(ui.vgap(ui.dimens.s))
-                addView(ui.quietText(streakLine(signals.currentStreak)))
+                addView(ui.vgap(ui.dimens.lineGap))
+                addView(ui.note(streakLine(signals.currentStreak)))
                 if (state.guardGapOpen || state.guardGapRepairedToday) {
-                    addView(ui.vgap(ui.dimens.s))
-                    addView(ui.quietText(getString(R.string.guard_profile_line)))
+                    addView(ui.vgap(ui.dimens.lineGap))
+                    addView(ui.note(getString(R.string.guard_profile_line)))
                 }
             }
         )
         card.addView(line)
 
-        card.addView(ui.vgap(ui.dimens.l))
+        card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(ui.rule())
         card.addView(
             ui.row().apply {
@@ -1617,7 +1707,7 @@ class MainActivity : AppCompatActivity() {
                 addView(ui.weighted(ui.statTile(getString(R.string.stat_bank_spent), getString(R.string.stat_minutes, state.spentMinutes))))
             }
         )
-        card.addView(ui.vgap(ui.dimens.l))
+        card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(
             ui.body(
                 getString(R.string.time_bank_available_total, state.signals?.reclaimedAvailableMinutes ?: 0L)
@@ -1642,7 +1732,7 @@ class MainActivity : AppCompatActivity() {
                 Settings.ACTION_USAGE_ACCESS_SETTINGS
             )
         )
-        card.addView(ui.vgap(ui.dimens.s))
+        card.addView(ui.vgap(ui.dimens.lineGap))
         card.addView(
             permissionLine(
                 getString(R.string.permissions_accessibility_action),
@@ -1650,7 +1740,7 @@ class MainActivity : AppCompatActivity() {
                 Settings.ACTION_ACCESSIBILITY_SETTINGS
             )
         )
-        profileContainer.addView(ui.vgap(ui.dimens.l))
+        profileContainer.addView(ui.vgap(ui.dimens.groupGap))
         profileContainer.addView(card)
     }
 
@@ -1675,10 +1765,10 @@ class MainActivity : AppCompatActivity() {
 
         val card = ui.bentoCard(getString(R.string.profile_history_heading))
         if (completed.isEmpty()) {
-            card.addView(ui.bodySecondary(getString(R.string.profile_history_empty)))
+            card.addView(ui.note(getString(R.string.profile_history_empty)))
         } else {
             completed.forEachIndexed { index, quest ->
-                if (index > 0) card.addView(ui.hairline())
+                if (index > 0) card.addView(ui.rowRule())
                 val row = ui.row().apply { setPadding(0, ui.dimens.s, 0, ui.dimens.s) }
                 row.addView(
                     ui.pose(
@@ -1690,7 +1780,7 @@ class MainActivity : AppCompatActivity() {
                 row.addView(ui.hgap(ui.dimens.m))
                 row.addView(
                     ui.weighted(
-                        ui.bodySecondary(
+                        ui.note(
                             getString(R.string.profile_history_row, quest.title, quest.rewardMinutes)
                         )
                     )
@@ -1698,7 +1788,7 @@ class MainActivity : AppCompatActivity() {
                 card.addView(row)
             }
         }
-        profileContainer.addView(ui.vgap(ui.dimens.l))
+        profileContainer.addView(ui.vgap(ui.dimens.groupGap))
         profileContainer.addView(card)
     }
 
@@ -1709,8 +1799,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun renderDevPanel() {
         val block = ui.column()
-        block.addView(ui.label("[dev]"))
-        block.addView(ui.vgap(ui.dimens.m))
+        block.addView(ui.tag("[dev]"))
+        block.addView(ui.vgap(ui.dimens.lineGap))
 
         block.addView(
             ui.quiet(

@@ -24,37 +24,40 @@ object CriticalTimeCard {
         limitMinutes: Long,
         onDismiss: () -> Unit
     ): View {
-        val block = ui.block(StatusTone.HELD)
+        // A framed notice, not a card: this is the one surface ALIVE raises on
+        // its own, so it carries a second rule inside its edge instead of a
+        // colour, a sound or a movement.
+        val block = ui.notice()
 
-        block.addView(ui.label(context.getString(R.string.chart_alert_eyebrow)))
-        block.addView(ui.vgap(ui.dimens.s))
+        block.addView(ui.sectionHeader(context.getString(R.string.chart_alert_eyebrow)))
+        block.addView(ui.vgap(ui.dimens.lineGap))
 
         val figure = ui.row().apply { gravity = Gravity.BOTTOM }
         figure.addView(ui.timer(context.getString(R.string.stat_minutes, remainingMinutes)))
         figure.addView(
-            ui.label(context.getString(R.string.stat_min_left)).apply {
+            ui.tag(context.getString(R.string.stat_min_left)).apply {
                 setPadding(ui.dimens.m, 0, 0, ui.dimens.l)
             }
         )
         block.addView(figure)
 
-        block.addView(ui.vgap(ui.dimens.s))
+        block.addView(ui.vgap(ui.dimens.lineGap))
         block.addView(ui.timeBar(remainingMinutes, limitMinutes))
 
-        block.addView(ui.vgap(ui.dimens.xl))
+        block.addView(ui.vgap(ui.dimens.groupGap))
         block.addView(
             ui.headline(
                 context.getString(AliveStates.alertHeadline(remainingMinutes), remainingMinutes)
             )
         )
 
-        block.addView(ui.vgap(ui.dimens.s))
-        block.addView(ui.bodySecondary(context.getString(R.string.alert_support)))
+        block.addView(ui.vgap(ui.dimens.lineGap))
+        block.addView(ui.note(context.getString(R.string.alert_support)))
 
-        block.addView(ui.vgap(ui.dimens.l))
-        block.addView(ui.accents(seed = 4, count = 3))
+        block.addView(ui.vgap(ui.dimens.groupGap))
+        block.addView(ui.accents(seed = 6))
 
-        block.addView(ui.vgap(ui.dimens.m))
+        block.addView(ui.vgap(ui.dimens.lineGap))
         block.addView(
             ui.quiet(context.getString(R.string.action_back)).apply {
                 layoutParams = LinearLayout.LayoutParams(

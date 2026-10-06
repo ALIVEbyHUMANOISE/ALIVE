@@ -1,8 +1,10 @@
 package com.projectego.app.ui
 
 import android.content.Context
-import android.content.res.ColorStateList
+import android.graphics.Color
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.LayerDrawable
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
@@ -15,6 +17,7 @@ import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.TextView
 import androidx.annotation.ColorInt
+import androidx.annotation.ColorRes
 import androidx.annotation.DrawableRes
 import androidx.annotation.StyleRes
 import androidx.appcompat.widget.AppCompatButton
@@ -22,15 +25,31 @@ import androidx.core.content.ContextCompat
 import com.projectego.app.R
 
 /**
+ * How much a surface weighs - a separate question from what happened.
+ *
+ * `StatusTone` answers "in flight, landed, or closed". This answers "how loudly
+ * should the eye treat this box", and the two must not be collapsed: an app
+ * where every card is the heaviest thing on screen is an app with no hierarchy
+ * at all. A screen gets exactly one MAJOR.
+ */
+enum class SurfaceWeight { MAJOR, MINOR, PLAIN }
+
+/**
  * ALIVE's component vocabulary: neo-brutalist structure, pixel soul.
  *
- * Every surface is a flat rectangle with a thick ink edge and a hard ink
- * shadow offset to the bottom-right. Nothing floats, nothing is blurred,
- * nothing is rounded. Buttons are physical: pressing one collapses its shadow.
+ * A surface is a flat rectangle with an ink edge and a hard ink shadow offset to
+ * the bottom-right. Nothing floats, nothing is blurred, nothing is rounded.
+ * Buttons are physical: pressing one collapses its shadow.
  *
- * Not everything is a block. Most of the screen is type on paper, and the
- * blocks are reserved for the one thing that is in flight and the one thing
- * that has landed - if everything had a border, nothing would.
+ * Weight is rationed on purpose. Most of a screen is type on canvas, one card is
+ * MAJOR, the rest are MINOR, and prose that has nothing in flight gets PLAIN -
+ * if everything had a border, nothing would.
+ *
+ * Rhythm is equally rationed, and the numbers live in res/values/dimens.xml:
+ * cards are separated by air (`cardGap`), contents inside a card by a rule
+ * (`groupGap` / `lineGap`), rows of one list by a hairline. Nothing inside a
+ * card is `cardGap` or more apart; if two things want that much air they are two
+ * cards.
  */
 class AliveComponents(private val context: Context) {
 
@@ -51,39 +70,41 @@ class AliveComponents(private val context: Context) {
     fun headline(value: CharSequence): TextView =
         text(R.style.TextAppearance_ALIVE_Headline, value)
 
-    fun statement(value: CharSequence): TextView =
-        text(R.style.TextAppearance_ALIVE_Statement, value)
+    /** Row titles and in-flight statements: one step, not two that looked alike. */
+    fun lead(value: CharSequence): TextView =
+        text(R.style.TextAppearance_ALIVE_Lead, value)
 
     fun sectionHeader(value: CharSequence): TextView =
         text(R.style.TextAppearance_ALIVE_SectionHeader, value)
 
+    /** Main prose. Ink, because it is the thing being read. */
     fun body(value: CharSequence): TextView =
         text(R.style.TextAppearance_ALIVE_Body, value)
 
-    fun bodySecondary(value: CharSequence): TextView =
-        text(R.style.TextAppearance_ALIVE_BodySecondary, value)
+    /** Support lines and disclosures: same size as body, one step quieter. */
+    fun note(value: CharSequence): TextView =
+        text(R.style.TextAppearance_ALIVE_Note, value)
 
-    fun questRowTitle(value: CharSequence): TextView =
-        text(R.style.TextAppearance_ALIVE_QuestRowTitle, value)
-
-    /** Small uppercase monospace tag: YOUR TIME, TIME BANK, +20 MIN. */
-    fun label(value: CharSequence): TextView =
+    /**
+     * A tag: numbers with a unit, a weekday, `+20 MIN`. Pixel caps at 10sp.
+     *
+     * Ten glyphs is the limit, and it is not a stylistic preference - below that
+     * size this face stops being readable text, which is what happened when it
+     * carried 32-to-96-character sentences and the bottom navigation.
+     */
+    fun tag(value: CharSequence): TextView =
         text(R.style.TextAppearance_ALIVE_Label, value)
 
-    /** The big number. Monospace so digits hold their columns. */
+    /** The big number. One per screen at most. */
     fun timer(value: CharSequence): TextView =
         text(R.style.TextAppearance_ALIVE_Timer, value)
 
-    fun timerSmall(value: CharSequence): TextView =
-        text(R.style.TextAppearance_ALIVE_TimerSmall, value)
+    /** A ledger number: the same terminal face, one step down. */
+    fun number(value: CharSequence): TextView =
+        text(R.style.TextAppearance_ALIVE_Number, value)
 
     fun annotation(value: CharSequence): TextView =
         text(R.style.TextAppearance_ALIVE_Annotation, value)
-
-    fun quietText(value: CharSequence): TextView =
-        text(R.style.TextAppearance_ALIVE_Body, value).apply {
-            setTextColor(palette.inkMuted)
-        }
 
     // ---------- STRUCTURE ----------
 
@@ -117,73 +138,154 @@ class AliveComponents(private val context: Context) {
         layoutParams = LinearLayout.LayoutParams(widthPx, ViewGroup.LayoutParams.MATCH_PARENT)
     }
 
-    /** The thinnest ink rule, for inside a block rather than between them. */
-    fun hairline(): View = View(context).apply {
-        layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dimens.borderThin)
-        setBackgroundColor(palette.inkHairline)
+    /**
+     * A column that keeps exactly [gapPx] of air between its children.
+     *
+     * Gaps remembered by hand are gaps that get forgotten, and a card body that
+     * is once in a while flush looks like a mistake rather than a choice. The
+     * spacer goes before every child after the first, so a stack never ends with
+     * trailing space.
+     */
+    class Stack(context: Context, private val gapPx: Int) : LinearLayout(context) {
+
+        init {
+            orientation = VERTICAL
+            layoutParams = LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        override fun addView(child: View) {
+            addGap()
+            super.addView(child)
+        }
+
+        override fun addView(child: View, params: ViewGroup.LayoutParams) {
+            addGap()
+            super.addView(child, params)
+        }
+
+        private fun addGap() {
+            if (childCount > 0 && gapPx > 0) {
+                super.addView(
+                    View(context).apply {
+                        layoutParams = LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, gapPx)
+                    }
+                )
+            }
+        }
     }
 
-    /**
-     * A hard rule with a square at its head: the pixel equivalent of a section
-     * break, and the only divider used between major blocks.
-     */
-    fun separator(): View = row().apply {
-        addView(
-            View(context).apply {
-                layoutParams = LinearLayout.LayoutParams(dimens.l, dimens.l)
-                setBackgroundColor(palette.ink)
-            }
-        )
-        addView(
-            View(context).apply {
-                layoutParams = LinearLayout.LayoutParams(0, dimens.borderThin, 1f).apply {
-                    marginStart = dimens.s
-                }
-                setBackgroundColor(palette.ink)
-            }
-        )
+    /** A column with a fixed gap. Use this for anything that holds more than one thing. */
+    fun stack(gapPx: Int): Stack = Stack(context, gapPx)
+
+    /** The thinnest ink rule, for between the rows of one list. */
+    fun rowRule(): View = View(context).apply {
+        layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dimens.borderThin)
+        setBackgroundColor(palette.inkHairline)
     }
 
     // ---------- SURFACES ----------
 
     /**
-     * A block whose dress comes from its tone. Padding reserves room for the
-     * offset shadow so text never lands on it.
+     * What a surface looks like, decided by two independent questions: how heavy
+     * (`weight`) and what happened (`tone`).
      *
-     * No block uses a dark fill: white-on-forest would force every child
-     * TextView to be recoloured, and the calm reading order would go with it.
-     * Weight here comes from the edge and the shadow.
+     * Composed in code rather than in XML because the matrix would otherwise be
+     * twelve drawables, each a copy of the next with two numbers changed - and a
+     * drawable cannot express the rule that a closed door never wins the weight
+     * contest, which is the whole reason QUIET overrides the shadow here.
+     *
+     * No face is dark: white-on-forest would force every child TextView to be
+     * recoloured, and the calm reading order would go with it. Weight comes from
+     * the edge and the shadow, never from an inverted fill.
      */
-    fun block(tone: StatusTone): LinearLayout = column().apply {
-        setPadding(dimens.xl, dimens.xl, dimens.xl, dimens.xl)
-        when (tone) {
-            // Something is in flight: the heaviest edge on the screen.
-            StatusTone.HELD -> setBackgroundResource(R.drawable.bg_brutal_block)
-            // Something has landed.
-            StatusTone.LANDED -> setBackgroundResource(R.drawable.bg_brutal_block_soft)
-            // A closed door: a hairline and no shadow, so it competes with nothing.
-            StatusTone.QUIET -> setBackgroundResource(R.drawable.bg_brutal_quiet)
-            // Ordinary content sits straight on the canvas, grid and all.
-            StatusTone.NEUTRAL -> setBackgroundColor(android.graphics.Color.TRANSPARENT)
+    private class Surface(val edge: Int, val shadow: Int, @ColorInt val face: Int?)
+
+    private fun surfaceFor(weight: SurfaceWeight, tone: StatusTone): Surface = when {
+        // Ordinary content sits straight on the canvas - no edge, no shadow, and
+        // no hidden padding either.
+        tone == StatusTone.NEUTRAL || weight == SurfaceWeight.PLAIN -> Surface(0, 0, null)
+
+        // A closed door: a hairline and no shadow, whatever weight asked for.
+        tone == StatusTone.QUIET -> Surface(dimens.borderThin, 0, Color.TRANSPARENT)
+
+        else -> Surface(
+            edge = if (weight == SurfaceWeight.MAJOR) dimens.borderBold else dimens.borderButton,
+            shadow = if (weight == SurfaceWeight.MAJOR) dimens.shadow else dimens.shadowMinor,
+            face = if (tone == StatusTone.LANDED) palette.softForest else palette.white
+        )
+    }
+
+    private fun drawableFor(surface: Surface): Drawable? {
+        val face = surface.face ?: return null
+        val ink = GradientDrawable().apply { setColor(palette.ink) }
+        val top = GradientDrawable().apply {
+            setColor(face)
+            setStroke(surface.edge, palette.ink)
+        }
+        // The face covers the ink layer everywhere but bottom-right, which is
+        // what leaves a hard shadow rather than a blurred one.
+        return LayerDrawable(arrayOf(ink, top)).apply {
+            setLayerInset(1, 0, 0, surface.shadow, surface.shadow)
         }
     }
 
     /**
-     * A bento card: ALIVE's heaviest surface, with its name ruled off from the
-     * contents the way a section header rules off a section.
+     * A block whose dress comes from its weight and its tone.
      *
-     * The caller gets the card with its title already in place and adds the
-     * chart, the legend, or whatever else the card is about.
+     * Padding is measured from the face, not from the view's bounds: the right
+     * and bottom carry the shadow's width as well, so the interior is optically
+     * square and no glyph ever sits on a shadow.
      */
-    fun bentoCard(title: CharSequence): LinearLayout = block(StatusTone.HELD).apply {
+    fun block(
+        weight: SurfaceWeight = SurfaceWeight.MINOR,
+        tone: StatusTone = StatusTone.HELD
+    ): LinearLayout {
+        val surface = surfaceFor(weight, tone)
+        return column().apply {
+            background = drawableFor(surface)
+            val inset = dimens.cardInset
+            setPadding(
+                surface.edge + inset,
+                surface.edge + inset,
+                surface.edge + surface.shadow + inset,
+                surface.edge + surface.shadow + inset
+            )
+        }
+    }
+
+    /**
+     * A framed notice: a MAJOR edge with a hairline ruled inside it.
+     *
+     * Only for the one moment ALIVE raises without being invited. Every other
+     * card on every other screen is a single edge, which is what makes this one
+     * read as "raised" without a colour, a sound, or a movement.
+     */
+    fun notice(): LinearLayout = block(SurfaceWeight.MAJOR).apply {
+        setBackgroundResource(R.drawable.bg_brutal_notice)
+    }
+
+    /**
+     * A named card: its title ruled off from its contents.
+     *
+     * MINOR by default, on purpose. A screen earns one MAJOR and everything else
+     * that wanted a border gets a thinner edge and a smaller shadow - still
+     * unmistakably a box, no longer competing for the top of the pile.
+     */
+    fun bentoCard(
+        title: CharSequence,
+        weight: SurfaceWeight = SurfaceWeight.MINOR,
+        tone: StatusTone = StatusTone.HELD
+    ): LinearLayout = block(weight, tone).apply {
         addView(cardTitle(title))
-        addView(vgap(dimens.l))
     }
 
     /** Uppercase, extra bold, thick ink rule underneath: a card's name. */
     fun cardTitle(value: CharSequence): LinearLayout = column().apply {
         addView(sectionHeader(value))
-        addView(vgap(dimens.s))
+        addView(vgap(dimens.lineGap))
         addView(
             View(context).apply {
                 layoutParams = LinearLayout.LayoutParams(
@@ -212,10 +314,12 @@ class AliveComponents(private val context: Context) {
      * tracking" before any sentence has to.
      */
     fun statTile(name: CharSequence, value: CharSequence): LinearLayout = column().apply {
-        setPadding(dimens.m, dimens.m, dimens.m, dimens.m)
-        addView(label(name))
-        addView(vgap(dimens.xs))
-        addView(timerSmall(value))
+        // ledgerInset + the card's cardInset equals the page gutter, so a tile's
+        // number lines up with the page edge instead of overhanging it.
+        setPadding(dimens.ledgerInset, dimens.ledgerInset, dimens.ledgerInset, dimens.ledgerInset)
+        addView(sectionHeader(name))
+        addView(vgap(dimens.pairGap))
+        addView(number(value))
     }
 
     /** A thick ink rule: the horizontal half of a table's cross. */
@@ -360,15 +464,18 @@ class AliveComponents(private val context: Context) {
      * Buttons are plain AppCompat buttons over hard-shadow drawables.
      * MaterialButton is deliberately not used: its shape drawable would fight
      * the offset shadow and soften the edge.
+     *
+     * Text colour arrives as a state list, not a colour, so a disabled button
+     * cannot be left wearing the white it uses when it is live.
      */
     private fun button(
         value: CharSequence,
         @DrawableRes background: Int,
-        @ColorInt textColor: Int
+        @ColorRes textColor: Int
     ): AppCompatButton = AppCompatButton(context).apply {
         text = value
         setTextAppearance(R.style.TextAppearance_ALIVE_Button)
-        setTextColor(textColor)
+        setTextColor(ContextCompat.getColorStateList(context, textColor))
         setBackgroundResource(background)
         stateListAnimator = null
         gravity = Gravity.CENTER
@@ -379,15 +486,15 @@ class AliveComponents(private val context: Context) {
 
     /** Forest fill. One per screen at most. */
     fun primary(value: CharSequence): AppCompatButton =
-        button(value, R.drawable.bg_brutal_button_primary, palette.white)
+        button(value, R.drawable.bg_brutal_button_primary, R.color.text_on_primary)
 
     /** Paper fill with an ink edge. */
     fun secondary(value: CharSequence): AppCompatButton =
-        button(value, R.drawable.bg_brutal_button_secondary, palette.ink)
+        button(value, R.drawable.bg_brutal_button_secondary, R.color.text_on_secondary)
 
     /** Flat until touched. */
     fun quiet(value: CharSequence): AppCompatButton =
-        button(value, R.drawable.bg_brutal_button_quiet, palette.inkSecondary)
+        button(value, R.drawable.bg_brutal_button_quiet, R.color.text_on_secondary)
 
     /**
      * The way out of a panel: an ink edge, a pixel arrow and the word.
@@ -413,7 +520,9 @@ class AliveComponents(private val context: Context) {
     fun option(value: CharSequence): RadioButton = RadioButton(context).apply {
         setTextAppearance(R.style.TextAppearance_ALIVE_Option)
         text = value
-        buttonTintList = ColorStateList.valueOf(palette.ink)
+        // No buttonTintList here: the theme's forest tint is what makes a
+        // selected radio agree with the selected nav block and the primary CTA,
+        // and overriding it locally is how the three stopped matching.
         gravity = Gravity.CENTER_VERTICAL
         minHeight = dimens.touchMin
         setPadding(dimens.xs, 0, 0, 0)
@@ -430,12 +539,6 @@ class AliveComponents(private val context: Context) {
         setPadding(dimens.l, dimens.m, dimens.l, dimens.m)
     }
 
-    /** A disabled action loses its edge as well as its colour. */
-    fun disabled(button: AppCompatButton): AppCompatButton = button.apply {
-        isEnabled = false
-        setTextColor(palette.inkDisabled)
-    }
-
     // ---------- ACCENTS ----------
 
     private val accentShapes = intArrayOf(
@@ -448,22 +551,22 @@ class AliveComponents(private val context: Context) {
     )
 
     /**
-     * A short run of scattered pixel shapes - an invader, a star, a diamond.
+     * A short run of pixel shapes - an invader, a star, a diamond.
      *
-     * Deterministic per seed on purpose: a section always shows the same
-     * shapes, so the screen does not reshuffle every time it re-renders. Two or
-     * three per section at most, because pixel debris on every component stops
-     * being an accent and becomes noise.
+     * One row per screen, three shapes, fixed spacing, and a seed chosen per
+     * screen so the same corner always shows the same shapes. The count and the
+     * margins used to be derived from the seed, which made the debris look
+     * sprinkled rather than placed: pixel scatter on every component stops being
+     * an accent and becomes noise.
      */
-    fun accents(seed: Int, count: Int = 3, sizePx: Int = dimens.l): View = row().apply {
-        for (i in 0 until count) {
-            val shape = accentShapes[(seed * 7 + i * 5) % accentShapes.size]
+    fun accents(seed: Int, sizePx: Int = dimens.l): View = row().apply {
+        for (i in 0 until ACCENT_COUNT) {
             addView(
                 ImageView(context).apply {
                     layoutParams = LinearLayout.LayoutParams(sizePx, sizePx).apply {
-                        marginEnd = dimens.m + (seed + i) % 3 * dimens.xs
+                        marginEnd = if (i == ACCENT_COUNT - 1) 0 else dimens.lineGap
                     }
-                    setImageResource(shape)
+                    setImageResource(accentShapes[(seed * 7 + i * 5) % accentShapes.size])
                     contentDescription = null
                 }
             )
@@ -477,17 +580,20 @@ class AliveComponents(private val context: Context) {
     fun emptyState(heading: CharSequence, line: CharSequence, secondLine: CharSequence): LinearLayout =
         column().apply {
             addView(pose(R.drawable.ic_alive_character, dimens.characterLarge, context.getString(R.string.pose_unaware_note)))
-            addView(vgap(dimens.l))
+            addView(vgap(dimens.groupGap))
             addView(headline(heading))
-            addView(vgap(dimens.s))
-            addView(bodySecondary(line))
-            addView(vgap(dimens.xs))
+            addView(vgap(dimens.lineGap))
+            addView(note(line))
+            addView(vgap(dimens.pairGap))
             addView(annotation(secondLine))
         }
 
     private companion object {
         /** The sprites are drawn on a 16x16 grid, so one cell is the smallest honest step. */
         const val SPRITE_GRID = 16f
+
+        /** Three shapes, on one row, on one screen. Not a per-section decoration. */
+        const val ACCENT_COUNT = 3
 
         const val BOB_UP_MILLIS = 240L
         const val BOB_DOWN_MILLIS = 1_500L

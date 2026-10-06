@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A framed notice: a MAJOR edge with a hairline set 4dp inside it, the way a
+     printed notice is double-ruled. Reserved for the one moment ALIVE raises
+     without being asked - the cross-app critical note - so that card cannot read
+     as an ordinary Home card. No new hue, no motion, no red.
+
+     The inner rule's insets are the arithmetic of the two layers above it:
+     3dp edge + 4dp gap on the left and top, and the 4dp shadow again on the
+     right and bottom, so the hairline sits the same distance from the face on
+     all four sides. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/alive_ink" />
+        </shape>
+    </item>
+    <item
+        android:right="@dimen/shadow_offset"
+        android:bottom="@dimen/shadow_offset">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/alive_white" />
+            <stroke
+                android:width="@dimen/border_bold"
+                android:color="@color/alive_ink" />
+        </shape>
+    </item>
+    <item
+        android:left="7dp"
+        android:top="7dp"
+        android:right="11dp"
+        android:bottom="11dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" />
+            <stroke
+                android:width="@dimen/border_hairline"
+                android:color="@color/alive_ink_hairline" />
+        </shape>
+    </item>
+</layer-list>
