@@ -31,7 +31,12 @@ import kotlin.math.sin
  */
 class BrutalistDonut(context: Context) : View(context) {
 
-    data class Slice(val label: String, val minutes: Long, val color: Int)
+    /**
+     * One slice. [hatched] marks the aggregate - the minutes that belong to apps
+     * past the fourth - so it is distinguishable as a shape and not only as a
+     * colour nobody can name.
+     */
+    data class Slice(val label: String, val minutes: Long, val color: Int, val hatched: Boolean = false)
 
     /** The tapped slice's index, or -1 when the tap cleared the selection. */
     var onSliceTapped: ((Int) -> Unit)? = null
@@ -51,6 +56,11 @@ class BrutalistDonut(context: Context) : View(context) {
     private val holeEdge = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = dimens.borderBold.toFloat()
+        color = palette.ink
+    }
+    private val hatchPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = dp(1.5f)
         color = palette.ink
     }
     private val numberPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -143,6 +153,14 @@ class BrutalistDonut(context: Context) : View(context) {
             path.close()
             canvas.drawPath(path, face)
             canvas.drawPath(path, edge)
+            if (slice.hatched) {
+                // Clipped to the slice, so the hatch belongs to that wedge and
+                // not to the ring: "not one app, the rest of them".
+                canvas.save()
+                canvas.clipPath(path)
+                drawHatch(canvas, bounds)
+                canvas.restore()
+            }
 
             startAngle += sweep
         }
@@ -150,6 +168,15 @@ class BrutalistDonut(context: Context) : View(context) {
         face.alpha = FULL_ALPHA
         edge.alpha = FULL_ALPHA
         drawCentre(canvas, centreX, centreY, inner)
+    }
+
+    private fun drawHatch(canvas: Canvas, area: RectF) {
+        val step = dp(7f)
+        var x = area.left - area.height()
+        while (x < area.right) {
+            canvas.drawLine(x, area.bottom, x + area.height(), area.top, hatchPaint)
+            x += step
+        }
     }
 
     private fun drawEmptyRing(canvas: Canvas, centreX: Float, centreY: Float, outer: Float, inner: Float) {

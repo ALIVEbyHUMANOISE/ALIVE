@@ -338,24 +338,37 @@ class AliveComponents(private val context: Context) {
      * The remaining-time bar: whole blocks for what is left, hollow blocks for
      * what is spent. Segmented rather than smooth, so it reads as counted
      * minutes and not as a gauge.
+     *
+     * [fill] is the interior of a live block. It defaults to forest because a
+     * full allowance is ALIVE's own thing; the caller passes red when the time
+     * left is thin, which is the same fact the number already states - the
+     * colour never carries it alone.
      */
-    fun timeBar(remaining: Long, limit: Long, segments: Int = 10): LinearLayout = row().apply {
+    fun timeBar(
+        remaining: Long,
+        limit: Long,
+        segments: Int = 10,
+        @ColorInt fill: Int = palette.forest
+    ): LinearLayout = row().apply {
         if (limit <= 0) return@apply
         val filled = ((remaining.toFloat() / limit.toFloat()) * segments)
             .roundToIntClamped(segments)
         for (index in 0 until segments) {
             addView(
-                ImageView(context).apply {
+                View(context).apply {
                     layoutParams = LinearLayout.LayoutParams(dimens.stepWidth, dimens.stepHeight).apply {
                         marginEnd = if (index == segments - 1) 0 else dimens.stepGap
                     }
-                    setImageResource(
-                        if (index < filled) R.drawable.alive_step_full else R.drawable.alive_step_empty
-                    )
-                    contentDescription = null
+                    background = step(if (index < filled) fill else palette.white)
                 }
             )
         }
+    }
+
+    /** One block of a meter: a face with an ink edge, drawn so the edge stays ink. */
+    private fun step(@ColorInt face: Int): GradientDrawable = GradientDrawable().apply {
+        setColor(face)
+        setStroke(dimens.borderButton, palette.ink)
     }
 
     private fun Float.roundToIntClamped(max: Int): Int =

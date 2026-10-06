@@ -270,6 +270,7 @@
     <string name="cd_focus_mark">Pixel mark: %1$s focus.</string>
     <string name="chart_apps_heading">Today, by app</string>
     <string name="chart_labels_note">ALIVE only gets the names the device is willing to give it. Some show as part of their package name.</string>
+    <string name="chart_apps_folded">%1$d smaller ones</string>
     <string name="chart_total_minutes">%1$d min across the days ALIVE saw</string>
     <string name="chart_days_recorded">%1$d of %2$d days recorded</string>
     <string name="chart_none">ALIVE hasn\'t recorded a day yet.</string>

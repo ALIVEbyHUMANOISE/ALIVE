@@ -50,10 +50,9 @@ class BrutalistBarChart(context: Context) : View(context) {
         strokeWidth = dimens.borderButton.toFloat()
         color = palette.ink
     }
-    private val seam = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE
-        strokeWidth = dp(1f)
-        color = palette.paper
+    private val band = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = palette.workPale
     }
     private val hatchPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
@@ -133,7 +132,17 @@ class BrutalistBarChart(context: Context) : View(context) {
 
         columns.forEachIndexed { index, column ->
             val centre = left + slot * index + slot / 2f
-            drawColumn(canvas, column, centre, barWidth, top, baseline, plotHeight, index == selected)
+            if (index == selected) {
+                // The selection is a band across the whole slot rather than a
+                // hairline around the bar: at month width a bar is 4dp and an
+                // inset outline on it is invisible, while a band is legible at
+                // any width and cannot overflow its own column.
+                shape.set(centre - slot / 2f, top, centre + slot / 2f, baseline)
+                canvas.drawRect(shape, band)
+                canvas.drawLine(shape.left, top, shape.left, baseline, edge)
+                canvas.drawLine(shape.right, top, shape.right, baseline, edge)
+            }
+            drawColumn(canvas, column, centre, barWidth, top, baseline, plotHeight)
             labelPaint.color = if (index == selected) palette.ink else palette.inkSecondary
             if (column.label.isNotEmpty()) {
                 canvas.drawText(column.label, centre, baseline + dimens.s - labelMetrics.ascent, labelPaint)
@@ -152,8 +161,7 @@ class BrutalistBarChart(context: Context) : View(context) {
         barWidth: Float,
         top: Float,
         baseline: Float,
-        plotHeight: Float,
-        isSelected: Boolean
+        plotHeight: Float
     ) {
         val half = barWidth / 2f
         val stubHeight = dp(9f)
@@ -193,16 +201,16 @@ class BrutalistBarChart(context: Context) : View(context) {
                 val height = max(column.fraction * plotHeight, dp(3f))
                 shape.set(centre - half, baseline - height, centre + half, baseline)
                 val full = column.kind == DayBarKind.FULL
-                face.color = if (full) palette.ink else palette.forest
+                // Soft forest, not forest: forest means "ALIVE is offering a
+                // choice", and a bar of minutes used is not a choice the app
+                // made. A day that used its whole allowance goes to solid ink,
+                // which is the darkest thing in the chart and needs no legend.
+                face.color = if (full) palette.ink else palette.softForest
                 canvas.drawRect(shape, face)
                 if (barWidth >= dp(11f)) {
                     texture(canvas, shape, if (full) dotPaper else dotInk)
                 }
                 canvas.drawRect(shape, edge)
-                if (isSelected) {
-                    shape.inset(seam.strokeWidth, seam.strokeWidth)
-                    canvas.drawRect(shape, seam)
-                }
             }
         }
     }

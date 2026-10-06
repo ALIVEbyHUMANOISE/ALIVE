@@ -33,6 +33,17 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
+    testOptions {
+        unitTests {
+            // Needed for one thing: a test that reads the actual colour
+            // resources and measures their contrast. Without it, Robolectric
+            // resolves no app resource at all and the palette rules can only be
+            // checked by eye - which is how a gold that fails 4.5:1 on warm gray
+            // nearly shipped.
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 dependencies {

@@ -7,9 +7,14 @@ import com.projectego.app.R
 /**
  * Every color ALIVE draws with, resolved from res/values/colors.xml.
  *
- * The palette is six colors (Constitution sec.07). A missing tone is added as
- * the ink hue with alpha, never as a new color - so `inkSecondary`, `inkMuted`
- * and `inkHairline` are all still ink.
+ * The palette is the constitution's six, plus three role hues added for the game
+ * layer (Constitution sec.07). The additions are not decoration: gold is reward,
+ * red is time running out, blue is the work itself, and each one replaces a
+ * meaning that previously had no colour at all - which is what made nine shades
+ * of cream read as flat.
+ *
+ * A missing tone is added as the ink hue with alpha, never as a new color - so
+ * `inkSecondary`, `inkMuted` and `inkHairline` are all still ink.
  *
  * `warmGray` is a surface color only. At #D8D2C7 on paper it sits around 1.2:1
  * contrast and must never be used for text.
@@ -33,14 +38,26 @@ class AlivePalette(context: Context) {
     val forestSoft = color(R.color.alive_forest_soft)
 
     /**
-     * Fills the charts cycle through, in order.
+     * Three game roles, each with one job. Read the role, not the colour: if a
+     * call site wants gold for something that is not a reward, it is using the
+     * wrong token.
      *
-     * Six colors and no more, which is why the slices are separated by a thick
-     * ink edge rather than by hue alone: a light fill next to a light fill still
-     * reads as two slices, and every one of them is named in the legend beside
-     * it.
+     * `*_dark` carries text or draws an edge and is measured to clear 4.5:1 on
+     * every ground (see `AlivePaletteTest`). `*_mid` is a fill only and never
+     * carries text - white on gold mid is 2.2:1. `*_pale` is a surface to read
+     * ink on.
      */
-    val chartSeries = listOf(forest, warmGray, softForest, ink, paper, white)
+    val rewardDark = color(R.color.alive_gold_reward_dark)
+    val rewardMid = color(R.color.alive_gold_reward_mid)
+    val rewardPale = color(R.color.alive_gold_reward_pale)
+
+    val shortDark = color(R.color.alive_red_short_dark)
+    val shortMid = color(R.color.alive_red_short_mid)
+    val shortPale = color(R.color.alive_red_short_pale)
+
+    val workDark = color(R.color.alive_blue_work_dark)
+    val workMid = color(R.color.alive_blue_work_mid)
+    val workPale = color(R.color.alive_blue_work_pale)
 
     private fun color(id: Int): Int = ContextCompat.getColor(appContext, id)
 }

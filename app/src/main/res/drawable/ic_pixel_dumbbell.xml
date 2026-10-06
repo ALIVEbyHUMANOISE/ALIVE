@@ -9,7 +9,7 @@
         android:fillColor="@color/alive_ink"
         android:pathData="M3,5h2v6h-2zM11,5h2v6h-2zM5,7h6v2h-6z" />
     <path
-        android:fillColor="@color/alive_forest"
+        android:fillColor="@color/alive_red_short_mid"
         android:pathData="M2,6h1v4h-1zM13,6h1v4h-1z" />
     <path
         android:fillColor="@color/alive_white"

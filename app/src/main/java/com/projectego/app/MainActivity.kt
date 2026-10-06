@@ -19,12 +19,14 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
+import androidx.core.content.ContextCompat
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.projectego.app.data.FocusSessionManager
 import com.projectego.app.data.LockStateManager
 import com.projectego.app.data.QuestRepository
 import com.projectego.app.data.TimeBankRepository
 import com.projectego.app.data.UsageHistoryRepository
+import com.projectego.app.domain.CriticalAlertPolicy
 import com.projectego.app.domain.FocusAppPolicy
 import com.projectego.app.domain.QuestStartCoordinator
 import com.projectego.app.domain.QuestVerificationCoordinator
@@ -46,6 +48,7 @@ import com.projectego.app.ui.AliveRenderState
 import com.projectego.app.ui.AliveSignals
 import com.projectego.app.ui.AliveStage
 import com.projectego.app.ui.AliveStates
+import com.projectego.app.ui.AliveSeries
 import com.projectego.app.ui.AppLabels
 import com.projectego.app.ui.BrutalistBarChart
 import com.projectego.app.ui.BrutalistDonut
@@ -617,7 +620,20 @@ class MainActivity : AppCompatActivity() {
             )
             card.addView(timeLine)
             card.addView(ui.vgap(ui.dimens.lineGap))
-            card.addView(ui.timeBar(report.remainingMinutes, report.limitMinutes))
+            // The same fact the number states, in a second channel: red appears
+            // exactly where the critical note would, because it is the same
+            // threshold - not a new one invented for the picture.
+            card.addView(
+                ui.timeBar(
+                    report.remainingMinutes,
+                    report.limitMinutes,
+                    fill = if (report.remainingMinutes in 1..CriticalAlertPolicy.REMAINING_WINDOW_MINUTES) {
+                        ui.palette.shortMid
+                    } else {
+                        ui.palette.forest
+                    }
+                )
+            )
         } else {
             // Closed, or a recovery day: a statement, not a number, and the
             // figure walking toward something else.
@@ -1178,7 +1194,13 @@ class MainActivity : AppCompatActivity() {
         val meta = ui.row()
         meta.addView(ui.tag(getString(R.string.unit_minutes, quest.estimatedDurationMinutes)))
         meta.addView(ui.hgap(ui.dimens.m))
-        meta.addView(ui.tag(getString(R.string.unit_minutes_gain, quest.rewardMinutes)))
+        // Gold means one thing in ALIVE: time you earned. Dark gold, because it
+        // has to stay readable as text at 10sp.
+        meta.addView(
+            ui.tag(getString(R.string.unit_minutes_gain, quest.rewardMinutes)).apply {
+                setTextColor(ui.palette.rewardDark)
+            }
+        )
         info.addView(meta)
 
         if (!verifiable) {
@@ -1521,16 +1543,44 @@ class MainActivity : AppCompatActivity() {
      *
      * Null when the device reported no entertainment apps, because a card that
      * says "today, by app" with nothing in it is a card that should not exist.
+     *
+     * The number in the middle of the ring is the day's total, not the sum of
+     * the slices that fit: it used to be measured after the cut-off, so a fifth
+     * app made the ring disagree with the `Used` tile on the card above it.
+     * Whatever is left over becomes one hatched slice that says so out loud.
      */
     private fun buildAppCard(): LinearLayout? {
-        val apps = state.entertainmentAppDetails
-            .filter { it.second > 0L }
-            .take(MAX_CHART_APPS)
-        if (apps.isEmpty()) return null
+        val recorded = state.entertainmentAppDetails.filter { it.second > 0L }
+        if (recorded.isEmpty()) return null
 
-        val total = apps.sumOf { it.second }
-        val series = ui.palette.chartSeries
+        val total = recorded.sumOf { it.second }
+        val shown = recorded.take(AliveSeries.MAX_SLICES)
+        val foldedCount = recorded.size - shown.size
+        val foldedMinutes = total - shown.sumOf { it.second }
+
+        val series = AliveSeries.donut.map { ContextCompat.getColor(this, it) }
+        val aggregateColor = ContextCompat.getColor(this, AliveSeries.aggregate)
         val card = ui.bentoCard(getString(R.string.chart_apps_heading))
+
+        val slices = shown.mapIndexed { index, entry ->
+            BrutalistDonut.Slice(
+                label = AppLabels.labelFor(this, entry.first),
+                minutes = entry.second,
+                color = series[index],
+                hatched = false
+            )
+        } + if (foldedMinutes > 0L) {
+            listOf(
+                BrutalistDonut.Slice(
+                    label = getString(R.string.chart_apps_folded, foldedCount),
+                    minutes = foldedMinutes,
+                    color = aggregateColor,
+                    hatched = true
+                )
+            )
+        } else {
+            emptyList()
+        }
 
         val donut = BrutalistDonut(this).apply {
             layoutParams = LinearLayout.LayoutParams(
@@ -1539,30 +1589,28 @@ class MainActivity : AppCompatActivity() {
             )
             totalCaption = getString(R.string.chart_total_label)
             contentDescription = getString(R.string.cd_app_donut)
-            setData(
-                apps.mapIndexed { index, (_, minutes) ->
-                    BrutalistDonut.Slice(
-                        label = AppLabels.labelFor(this@MainActivity, apps[index].first),
-                        minutes = minutes,
-                        color = series[index % series.size]
-                    )
-                },
-                total
-            )
+            setData(slices, total)
         }
         card.addView(donut)
 
         card.addView(ui.vgap(ui.dimens.groupGap))
-        apps.forEachIndexed { index, (packageName, minutes) ->
+        slices.forEachIndexed { index, slice ->
             val row = ui.row().apply {
-                setPadding(0, ui.dimens.s, 0, ui.dimens.s)
+                setPadding(0, ui.dimens.lineGap, 0, ui.dimens.lineGap)
                 // Tapping a name selects its slice, which is the same thing the
                 // ring does when tapped: the two never disagree.
                 setOnClickListener { donut.select(index) }
             }
-            row.addView(ui.swatch(series[index % series.size]))
-            row.addView(ui.weighted(ui.body(AppLabels.labelFor(this, packageName))))
-            row.addView(ui.tag(getString(R.string.unit_minutes, minutes)))
+            row.addView(ui.swatch(slice.color))
+            row.addView(
+                ui.weighted(ui.body(slice.label)).apply {
+                    maxLines = 1
+                    ellipsize = android.text.TextUtils.TruncateAt.END
+                    minimumWidth = 0
+                }
+            )
+            row.addView(ui.hgap(ui.dimens.lineGap))
+            row.addView(ui.tag(getString(R.string.unit_minutes, slice.minutes)))
             card.addView(row)
         }
 
@@ -1881,9 +1929,6 @@ class MainActivity : AppCompatActivity() {
 
 /** Kept clear of the focus form's 100/200 offsets, which are also view ids. */
 private const val CHART_RANGE_ID_BASE = 300
-
-/** More than this and the list stops being readable on one screen. */
-private const val MAX_CHART_APPS = 5
 
 /** Chart heights in dp. A month is shorter: 31 columns need width, not height. */
 private const val CHART_HEIGHT_DAY = 200
