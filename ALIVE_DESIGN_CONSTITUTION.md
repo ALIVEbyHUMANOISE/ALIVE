@@ -461,6 +461,21 @@ whole device cells, because a stretched pixel is not a pixel. Charts wrap into
 balanced rows rather than shrinking past an 18dp slot, labels are printed only
 where they actually fit, and the label floor is 8sp.
 
+### Tiles, and what a choice is allowed to become
+
+A category's mark sits **inside a tile of its own hue** — on the board, on the
+detail page, in the history, and in the focus card. A bare glyph on canvas is a
+decoration; the same glyph inside an edged, shadowed square is an object with a
+name, and that is what a nine-item board gets scanned by.
+
+A choice may be re-dressed as a tile but not re-built as one:
+
+> **A single-choice picker stays a `RadioGroup` of `RadioButton`s.**
+
+`buttonDrawable = null` plus a state-list face is enough. Dropping to clickable
+views is how a picker loses its mutual exclusion, its D-pad, and the word
+"selected" in TalkBack — three things a colour cannot give back.
+
 ---
 
 ## Design Constitution Principle

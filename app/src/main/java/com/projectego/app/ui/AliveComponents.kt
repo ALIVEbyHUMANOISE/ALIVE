@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
+import android.graphics.drawable.StateListDrawable
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
@@ -664,20 +665,45 @@ class AliveComponents(private val context: Context) {
     // ---------- FORM WIDGETS ----------
 
     /**
-     * A radio row. These exist because the form widgets were previously built
-     * bare and only had their colour set, which left them on the platform
-     * default face - the one place the screen then read as someone else's app.
+     * A single-choice tile: the hue it wears once it is the one picked, an
+     * optional pixel mark in front of its name, and no radio circle - the tile is
+     * the control. [glyph] may be 0, which is how the duration and range pickers
+     * get the same object without a mark to draw.
+     *
+     * It stays a [RadioButton] inside the existing [RadioGroup] rather than
+     * becoming a row of clickable views, because that is what makes one choice
+     * exclude the others, what keeps the D-pad working, and what lets TalkBack
+     * say "selected" instead of guessing from a colour. And it is built here
+     * rather than bare at the call site, because a form widget that only gets a
+     * text colour set silently falls back to the platform face - the one place a
+     * screen then reads as someone else's app.
      */
-    fun option(value: CharSequence): RadioButton = RadioButton(context).apply {
-        setTextAppearance(R.style.TextAppearance_ALIVE_Option)
-        text = value
-        // No buttonTintList here: the theme's forest tint is what makes a
-        // selected radio agree with the selected nav block and the primary CTA,
-        // and overriding it locally is how the three stopped matching.
-        gravity = Gravity.CENTER_VERTICAL
-        minHeight = dimens.touchMin
-        setPadding(dimens.xs, 0, 0, 0)
-    }
+    fun tileOption(value: CharSequence, @DrawableRes glyph: Int, @ColorInt hue: Int): RadioButton =
+        RadioButton(context).apply {
+            setTextAppearance(R.style.TextAppearance_ALIVE_Option)
+            text = value
+            buttonDrawable = null
+            gravity = Gravity.CENTER_VERTICAL
+            minHeight = dimens.touchMin
+            setPadding(
+                dimens.l + dimens.borderBold,
+                dimens.m,
+                dimens.l + dimens.borderBold + dimens.shadowMinor,
+                dimens.m + dimens.shadowMinor
+            )
+            val mark = if (glyph == 0) null else ContextCompat.getDrawable(context, glyph)?.apply {
+                setBounds(0, 0, dimens.l, dimens.l)
+            }
+            setCompoundDrawablesRelative(mark, null, null, null)
+            compoundDrawablePadding = if (mark == null) 0 else dimens.m
+            background = StateListDrawable().apply {
+                addState(
+                    intArrayOf(android.R.attr.state_checked),
+                    framed(hue, dimens.borderBold, dimens.shadowMinor, dimens.radiusTile.toFloat())
+                )
+                addState(intArrayOf(), outline(dimens.borderButton, dimens.radiusTile.toFloat(), palette.white))
+            }
+        }
 
     /** The goal field: an ink frame, not a bare line of hint text. */
     fun input(hint: CharSequence): EditText = EditText(context).apply {

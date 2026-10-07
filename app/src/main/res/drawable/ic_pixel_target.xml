@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pixel target: a ring with a block at its centre. Focus is the one thing in
+     ALIVE that is aimed at, so the mark is an aim rather than a clock - the clock
+     already stands for the Time Bank. Same 16 grid, same one-pixel weight. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="@color/alive_ink"
+        android:pathData="M2,2h12v1h-12zM2,13h12v1h-12zM2,3h1v10h-1zM13,3h1v10h-1zM6,6h4v4h-4z" />
+</vector>

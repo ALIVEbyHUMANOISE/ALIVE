@@ -18,6 +18,9 @@ import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.annotation.ColorInt
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
 import androidx.core.content.ContextCompat
@@ -109,6 +112,7 @@ class MainActivity : AppCompatActivity() {
     private val usageHistory by lazy { UsageHistoryRepository(this) }
 
     private var focusSetupAnchor: View? = null
+    private var timeBankAnchor: View? = null
     private var goalInput: EditText? = null
 
     /**
@@ -386,6 +390,9 @@ class MainActivity : AppCompatActivity() {
         val stage = AliveStates.stageOf(signals)
         val header = ui.column()
 
+        header.addView(homeShortcuts())
+        header.addView(ui.vgap(ui.dimens.groupGap))
+
         val line = ui.row()
         line.addView(
             ui.animatedPose(
@@ -422,7 +429,7 @@ class MainActivity : AppCompatActivity() {
                         })
                         // A block cursor, so the wordmark reads as something that
                         // is running rather than a printed title.
-                        addView(ui.caret(ui.dimens.dp(20)))
+                        addView(ui.caret(ui.dimens.caretHeight))
                     }
                 )
                 addView(ui.vgap(ui.dimens.lineGap))
@@ -439,6 +446,50 @@ class MainActivity : AppCompatActivity() {
         // above it would read as a frame around empty paper.
 
         statusContainer.addView(header)
+    }
+
+    /**
+     * The three places on Home worth jumping to, as tiles at the top rather than
+     * as words somewhere further down the scroll.
+     *
+     * The Time Bank especially: it is the thing that pays for an extension, and
+     * while it lived only in a card six screens' worth of scrolling down, most
+     * people never found out it existed.
+     */
+    private fun homeShortcuts(): View = ui.row().apply {
+        gravity = Gravity.END or Gravity.CENTER_VERTICAL
+        addView(
+            shortcutTile(R.drawable.ic_pixel_chart, R.string.cd_shortcut_chart, ui.palette.workPale) {
+                openUsageChartPanel()
+            }
+        )
+        addView(ui.hgap(ui.dimens.lineGap))
+        addView(
+            shortcutTile(R.drawable.ic_time_indicator, R.string.cd_shortcut_bank, ui.palette.rewardPale) {
+                revealTimeBank()
+            }
+        )
+        addView(ui.hgap(ui.dimens.lineGap))
+        addView(
+            shortcutTile(R.drawable.ic_pixel_target, R.string.cd_shortcut_focus, ui.palette.softForest) {
+                revealFocusSetup()
+            }
+        )
+    }
+
+    private fun shortcutTile(
+        @DrawableRes glyph: Int,
+        @StringRes name: Int,
+        @ColorInt hue: Int,
+        onTap: () -> Unit
+    ): View = ui.iconTile(hue, glyph, ui.dimens.touchMin).apply {
+        contentDescription = getString(name)
+        setOnClickListener { onTap() }
+    }
+
+    private fun revealTimeBank() {
+        val anchor = timeBankAnchor ?: return
+        homeScroll.post { homeScroll.smoothScrollTo(0, anchor.top) }
     }
 
     /**
@@ -903,11 +954,11 @@ class MainActivity : AppCompatActivity() {
 
         val head = ui.row()
         head.addView(
-            ui.pose(
-                R.drawable.ic_time_indicator,
-                ui.dimens.character,
-                getString(R.string.cd_time_bank)
-            )
+            // The same gold tile as the shortcut at the top of Home, so the two
+            // read as one thing pointing at the other.
+            ui.iconTile(ui.palette.rewardPale, R.drawable.ic_time_indicator, ui.dimens.character).apply {
+                contentDescription = getString(R.string.cd_time_bank)
+            }
         )
         head.addView(
             ui.column().apply {
@@ -944,6 +995,7 @@ class MainActivity : AppCompatActivity() {
             renderTimeBankUse(card, available)
         }
 
+        timeBankAnchor = card
         statusContainer.addView(card)
     }
 
@@ -1055,15 +1107,25 @@ class MainActivity : AppCompatActivity() {
         val actGroup = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
         activities.forEachIndexed { index, type ->
             actGroup.addView(
-                ui.option(
+                ui.tileOption(
                     getString(
                         R.string.focus_activity_option,
                         activityLabel(type),
                         FocusAppPolicy.getApprovedPackages(type).size
-                    )
+                    ),
+                    PixelMarks.focus(type),
+                    ContextCompat.getColor(this@MainActivity, QuestHues.focus(type))
                 ).apply {
                     id = index + 100
                     isChecked = index == state.selectedActivityIndex
+                    layoutParams = RadioGroup.LayoutParams(
+                        RadioGroup.LayoutParams.MATCH_PARENT,
+                        RadioGroup.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        // Tiles need air between them; a ruled list did not,
+                        // because the rule was the separation.
+                        if (index > 0) topMargin = ui.dimens.pairGap
+                    }
                 }
             )
         }
@@ -1101,12 +1163,14 @@ class MainActivity : AppCompatActivity() {
                 // A bare number, with the unit in the heading: four "60 min"
                 // radios will not fit a 320dp screen, and these four values are
                 // the only ones the engine accepts.
-                ui.option(getString(R.string.focus_duration_value, duration)).apply {
+                ui.tileOption(getString(R.string.focus_duration_value, duration), 0, ui.palette.softForest).apply {
                     id = index + 200
-                    gravity = Gravity.CENTER_HORIZONTAL
+                    gravity = Gravity.CENTER
                     layoutParams = RadioGroup.LayoutParams(
                         0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f
-                    )
+                    ).apply {
+                        if (index > 0) marginStart = ui.dimens.pairGap
+                    }
                     isChecked = index == state.selectedDurationIndex
                 }
             )
@@ -1429,11 +1493,11 @@ class MainActivity : AppCompatActivity() {
      */
     private fun buildFocusSessionInto(column: LinearLayout, session: FocusSession) {
         column.addView(
-            ui.pose(
+            ui.iconTile(
+                ContextCompat.getColor(this, QuestHues.focus(session.activityType)),
                 PixelMarks.focus(session.activityType),
-                ui.dimens.characterLarge,
-                getString(R.string.cd_focus_mark, activityLabel(session.activityType))
-            )
+                ui.dimens.characterLarge
+            ).apply { contentDescription = getString(R.string.cd_focus_mark, activityLabel(session.activityType)) }
         )
         column.addView(ui.vgap(ui.dimens.groupGap))
         column.addView(ui.headline(getString(R.string.focus_active_heading, activityLabel(session.activityType))))
@@ -1511,10 +1575,17 @@ class MainActivity : AppCompatActivity() {
         ranges.forEachIndexed { index, range ->
             switch.addView(
                 // Stacked rather than side by side: "Last 7 days" and "This
-                // month" cannot share a 320dp row with their radio circles.
-                ui.option(getString(UsageChartStates.rangeLabel(range))).apply {
+                // month" cannot share a 320dp row at a readable size. Blue is the
+                // colour of the work of looking, and the selected one wears it.
+                ui.tileOption(getString(UsageChartStates.rangeLabel(range)), 0, ui.palette.workPale).apply {
                     id = CHART_RANGE_ID_BASE + index
                     isChecked = index == state.chartRangeIndex
+                    layoutParams = RadioGroup.LayoutParams(
+                        RadioGroup.LayoutParams.MATCH_PARENT,
+                        RadioGroup.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        if (index > 0) topMargin = ui.dimens.pairGap
+                    }
                 }
             )
         }
@@ -1914,11 +1985,13 @@ class MainActivity : AppCompatActivity() {
                 if (index > 0) card.addView(ui.rowRule())
                 val row = ui.row().apply { setPadding(0, ui.dimens.s, 0, ui.dimens.s) }
                 row.addView(
-                    ui.pose(
+                    // The same tile the quest wears on the board, at the small
+                    // size, so a finished quest is recognisable in its own history.
+                    ui.iconTile(
+                        ContextCompat.getColor(this@MainActivity, QuestHues.quest(quest.category)),
                         PixelMarks.quest(quest.category),
-                        ui.dimens.dp(24),
-                        getString(PixelMarks.description(quest.category))
-                    )
+                        ui.dimens.markSmallSize
+                    ).apply { contentDescription = getString(PixelMarks.description(quest.category)) }
                 )
                 row.addView(ui.hgap(ui.dimens.m))
                 row.addView(

@@ -82,6 +82,11 @@
     <string name="stat_bank_spent">Spent</string>
     <string name="time_bank_explain">Verified quests pay minutes in. Extending a Focus session pays them out.</string>
     <string name="cd_time_bank">Pixel clock: the Time Bank, where reclaimed minutes are kept.</string>
+    <!-- The three Home tiles. Each says what it opens, because a glyph alone is a
+         guess and a wrong guess costs a tap. -->
+    <string name="cd_shortcut_chart">Pixel bars: open the usage chart.</string>
+    <string name="cd_shortcut_bank">Pixel clock: jump to the Time Bank.</string>
+    <string name="cd_shortcut_focus">Pixel target: jump to starting a focus session.</string>
 
     <!-- ============ QUEST BOARD ============ -->
     <string name="quest_heading">Quest</string>
