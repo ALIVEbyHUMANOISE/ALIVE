@@ -1247,7 +1247,10 @@ class MainActivity : AppCompatActivity() {
         val activeQuest = activeQuestId?.let { id -> allQuests.find { it.id == id } }
 
         val header = ui.column()
+        // Two display lines with no gap between them: the leading is already cut
+        // in the type style, so the pair reads as one sentence that wrapped.
         header.addView(ui.display(getString(R.string.quest_heading)))
+        header.addView(ui.display(getString(R.string.quest_heading_second)))
         header.addView(ui.vgap(ui.dimens.lineGap))
         header.addView(ui.annotation(getString(R.string.quest_subhead)))
         header.addView(ui.vgap(ui.dimens.lineGap))
@@ -1287,12 +1290,15 @@ class MainActivity : AppCompatActivity() {
     /** Two cards per row, with the same air between them as between the rows. */
     private fun questGrid(quests: List<Quest>): LinearLayout = ui.stack(ui.dimens.cardGap).apply {
         quests.chunked(QUEST_COLUMNS).forEach { pair ->
-            val row = ui.row()
+            // TOP, not centred: two cards whose titles wrap differently are meant
+            // to start at the same line, and MATCH_PARENT here would ask a
+            // wrap_content row for the height of the scroll viewport instead.
+            val row = ui.row().apply { gravity = Gravity.TOP }
             pair.forEachIndexed { index, quest ->
                 if (index > 0) row.addView(ui.hgap(ui.dimens.cardGap))
                 row.addView(
                     questCard(quest).apply {
-                        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
+                        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                     }
                 )
             }
@@ -1324,12 +1330,9 @@ class MainActivity : AppCompatActivity() {
         // The tab is added first so the card draws over its bottom half: a tab is
         // meant to look tucked behind the card, and an outline on it would draw a
         // second box around something that is only a flag.
-        wrapper.addView(ui.categoryTab(hue, widthPx = ui.dimens.xxl + ui.dimens.l))
+        wrapper.addView(ui.categoryTab(hue, widthPx = ui.dimens.xxxl * 2))
         wrapper.addView(
-            ui.block(
-                SurfaceWeight.MINOR,
-                if (completed) StatusTone.LANDED else StatusTone.HELD
-            ).apply {
+            ui.block(SurfaceWeight.MINOR).apply {
                 layoutParams = FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT,
                     FrameLayout.LayoutParams.WRAP_CONTENT
@@ -1347,15 +1350,28 @@ class MainActivity : AppCompatActivity() {
                                 }
                             )
                         )
-                        if (completed) {
-                            // Gold means it already paid out, which is the one
-                            // thing a card has to say about its own history.
-                            addView(ui.pillBadge(getString(R.string.quest_reclaimed_label), ui.palette.rewardMid))
-                        }
                     }
                 )
                 addView(ui.vgap(ui.dimens.groupGap))
                 addView(ui.lead(quest.title))
+                if (completed) {
+                    // Under the name, not beside it. "Reclaimed" is nine glyphs in
+                    // the pixel face, and the eighty-odd dp left over next to a
+                    // tile in a half-width card clips them - so the gold goes on a
+                    // line of its own, where it can also be read out.
+                    addView(ui.vgap(ui.dimens.lineGap))
+                    addView(
+                        ui.row().apply {
+                            addView(ui.swatch(ui.palette.rewardMid))
+                            addView(
+                                ui.tag(getString(R.string.quest_reclaimed_label)).apply {
+                                    setTextColor(ui.palette.rewardDark)
+                                    gravity = Gravity.CENTER_VERTICAL
+                                }
+                            )
+                        }
+                    )
+                }
             }
         )
 

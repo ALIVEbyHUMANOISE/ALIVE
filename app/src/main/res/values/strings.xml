@@ -89,7 +89,10 @@
     <string name="cd_shortcut_focus">Pixel target: jump to starting a focus session.</string>
 
     <!-- ============ QUEST BOARD ============ -->
-    <string name="quest_heading">Quest</string>
+    <!-- The board's headline is a statement in two lines, the way the reference
+         says what a screen is for before anything on it is read. -->
+    <string name="quest_heading">Pick a quest.</string>
+    <string name="quest_heading_second">Grow every day.</string>
     <string name="quest_subhead">What do you want to make time for?</string>
     <string name="quest_yours">Your quests</string>
     <string name="quest_current">Current quest</string>

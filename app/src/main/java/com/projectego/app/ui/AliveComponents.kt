@@ -379,17 +379,6 @@ class AliveComponents(private val context: Context) {
             }
         }
 
-    /** A two-or-three-word flag on a card: `NEW`, `DONE`, `+20`. Pill, ink edge, no shadow. */
-    fun pillBadge(value: CharSequence, @ColorInt hue: Int): TextView = tag(value).apply {
-        setTextColor(palette.ink)
-        background = GradientDrawable().apply {
-            setColor(hue)
-            setStroke(dimens.borderButton, palette.ink)
-            cornerRadius = dimens.radiusPill.toFloat()
-        }
-        setPadding(dimens.s, dimens.xs / 2, dimens.s, dimens.xs / 2)
-    }
-
     /**
      * One cell of the day's facts: the name in small caps, the number in the
      * number face - on its own little face.
