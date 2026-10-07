@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Text-only action. Flat until touched, then it takes a surface. -->
+<!-- Text-only action. Flat until touched, then it takes a surface - and the
+     surface it takes is the same rounded one everything else wears. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_pressed="true">
         <shape android:shape="rectangle">
@@ -7,6 +8,7 @@
             <stroke
                 android:width="@dimen/border_hairline"
                 android:color="@color/alive_ink" />
+            <corners android:radius="@dimen/radius_tile" />
         </shape>
     </item>
     <item android:state_enabled="false">

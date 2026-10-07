@@ -205,6 +205,9 @@ class BrutalistBarChart(context: Context) : View(context) {
     ) {
         val half = barWidth / 2f
         val stubHeight = dp(9f)
+        // The same corner as a meter step: a bar is a block of this app, not a
+        // spreadsheet column.
+        val corner = dimens.radiusStep.toFloat()
 
         when (column.kind) {
             // Never seen: a hollow stub, so the gap in the record is visible
@@ -212,8 +215,8 @@ class BrutalistBarChart(context: Context) : View(context) {
             DayBarKind.MISSING -> {
                 shape.set(centre - half, baseline - stubHeight, centre + half, baseline)
                 face.color = palette.paper
-                canvas.drawRect(shape, face)
-                canvas.drawRect(shape, edge)
+                canvas.drawRoundRect(shape, corner, corner, face)
+                canvas.drawRoundRect(shape, corner, corner, edge)
             }
 
             // No allowance to spend: same stub height, filled and hatched, so it
@@ -221,9 +224,9 @@ class BrutalistBarChart(context: Context) : View(context) {
             DayBarKind.RECOVERY -> {
                 shape.set(centre - half, baseline - stubHeight, centre + half, baseline)
                 face.color = palette.warmGray
-                canvas.drawRect(shape, face)
+                canvas.drawRoundRect(shape, corner, corner, face)
                 hatch(canvas, shape)
-                canvas.drawRect(shape, edge)
+                canvas.drawRoundRect(shape, corner, corner, edge)
             }
 
             // An allowance and nothing spent: a square on the baseline. Drawing a
@@ -232,7 +235,7 @@ class BrutalistBarChart(context: Context) : View(context) {
                 val tick = min(barWidth, dp(8f))
                 shape.set(centre - tick / 2f, baseline - tick, centre + tick / 2f, baseline)
                 face.color = palette.ink
-                canvas.drawRect(shape, face)
+                canvas.drawRoundRect(shape, corner, corner, face)
             }
 
             else -> {
@@ -246,11 +249,11 @@ class BrutalistBarChart(context: Context) : View(context) {
                 // made. A day that used its whole allowance goes to solid ink,
                 // which is the darkest thing in the chart and needs no legend.
                 face.color = if (full) palette.ink else palette.softForest
-                canvas.drawRect(shape, face)
+                canvas.drawRoundRect(shape, corner, corner, face)
                 if (barWidth >= dp(11f)) {
                     texture(canvas, shape, if (full) dotPaper else dotInk)
                 }
-                canvas.drawRect(shape, edge)
+                canvas.drawRoundRect(shape, corner, corner, edge)
             }
         }
     }
@@ -303,7 +306,8 @@ class BrutalistBarChart(context: Context) : View(context) {
 
         bubble.set(bubbleLeft, top - height, bubbleRight, top)
         face.color = palette.ink
-        canvas.drawRect(bubble, face)
+        val corner = dimens.radiusStep.toFloat()
+        canvas.drawRoundRect(bubble, corner, corner, face)
         val metrics = valuePaint.fontMetrics
         canvas.drawText(text, bubble.centerX(), bubble.centerY() - (metrics.ascent + metrics.descent) / 2f, valuePaint)
     }

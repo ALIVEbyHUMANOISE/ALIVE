@@ -8,10 +8,15 @@
            press_start_2p    -> tags ONLY. Ten glyphs maximum, one line, never a
                                 sentence and never a heading.
 
-         The ladder is six sizes with a real step between each (34 / 26 / 20 / 16 /
-         13 / 10). It used to have Statement 19, QuestRowTitle 19 and Annotation 18
-         side by side, plus 15 / 15 / 16 / 17 in one band - four "levels" of type
-         that read as one size, which is how a screen ends up flat.
+         The ladder steps 34 / 26 / 20 / 16 / 14 / 13 / 10, and nothing sits two
+         steps apart by less than 2sp. It used to have Statement 19, QuestRowTitle
+         19 and Annotation 18 side by side, plus 15 / 15 / 16 / 17 in one band -
+         four "levels" of type that read as one size, which is how a screen ends
+         up flat.
+
+         Sentence case is the reference pass. Uppercase-with-tracking is a stamp,
+         and a stamp on every card title, button and nav label is what made the app
+         look like form furniture rather than something being said to you.
 
          The pixel face is the one that got demoted by this file. It is ALIVE's
          game voice and it is beautiful at four or five glyphs; at ten sp it took
@@ -26,7 +31,7 @@
         <item name="android:textColor">@color/alive_ink</item>
         <item name="android:textSize">34sp</item>
         <item name="android:letterSpacing">-0.03</item>
-        <item name="android:textAllCaps">true</item>
+        <item name="android:lineSpacingExtra">-4sp</item>
     </style>
 
     <!-- The one sentence a card leads with. -->
@@ -63,15 +68,26 @@
         <item name="android:textColor">@color/alive_ink_secondary</item>
     </style>
 
-    <!-- Card titles, field labels, meta lines. The tracking came down from 0.16:
-         at that width "TIME BANK · MIN" could not fit a ledger cell on one line. -->
+    <!-- Card titles and section names. Sentence case, no tracking: the reference
+         this app is being dressed like names a section the way a page does - with
+         a bold word, not a stamped label. Uppercase with 0.08 tracking also could
+         not fit "TIME BANK · MIN" in a ledger cell, which is why it went. -->
     <style name="TextAppearance.ALIVE.SectionHeader" parent="TextAppearance.MaterialComponents.Subtitle1">
         <item name="android:fontFamily">sans-serif-black</item>
         <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/alive_ink</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:letterSpacing">-0.01</item>
+    </style>
+
+    <!-- The small grey line beside a tile: "24 quests", "2 routes". It is not a
+         note (16sp prose) and not a tag (10sp pixel caps), and a two-column grid
+         has no room for either of those next to an icon. -->
+    <style name="TextAppearance.ALIVE.Meta" parent="TextAppearance.MaterialComponents.Body2">
+        <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textColor">@color/alive_ink_secondary</item>
         <item name="android:textSize">13sp</item>
-        <item name="android:textAllCaps">true</item>
-        <item name="android:letterSpacing">0.08</item>
+        <item name="android:lineSpacingExtra">2sp</item>
     </style>
 
     <!-- ============ TAGS: the pixel voice, and its limit ============ -->
@@ -131,22 +147,22 @@
         <item name="android:fontFamily">sans-serif-black</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textSize">15sp</item>
-        <item name="android:textAllCaps">true</item>
-        <item name="android:letterSpacing">0.08</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">-0.01</item>
     </style>
 
     <!-- The theme's default button. ALIVE's own buttons are AppCompat over
          hard-shadow drawables and set their own appearance; this exists so any
          Material control inherits the same voice instead of the platform one. -->
     <style name="Widget.ALIVE.Button.Primary" parent="Widget.MaterialComponents.Button">
-        <item name="backgroundTint">@color/alive_forest</item>
-        <item name="android:textColor">@color/alive_white</item>
+        <item name="backgroundTint">@color/alive_amber_action</item>
+        <item name="android:textColor">@color/alive_ink</item>
         <item name="android:textSize">15sp</item>
         <item name="android:fontFamily">sans-serif-black</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:textAllCaps">true</item>
-        <item name="android:letterSpacing">0.08</item>
-        <item name="cornerRadius">@dimen/radius_none</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">-0.01</item>
+        <item name="cornerRadius">@dimen/radius_tile</item>
         <item name="android:minHeight">52dp</item>
         <item name="android:minWidth">0dp</item>
         <item name="android:paddingLeft">20dp</item>
@@ -164,8 +180,8 @@
         <item name="android:fontFamily">sans-serif-black</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textSize">13sp</item>
-        <item name="android:textAllCaps">true</item>
-        <item name="android:letterSpacing">0.06</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:letterSpacing">0</item>
     </style>
 
     <style name="Widget.ALIVE.BottomNav" parent="Widget.MaterialComponents.BottomNavigationView">

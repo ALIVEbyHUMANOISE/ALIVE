@@ -112,6 +112,40 @@ class AlivePaletteTest {
         assertTrue("warmGray on paper = $ratio", ratio < 1.6)
     }
 
+    @Test
+    fun `ink is readable on every tile hue and on the action amber`() {
+        // A category tile holds an ink pixel mark and a card's tab sits under ink
+        // text, so the same 4.5:1 that governs a sentence governs a hue here.
+        // This is the test that decides whether a category colour may exist.
+        val fills = listOf(
+            R.color.alive_cat_study,
+            R.color.alive_cat_reading,
+            R.color.alive_cat_exercise,
+            R.color.alive_cat_walking,
+            R.color.alive_cat_cleaning,
+            R.color.alive_cat_creative,
+            R.color.alive_cat_coding,
+            R.color.alive_cat_writing,
+            R.color.alive_cat_work,
+            R.color.alive_cat_other,
+            R.color.alive_amber_action
+        )
+        val ink = color(R.color.alive_ink)
+        fills.forEach { id ->
+            val name = context.resources.getResourceName(id)
+            val ratio = contrast(ink, color(id))
+            assertTrue("$name = $ratio", ratio >= 4.5)
+        }
+    }
+
+    @Test
+    fun `the colour of an offer is not the colour of a reward`() {
+        // Amber invites, gold pays out. Two yellows that measure the same are one
+        // yellow with two names, which is how a palette starts lying.
+        val ratio = contrast(color(R.color.alive_amber_action), color(R.color.alive_gold_reward_mid))
+        assertTrue("amber against reward gold = $ratio", ratio >= 1.3)
+    }
+
     /** WCAG 2.1 relative luminance, after compositing any alpha onto the ground. */
     private fun contrast(foreground: Int, background: Int): Double {
         val blended = blend(foreground, background)

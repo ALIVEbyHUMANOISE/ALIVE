@@ -50,5 +50,35 @@
     <color name="alive_blue_work_dark">#27537A</color>
     <color name="alive_blue_work_mid">#4E86B4</color>
     <color name="alive_blue_work_pale">#D9E5EE</color>
+
+    <!-- ============ THE DOING ITSELF: one hue per category ============
+
+         These are not status colours and they are not text colours. A category
+         hue lives on exactly two objects - the tab on a quest card's top edge and
+         the tile its mark sits in - which is what lets nine of them coexist with
+         the role colours above without anyone having to learn a legend.
+
+         Every one is a light: ink strokes and ink text both clear 4.5:1 on all
+         nine, because the pixel marks are drawn in ink and sit inside these
+         fills. `AlivePaletteTest` measures that. -->
+    <color name="alive_cat_study">#F5CE7E</color>
+    <color name="alive_cat_reading">#9CC9E8</color>
+    <color name="alive_cat_exercise">#63C98A</color>
+    <color name="alive_cat_walking">#B7E06B</color>
+    <color name="alive_cat_cleaning">#C9CDD2</color>
+    <color name="alive_cat_creative">#F58FA6</color>
+    <color name="alive_cat_coding">#A99AF2</color>
+    <color name="alive_cat_writing">#F4B168</color>
+    <!-- Focus's WORK activity, and the one category hue that is not a quest
+         category. It is a step lighter than blue_work_mid because ink strokes on
+         blue_work_mid measure 4.3:1 - a tile whose mark cannot be read is not a
+         tile. -->
+    <color name="alive_cat_work">#7FA8CB</color>
+    <color name="alive_cat_other">#D8D2C7</color>
+
+    <!-- The colour of "do this". Brighter and flatter than reward gold on
+         purpose: gold is what a quest paid out, amber is what a button offers,
+         and the two are never on the same object. -->
+    <color name="alive_amber_action">#F7C948</color>
 </resources>
 

@@ -37,13 +37,13 @@ enum class SurfaceWeight { MAJOR, MINOR, PLAIN }
 /**
  * ALIVE's component vocabulary: neo-brutalist structure, pixel soul.
  *
- * A surface is a flat rectangle with an ink edge and a hard ink shadow offset to
- * the bottom-right. Nothing floats, nothing is blurred, nothing is rounded.
- * Buttons are physical: pressing one collapses its shadow.
+ * A surface is a flat rounded rectangle with an ink edge and a hard ink shadow
+ * offset to the bottom-right. Nothing floats, nothing is blurred, nothing is
+ * gradient. Buttons are physical: pressing one collapses its shadow.
  *
- * Weight is rationed on purpose. Most of a screen is type on canvas, one card is
- * MAJOR, the rest are MINOR, and prose that has nothing in flight gets PLAIN -
- * if everything had a border, nothing would.
+ * Weight is rationed. Most of a screen is type on canvas, one card is MAJOR, the
+ * rest are MINOR, and prose that has nothing in flight gets PLAIN - if everything
+ * had a border, nothing would.
  *
  * Rhythm is equally rationed, and the numbers live in res/values/dimens.xml:
  * cards are separated by air (`cardGap`), contents inside a card by a rule
@@ -84,6 +84,10 @@ class AliveComponents(private val context: Context) {
     /** Support lines and disclosures: same size as body, one step quieter. */
     fun note(value: CharSequence): TextView =
         text(R.style.TextAppearance_ALIVE_Note, value)
+
+    /** The small grey count beside a tile: "24 quests", "2 routes". */
+    fun meta(value: CharSequence): TextView =
+        text(R.style.TextAppearance_ALIVE_Meta, value)
 
     /**
      * A tag: numbers with a unit, a weekday, `+20 MIN`. Pixel caps at 10sp.
@@ -201,42 +205,59 @@ class AliveComponents(private val context: Context) {
      * recoloured, and the calm reading order would go with it. Weight comes from
      * the edge and the shadow, never from an inverted fill.
      */
-    private class Surface(val edge: Int, val shadow: Int, @ColorInt val face: Int?)
+    private class Surface(val edge: Int, val shadow: Int, val radius: Int, @ColorInt val face: Int?)
 
     private fun surfaceFor(weight: SurfaceWeight, tone: StatusTone): Surface = when {
         // Ordinary content sits straight on the canvas - no edge, no shadow, and
         // no hidden padding either.
-        tone == StatusTone.NEUTRAL || weight == SurfaceWeight.PLAIN -> Surface(0, 0, null)
+        tone == StatusTone.NEUTRAL || weight == SurfaceWeight.PLAIN -> Surface(0, 0, 0, null)
 
         // A closed door: a hairline and no shadow, whatever weight asked for.
-        tone == StatusTone.QUIET -> Surface(dimens.borderThin, 0, Color.TRANSPARENT)
+        tone == StatusTone.QUIET -> Surface(dimens.borderThin, 0, dimens.radiusCard, Color.TRANSPARENT)
 
         else -> Surface(
             edge = if (weight == SurfaceWeight.MAJOR) dimens.borderBold else dimens.borderButton,
             shadow = if (weight == SurfaceWeight.MAJOR) dimens.shadow else dimens.shadowMinor,
+            radius = dimens.radiusCard,
             face = if (tone == StatusTone.LANDED) palette.softForest else palette.white
         )
     }
 
     private fun drawableFor(surface: Surface): Drawable? {
         val face = surface.face ?: return null
-        return framed(face, surface.edge, surface.shadow)
+        val radius = surface.radius.toFloat()
+        // A QUIET surface asks for a hairline, a transparent face and no shadow.
+        // Without the shadow it must not get the ink layer at all, because that
+        // layer is what a hard shadow is made of - and an ink rectangle under a
+        // transparent face is a black card, not an empty one.
+        if (surface.shadow == 0) return outline(surface.edge, radius, face)
+        return framed(face, surface.edge, surface.shadow, radius)
     }
+
+    /** The face itself: a fill, an ink edge, one corner. */
+    private fun outline(edge: Int, radius: Float, @ColorInt face: Int): GradientDrawable =
+        GradientDrawable().apply {
+            setColor(face)
+            setStroke(edge, palette.ink)
+            cornerRadius = radius
+        }
 
     /**
      * A face with an ink edge and a hard ink shadow to its bottom-right - the one
-     * picture every raised object in this app wears, shared by cards and chips so
-     * a 10sp tag and a whole card are unmistakably the same kind of thing.
+     * picture every raised object in this app wears, shared by cards, tiles and
+     * chips so a 10sp tag and a whole card are unmistakably the same kind of thing.
+     *
+     * Both layers are rounded, not just the face: a square shadow behind a round
+     * card shows up as two black corners, which is the first thing the eye catches.
      */
-    private fun framed(@ColorInt face: Int, edge: Int, shadow: Int): Drawable {
-        val ink = GradientDrawable().apply { setColor(palette.ink) }
-        val top = GradientDrawable().apply {
-            setColor(face)
-            setStroke(edge, palette.ink)
+    private fun framed(@ColorInt face: Int, edge: Int, shadow: Int, radius: Float): Drawable {
+        val ink = GradientDrawable().apply {
+            setColor(palette.ink)
+            cornerRadius = radius
         }
         // The face covers the ink layer everywhere but bottom-right, which is
         // what leaves a hard shadow rather than a blurred one.
-        return LayerDrawable(arrayOf(ink, top)).apply {
+        return LayerDrawable(arrayOf(ink, outline(edge, radius, face))).apply {
             setLayerInset(1, 0, 0, shadow, shadow)
         }
     }
@@ -314,18 +335,81 @@ class AliveComponents(private val context: Context) {
         background = GradientDrawable().apply {
             setColor(color)
             setStroke(dimens.borderButton, palette.ink)
+            cornerRadius = dimens.radiusStep.toFloat()
         }
     }
 
     /**
-     * One cell of the day's facts: the name in small pixel caps, the number in
-     * the number face. Four of these in a ruled grid answer "what is this app
-     * tracking" before any sentence has to.
+     * A category's tile: the hue that kind of doing wears, an ink edge, a hard
+     * shadow, and the pixel mark sitting inside it.
+     *
+     * This is the object the whole board is scanned by. A list of nine quests is
+     * nine sentences that all start the same way, and the tile is what makes
+     * "the walking one" a thing you can point at instead of a thing you read for.
+     */
+    fun iconTile(@ColorInt hue: Int, @DrawableRes glyph: Int, sizePx: Int = dimens.touchMin): ImageView =
+        ImageView(context).apply {
+            setImageResource(glyph)
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
+            background = framed(hue, dimens.borderButton, dimens.shadowMinor, dimens.radiusTile.toFloat())
+            val inset = (sizePx - dimens.shadowMinor) / 5
+            setPadding(inset, inset, inset + dimens.shadowMinor, inset + dimens.shadowMinor)
+            layoutParams = LinearLayout.LayoutParams(sizePx, sizePx)
+        }
+
+    /** Repaint a tile's face. The Focus picker swaps hue along with the mark. */
+    fun tintTile(tile: ImageView, @ColorInt hue: Int) {
+        tile.background = framed(hue, dimens.borderButton, dimens.shadowMinor, dimens.radiusTile.toFloat())
+    }
+
+    /**
+     * The flat pill on a card's top edge.
+     *
+     * It has no ink edge of its own, which is the one place in ALIVE that is
+     * allowed: the edge belongs to the card, and a border on the tab too would
+     * draw a second box around something that is meant to look tucked behind.
+     */
+    fun categoryTab(@ColorInt hue: Int, widthPx: Int = dimens.xxxl, heightPx: Int = dimens.l): View =
+        View(context).apply {
+            layoutParams = LinearLayout.LayoutParams(widthPx, heightPx)
+            background = GradientDrawable().apply {
+                setColor(hue)
+                cornerRadius = dimens.radiusTile.toFloat()
+            }
+        }
+
+    /** A two-or-three-word flag on a card: `NEW`, `DONE`, `+20`. Pill, ink edge, no shadow. */
+    fun pillBadge(value: CharSequence, @ColorInt hue: Int): TextView = tag(value).apply {
+        setTextColor(palette.ink)
+        background = GradientDrawable().apply {
+            setColor(hue)
+            setStroke(dimens.borderButton, palette.ink)
+            cornerRadius = dimens.radiusPill.toFloat()
+        }
+        setPadding(dimens.s, dimens.xs / 2, dimens.s, dimens.xs / 2)
+    }
+
+    /**
+     * One cell of the day's facts: the name in small caps, the number in the
+     * number face - on its own little face.
+     *
+     * Four of these answer "what is this app tracking" before any sentence has
+     * to. They are cards rather than ruled table cells because the grid is what
+     * the rest of the screen is made of, and a ruled box in the middle of a grid
+     * of boxes reads as a different app.
      */
     fun statTile(name: CharSequence, value: CharSequence): LinearLayout = column().apply {
-        // ledgerInset + the card's cardInset equals the page gutter, so a tile's
-        // number lines up with the page edge instead of overhanging it.
-        setPadding(dimens.ledgerInset, dimens.ledgerInset, dimens.ledgerInset, dimens.ledgerInset)
+        background = framed(
+            palette.white, dimens.borderButton, dimens.shadowMinor, dimens.radiusTile.toFloat()
+        )
+        val inset = dimens.ledgerInset
+        val edge = dimens.borderButton
+        setPadding(
+            inset + edge,
+            inset + edge,
+            inset + edge + dimens.shadowMinor,
+            inset + edge + dimens.shadowMinor
+        )
         addView(sectionHeader(name))
         addView(vgap(dimens.pairGap))
         addView(number(value))
@@ -378,6 +462,7 @@ class AliveComponents(private val context: Context) {
     private fun step(@ColorInt face: Int): GradientDrawable = GradientDrawable().apply {
         setColor(face)
         setStroke(dimens.borderButton, palette.ink)
+        cornerRadius = dimens.radiusStep.toFloat()
     }
 
     /**
@@ -412,7 +497,7 @@ class AliveComponents(private val context: Context) {
      */
     fun rewardChip(value: CharSequence): TextView = tag(value).apply {
         setTextColor(palette.rewardDark)
-        background = framed(palette.rewardPale, dimens.borderButton, dimens.shadowMinor)
+        background = framed(palette.rewardPale, dimens.borderButton, dimens.shadowMinor, dimens.radiusPill.toFloat())
         val inset = dimens.s
         // The shadow is inside these bounds, so the right and bottom carry its
         // width as padding or the gold sits on the glyph. Vertically the chip
@@ -423,14 +508,6 @@ class AliveComponents(private val context: Context) {
             dimens.borderButton + dimens.shadowMinor + inset,
             dimens.borderButton + dimens.shadowMinor + dimens.xs
         )
-    }
-
-    /** One gold token: the marker beside a quest that has already paid out. */
-    fun rewardMark(sizePx: Int = dimens.s): View = View(context).apply {
-        layoutParams = LinearLayout.LayoutParams(sizePx, sizePx).apply {
-            marginEnd = dimens.pairGap
-        }
-        background = step(palette.rewardMid)
     }
 
     private fun Float.roundToIntClamped(max: Int): Int =
@@ -559,10 +636,9 @@ class AliveComponents(private val context: Context) {
         includeFontPadding = false
     }
 
-    /** Forest fill. One per screen at most. */
+    /** The amber offer. One per screen at most. */
     fun primary(value: CharSequence): AppCompatButton =
         button(value, R.drawable.bg_brutal_button_primary, R.color.text_on_primary)
-
     /** Paper fill with an ink edge. */
     fun secondary(value: CharSequence): AppCompatButton =
         button(value, R.drawable.bg_brutal_button_secondary, R.color.text_on_secondary)
@@ -584,34 +660,6 @@ class AliveComponents(private val context: Context) {
         setCompoundDrawablesRelative(arrow, null, null, null)
         compoundDrawablePadding = dimens.m
     }
-
-    /**
-     * The square that says "this row opens": an edged block holding one glyph and
-     * no word.
-     *
-     * It is not a button, and the row it sits in is. A word like `Details` cost a
-     * list row eleven characters of width that the quest itself needed, and two
-     * tap targets in one row is two chances to miss. Mirroring the row's pressed
-     * state is what lets it still wear the pushed-in face when the row is pushed.
-     */
-    fun chevronBlock(name: CharSequence, sizePx: Int = dimens.touchMin): ImageView =
-        ImageView(context).apply {
-            setImageResource(R.drawable.ic_chevron_right_pixel)
-            contentDescription = name
-            isDuplicateParentStateEnabled = true
-            setBackgroundResource(R.drawable.bg_brutal_button_secondary)
-            scaleType = ImageView.ScaleType.CENTER_INSIDE
-            val slack = (sizePx - dimens.markSmallSize) / 2
-            // Centred on the face, not on the bounds: the shadow is inside the
-            // bounds and would otherwise push the glyph toward the top-left.
-            setPadding(
-                slack + dimens.borderBold,
-                slack + dimens.borderBold,
-                slack + dimens.borderBold - dimens.shadow,
-                slack + dimens.borderBold - dimens.shadow
-            )
-            layoutParams = LinearLayout.LayoutParams(sizePx, sizePx)
-        }
 
     // ---------- FORM WIDGETS ----------
 
@@ -639,7 +687,14 @@ class AliveComponents(private val context: Context) {
         setHintTextColor(palette.inkDisabled)
         setBackgroundResource(R.drawable.bg_brutal_input)
         minHeight = dimens.touchMin
-        setPadding(dimens.l, dimens.m, dimens.l, dimens.m)
+        // Measured from the face: the frame is 3dp thick and its shadow 4dp, so
+        // the text starts the same distance from the ink on every side.
+        setPadding(
+            dimens.l + dimens.borderBold,
+            dimens.m,
+            dimens.l + dimens.borderBold + dimens.shadowMinor,
+            dimens.m + dimens.shadowMinor
+        )
     }
 
     // ---------- ACCENTS ----------

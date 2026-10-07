@@ -1,13 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Input field: an open ink frame. It must look like somewhere to write,
-     which the flat paper-on-paper treatment did not. -->
+<!-- Input field: an open ink frame with the same hard shadow a card carries,
+     because the reference treats "somewhere to write" as an object you press
+     into, not a line under a word. The shadow is 4dp to the bottom-right, so
+     AliveComponents.input() pads the same 4dp back or the caret sits on it. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/alive_ink" />
+            <corners android:radius="@dimen/radius_field" />
+        </shape>
+    </item>
+    <item
+        android:right="@dimen/shadow_minor"
+        android:bottom="@dimen/shadow_minor">
         <shape android:shape="rectangle">
             <solid android:color="@color/alive_white" />
             <stroke
                 android:width="@dimen/border_bold"
                 android:color="@color/alive_ink" />
+            <corners android:radius="@dimen/radius_field" />
         </shape>
     </item>
 </layer-list>

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Bottom navigation selected state: a forest block with an ink edge.
-     No offset shadow here - the bar is too short to show one honestly. -->
+<!-- Bottom navigation selected state: a forest block with an ink edge, rounded
+     like every other raised face. No offset shadow here - the bar is too short
+     to show one honestly. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_checked="true">
         <shape android:shape="rectangle">
@@ -8,6 +9,7 @@
             <stroke
                 android:width="@dimen/border_button"
                 android:color="@color/alive_ink" />
+            <corners android:radius="@dimen/radius_tile" />
         </shape>
     </item>
     <item android:state_selected="true">
@@ -16,6 +18,7 @@
             <stroke
                 android:width="@dimen/border_button"
                 android:color="@color/alive_ink" />
+            <corners android:radius="@dimen/radius_tile" />
         </shape>
     </item>
     <item>

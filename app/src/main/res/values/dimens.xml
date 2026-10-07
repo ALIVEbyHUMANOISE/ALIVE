@@ -20,7 +20,7 @@
 
     <!-- Rhythm: one value per relationship, and only one device per level.
          Cards are separated by air, contents by a rule, rows of one list by a
-         hairline. card_gap is sized so a MAJOR's 4dp shadow plus its 3dp edge
+         hairline. card_gap is sized so a MAJOR's 6dp shadow plus its 3dp edge
          always lands on clean canvas - two cards must never touch.
          card_inset + ledger_inset equals the page gutter (16 + 12 = 28), so a
          tile inside a card lines up with the page edge rather than overhangs it.
@@ -33,15 +33,25 @@
     <dimen name="card_inset">16dp</dimen>
     <dimen name="ledger_inset">12dp</dimen>
 
-    <!-- Neo-brutalist structure: thick edges, hard offset shadow, no radius.
-         A MINOR edge is a button's edge, so a card and a control read as the
-         same family of objects at different weights. -->
+    <!-- Structure: a thick ink edge, a hard offset shadow and a rounded corner.
+         A MINOR edge is a button's edge, so a card and a control read as the same
+         family of objects at different weights. The shadow is generous on
+         purpose: a rounded square with a 2dp shadow reads as a sticker, and with
+         a 6dp one it reads as something you can press.
+         One radius per object size and nothing in between - a card, a field, a
+         tile, a step and a pill are four different things, and the corner tells
+         you which one you are holding before the label renders. -->
     <dimen name="border_bold">3dp</dimen>
     <dimen name="border_button">2dp</dimen>
     <dimen name="border_hairline">1dp</dimen>
-    <dimen name="shadow_offset">4dp</dimen>
-    <dimen name="shadow_minor">2dp</dimen>
-    <dimen name="radius_none">0dp</dimen>
+    <dimen name="shadow_offset">6dp</dimen>
+    <dimen name="shadow_minor">4dp</dimen>
+
+    <dimen name="radius_card">16dp</dimen>
+    <dimen name="radius_field">14dp</dimen>
+    <dimen name="radius_tile">12dp</dimen>
+    <dimen name="radius_step">4dp</dimen>
+    <dimen name="radius_pill">999dp</dimen>
 
     <dimen name="touch_min">48dp</dimen>
 

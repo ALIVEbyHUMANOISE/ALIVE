@@ -89,9 +89,6 @@
     <string name="quest_yours">Your quests</string>
     <string name="quest_current">Current quest</string>
     <string name="quest_reclaimed_label">Reclaimed</string>
-    <!-- The chevron block has no word on it, so the row's name is said here
-         instead: what a screen reader announces for the whole line. -->
-    <string name="quest_open_for">Open %1$s</string>
     <string name="quest_not_verifiable">ALIVE can\'t verify this kind of session automatically yet.</string>
     <string name="quest_cannot_start">One thing at a time. Finish what\'s running first.</string>
     <string name="quest_start_failed">ALIVE couldn\'t start that quest.</string>

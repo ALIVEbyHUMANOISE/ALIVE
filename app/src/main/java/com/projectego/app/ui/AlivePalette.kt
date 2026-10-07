@@ -7,11 +7,17 @@ import com.projectego.app.R
 /**
  * Every color ALIVE draws with, resolved from res/values/colors.xml.
  *
- * The palette is the constitution's six, plus three role hues added for the game
- * layer (Constitution sec.07). The additions are not decoration: gold is reward,
- * red is time running out, blue is the work itself, and each one replaces a
- * meaning that previously had no colour at all - which is what made nine shades
- * of cream read as flat.
+ * Three families, and the difference between them is what a colour is allowed to
+ * mean (Constitution sec.07):
+ *
+ *  - The constitution's six: paper, ink, forest, soft forest, warm gray, white.
+ *    Structure and identity.
+ *  - Three role hues - gold is reward, red is time running out, blue is the work
+ *    itself - plus `amber`, which is the colour of an offer: the one thing on a
+ *    screen you are being invited to press.
+ *  - Nine category hues in `QuestHues`. Those are not status and not text: a
+ *    category hue lives on a card's tab and the tile its mark sits in, nowhere
+ *    else, which is what lets nine of them exist without a legend.
  *
  * A missing tone is added as the ink hue with alpha, never as a new color - so
  * `inkSecondary`, `inkMuted` and `inkHairline` are all still ink.
@@ -58,6 +64,9 @@ class AlivePalette(context: Context) {
     val workDark = color(R.color.alive_blue_work_dark)
     val workMid = color(R.color.alive_blue_work_mid)
     val workPale = color(R.color.alive_blue_work_pale)
+
+    /** "Do this." Brighter and flatter than reward gold, and never on the same object. */
+    val amber = color(R.color.alive_amber_action)
 
     private fun color(id: Int): Int = ContextCompat.getColor(appContext, id)
 }

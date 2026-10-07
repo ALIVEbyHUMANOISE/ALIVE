@@ -155,6 +155,28 @@ Red is a threshold, not a decoration: it appears exactly where the app already
 states the same number as critical. Colour is never the only signal — the
 minutes are printed next to it.
 
+### The category family
+
+Nine more colours, and they are a different kind of thing: one hue per category
+(study amber, reading sky, exercise green, walking lime, cleaning grey, creative
+pink, coding violet, writing orange, work blue), and each one lives on exactly
+two objects — the tab on a quest card's top edge, and the tile its pixel mark
+sits in.
+
+> **A category hue is chrome. Never text, never status, never a button.**
+
+That boundary is what lets nine of them coexist with the roles above without the
+screen turning into a crayon box. Ink clears 4.5:1 on every one of them, because
+the marks drawn inside them are ink — `AlivePaletteTest` measures all ten plus
+the action amber.
+
+### Amber is the offer
+
+The primary action is amber `#F7C948` with ink text. Forest is what ALIVE *is*
+(the meter, the selected nav block, the chart's spent bars); amber is what it is
+holding out. Reward gold is a deeper yellow (`#E0A526`) and never appears on a
+button, so "press this" and "you earned this" cannot be confused.
+
 ---
 
 ## 08 — Typography
@@ -322,6 +344,24 @@ shadow, whatever asked.
 No surface is dark. Weight comes from the edge and the shadow, never from an
 inverted fill.
 
+### The corner
+
+Every face is rounded, and there are exactly five radii:
+
+| Object | Radius |
+|---|---|
+| Card | 16dp |
+| Field | 14dp |
+| Tile, button | 12dp |
+| Meter step, chart bar | 4dp |
+| Badge, chip | a pill |
+
+> **A sixth radius is not allowed — and neither is a square face.**
+
+The shadow is 6dp on a MAJOR and 4dp on everything else. Both layers get the
+corner: a square ink shadow behind a round card reads as two black corners,
+which is the first thing anyone notices.
+
 ### Rhythm
 
 Six numbers, one per relationship (`res/values/dimens.xml`):
@@ -349,7 +389,7 @@ and bottom carry the shadow's width as well, or a glyph ends up sitting on it.
 
 ## 15 — Type Scale
 
-Ten steps, one job each:
+Eleven steps, one job each:
 
 | Step | Size | Job |
 |---|---|---|
@@ -357,15 +397,23 @@ Ten steps, one job each:
 | Display | 34sp | Wordmark, screen name |
 | Number | 28sp | A ledger figure |
 | Headline | 26sp | A statement worth its own line |
-| Lead | 20sp | Row titles, in-flight facts |
+| Lead | 20sp | Card titles, in-flight facts |
 | Body | 16sp | What is being read |
 | Note | 16sp | Support and disclosure — same size, one step quieter |
 | Annotation | 20sp | The handwritten aside |
-| SectionHeader | 13sp caps | The name of a block |
+| SectionHeader | 14sp bold | The name of a block |
+| Meta | 13sp | A count beside a tile |
 | Tag | 10sp pixel | A number with a unit |
 
 Three faces, and they are not interchangeable: `sans-serif-black` carries
 structure, `vt323` carries numbers, `press_start_2p` carries labels.
+
+> **Say it in words, not in stamps.**
+
+Uppercase with tracking is furniture — on every card title, button and nav label
+it turns an app into a form. Names are sentence case, the way a page names a
+section. The one exception is the pixel face, which is already shouting by
+nature.
 
 > **A size exists only if it does a job its neighbour cannot.**
 

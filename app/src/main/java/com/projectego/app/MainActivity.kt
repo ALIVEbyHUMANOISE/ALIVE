@@ -58,6 +58,7 @@ import com.projectego.app.ui.DayBar
 import com.projectego.app.ui.DayBarKind
 import com.projectego.app.ui.HomeAction
 import com.projectego.app.ui.PixelMarks
+import com.projectego.app.ui.QuestHues
 import com.projectego.app.ui.RewardBurst
 import com.projectego.app.ui.StatusTone
 import com.projectego.app.ui.SurfaceWeight
@@ -679,22 +680,31 @@ class MainActivity : AppCompatActivity() {
      * reclaimed time is banked. Ruled like a table so the numbers read as a
      * ledger, not as decoration.
      */
-    private fun statGrid(signals: AliveSignals): LinearLayout = ui.column().apply {
+    private fun statGrid(signals: AliveSignals): LinearLayout = ui.stack(ui.dimens.pairGap).apply {
         addView(
-            ui.row().apply {
-                addView(ui.weighted(streakTile(signals.currentStreak)))
-                addView(ui.ruleVertical())
-                addView(ui.weighted(ui.statTile(getString(R.string.stat_allowance), getString(R.string.stat_minutes, state.dailyLimitMinutes))))
-            }
+            statRow(
+                streakTile(signals.currentStreak),
+                ui.statTile(getString(R.string.stat_allowance), getString(R.string.stat_minutes, state.dailyLimitMinutes))
+            )
         )
-        addView(ui.rule())
         addView(
-            ui.row().apply {
-                addView(ui.weighted(ui.statTile(getString(R.string.stat_used), getString(R.string.stat_minutes, state.usedMinutesToday))))
-                addView(ui.ruleVertical())
-                addView(ui.weighted(ui.statTile(getString(R.string.stat_bank), getString(R.string.stat_minutes, signals.reclaimedAvailableMinutes))))
-            }
+            statRow(
+                ui.statTile(getString(R.string.stat_used), getString(R.string.stat_minutes, state.usedMinutesToday)),
+                ui.statTile(getString(R.string.stat_bank), getString(R.string.stat_minutes, signals.reclaimedAvailableMinutes))
+            )
         )
+    }
+
+    /** Two tiles side by side, half each, and stretched to the same height. */
+    private fun statRow(left: View, right: View): LinearLayout = ui.row().apply {
+        listOf(left, right).forEachIndexed { index, tile ->
+            if (index > 0) addView(ui.hgap(ui.dimens.pairGap))
+            addView(
+                tile.apply {
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
+                }
+            )
+        }
     }
 
     /**
@@ -705,13 +715,13 @@ class MainActivity : AppCompatActivity() {
      * is true. A run is worth showing as a shape because it is the only thing in
      * this app that takes more than a day to build.
      */
-    private fun streakTile(streak: Int): LinearLayout = ui.column().apply {
-        addView(ui.statTile(getString(R.string.stat_streak), getString(R.string.stat_minutes, streak)))
-        if (streak > 0) {
-            addView(ui.vgap(ui.dimens.lineGap))
-            addView(ui.streakPips(streak))
+    private fun streakTile(streak: Int): View =
+        ui.statTile(getString(R.string.stat_streak), getString(R.string.stat_minutes, streak)).apply {
+            if (streak > 0) {
+                addView(ui.vgap(ui.dimens.lineGap))
+                addView(ui.streakPips(streak))
+            }
         }
-    }
 
     /**
      * The single thing Home invites.
@@ -782,11 +792,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         block.addView(
-            ui.pose(
+            ui.iconTile(
+                ContextCompat.getColor(this, QuestHues.quest(quest.category)),
                 PixelMarks.quest(quest.category),
-                ui.dimens.character,
-                getString(PixelMarks.description(quest.category))
-            )
+                ui.dimens.character
+            ).apply { contentDescription = getString(PixelMarks.description(quest.category)) }
         )
         block.addView(ui.vgap(ui.dimens.lineGap))
 
@@ -920,13 +930,11 @@ class MainActivity : AppCompatActivity() {
         card.addView(head)
 
         card.addView(ui.vgap(ui.dimens.groupGap))
-        card.addView(ui.rule())
         card.addView(
-            ui.row().apply {
-                addView(ui.weighted(ui.statTile(getString(R.string.stat_bank_earned), getString(R.string.stat_minutes, state.earnedMinutes))))
-                addView(ui.ruleVertical())
-                addView(ui.weighted(ui.statTile(getString(R.string.stat_bank_spent), getString(R.string.stat_minutes, state.spentMinutes))))
-            }
+            statRow(
+                ui.statTile(getString(R.string.stat_bank_earned), getString(R.string.stat_minutes, state.earnedMinutes)),
+                ui.statTile(getString(R.string.stat_bank_spent), getString(R.string.stat_minutes, state.spentMinutes))
+            )
         )
 
         card.addView(ui.vgap(ui.dimens.groupGap))
@@ -992,11 +1000,11 @@ class MainActivity : AppCompatActivity() {
 
         if (session != null && session.isActive) {
             card.addView(
-                ui.pose(
+                ui.iconTile(
+                    ContextCompat.getColor(this, QuestHues.focus(session.activityType)),
                     PixelMarks.focus(session.activityType),
-                    ui.dimens.character,
-                    getString(R.string.cd_focus_mark, activityLabel(session.activityType))
-                )
+                    ui.dimens.character
+                ).apply { contentDescription = getString(R.string.cd_focus_mark, activityLabel(session.activityType)) }
             )
             card.addView(ui.vgap(ui.dimens.lineGap))
             card.addView(ui.lead(getString(R.string.focus_active_heading, activityLabel(session.activityType))))
@@ -1030,14 +1038,14 @@ class MainActivity : AppCompatActivity() {
         val activities = FocusActivityType.values()
         val durations = listOf(30L, 60L, 90L, 120L)
 
-        // The mark above the list is the answer to "what am I about to pick":
-        // it changes the moment another activity is chosen.
+        // The tile above the list is the answer to "what am I about to pick":
+        // its mark and its colour both change the moment another activity is chosen.
         val markType = activities.getOrNull(state.selectedActivityIndex) ?: FocusActivityType.STUDY
-        val mark = ui.pose(
+        val mark = ui.iconTile(
+            ContextCompat.getColor(this, QuestHues.focus(markType)),
             PixelMarks.focus(markType),
-            ui.dimens.character,
-            getString(R.string.cd_focus_mark, activityLabel(markType))
-        )
+            ui.dimens.character
+        ).apply { contentDescription = getString(R.string.cd_focus_mark, activityLabel(markType)) }
         anchor.addView(mark)
         anchor.addView(ui.vgap(ui.dimens.groupGap))
 
@@ -1064,6 +1072,7 @@ class MainActivity : AppCompatActivity() {
             val type = activities.getOrNull(state.selectedActivityIndex)
             if (type != null) {
                 mark.setImageResource(PixelMarks.focus(type))
+                ui.tintTile(mark, ContextCompat.getColor(this@MainActivity, QuestHues.focus(type)))
                 mark.contentDescription = getString(R.string.cd_focus_mark, activityLabel(type))
             }
         }
@@ -1181,9 +1190,7 @@ class MainActivity : AppCompatActivity() {
         header.addView(ui.accents(seed = 2))
         questContainer.addView(header)
 
-        // On this screen the attempt is the news, so it takes the one heavy
-        // frame; with nothing in flight the board takes it instead.
-        val attemptIsLive = currentAttempt != null && activeQuest != null
+        // On this screen the attempt is the news, so it takes the one heavy frame.
         if (currentAttempt != null && activeQuest != null) {
             questContainer.addView(
                 buildQuestStatusBlock(
@@ -1205,100 +1212,93 @@ class MainActivity : AppCompatActivity() {
                 )
             )
         } else {
-            // One ruled card for the whole board: separate floating rows read as
-            // leftovers, and the hairlines inside give each quest its own line.
-            val listCard = ui.bentoCard(
-                getString(R.string.quest_yours),
-                weight = if (attemptIsLive) SurfaceWeight.MINOR else SurfaceWeight.MAJOR
-            )
-            others.forEachIndexed { index, quest ->
-                if (index > 0) listCard.addView(ui.rowRule())
-                listCard.addView(buildQuestRow(quest))
+            // The board is a grid of cards, not a list of rows: a quest is chosen
+            // by what it looks like from a distance, and a list of nine sentences
+            // cannot be scanned that way.
+            questContainer.addView(ui.sectionHeader(getString(R.string.quest_yours)))
+            questContainer.addView(questGrid(others))
+        }
+    }
+
+    /** Two cards per row, with the same air between them as between the rows. */
+    private fun questGrid(quests: List<Quest>): LinearLayout = ui.stack(ui.dimens.cardGap).apply {
+        quests.chunked(QUEST_COLUMNS).forEach { pair ->
+            val row = ui.row()
+            pair.forEachIndexed { index, quest ->
+                if (index > 0) row.addView(ui.hgap(ui.dimens.cardGap))
+                row.addView(
+                    questCard(quest).apply {
+                        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
+                    }
+                )
             }
-            questContainer.addView(listCard)
+            if (pair.size < QUEST_COLUMNS) {
+                // The odd card stays half-width. Stretching it would make the last
+                // quest look like a different kind of thing.
+                row.addView(
+                    View(this@MainActivity).apply {
+                        layoutParams = LinearLayout.LayoutParams(0, 1, (QUEST_COLUMNS - pair.size).toFloat())
+                    }
+                )
+            }
+            addView(row)
         }
     }
 
     /**
-     * A row is name, what you actually do, duration, reclaimed time. Difficulty
-     * is at most one faded word; there are no levels, rarities, streak rewards,
-     * or checkmarks anywhere on this board.
+     * One quest: its category's tab on the top edge, its mark in a tile of the
+     * same colour, what it costs and what it pays, and its name.
+     *
+     * The description is not here - it is on the page a tap opens. A grid cell
+     * that carries a paragraph is a grid of two columns that is really a list.
      */
-    private fun buildQuestRow(quest: Quest): LinearLayout {
+    private fun questCard(quest: Quest): FrameLayout {
         val completed = quest.status == QuestStatus.COMPLETED
-        val verifiable = AliveStates.isSelfVerifiable(quest.category)
+        val hue = ContextCompat.getColor(this, QuestHues.quest(quest.category))
+        val wrapper = FrameLayout(this)
 
-        val row = ui.row().apply {
-            setPadding(0, ui.dimens.m, 0, ui.dimens.m)
-            setBackgroundResource(android.R.color.transparent)
-        }
+        // The tab is added first so the card draws over its bottom half: a tab is
+        // meant to look tucked behind the card, and an outline on it would draw a
+        // second box around something that is only a flag.
+        wrapper.addView(ui.categoryTab(hue, widthPx = ui.dimens.xxl + ui.dimens.l))
+        wrapper.addView(
+            ui.block(
+                SurfaceWeight.MINOR,
+                if (completed) StatusTone.LANDED else StatusTone.HELD
+            ).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = ui.dimens.s }
 
-        // The mark goes first: on a board of similar rows it is what lets the
-        // eye find "the walking one" without reading four titles.
-        row.addView(
-            ui.pose(
-                PixelMarks.quest(quest.category),
-                ui.dimens.touchMin,
-                getString(PixelMarks.description(quest.category))
-            )
-        )
-        row.addView(ui.hgap(ui.dimens.m))
-
-        val info = ui.column().apply {
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        info.addView(ui.lead(quest.title))
-        info.addView(ui.vgap(ui.dimens.pairGap))
-        info.addView(ui.note(quest.description))
-        info.addView(ui.vgap(ui.dimens.lineGap))
-
-        val meta = ui.row()
-        meta.addView(ui.tag(getString(R.string.unit_minutes, quest.estimatedDurationMinutes)))
-        meta.addView(ui.hgap(ui.dimens.m))
-        // Gold means one thing in ALIVE: time you earned. Dark gold, because it
-        // has to stay readable as text at 10sp.
-        meta.addView(
-            ui.tag(getString(R.string.unit_minutes_gain, quest.rewardMinutes)).apply {
-                setTextColor(ui.palette.rewardDark)
-            }
-        )
-        info.addView(meta)
-
-        if (!verifiable) {
-            info.addView(ui.vgap(ui.dimens.lineGap))
-            info.addView(ui.note(getString(R.string.quest_not_verifiable)))
-        }
-        row.addView(info)
-
-        row.addView(
-            if (completed) {
-                // A finished quest wears the same gold as the chip that paid it
-                // out, so "already banked" is recognisable without reading the word.
-                ui.row().apply {
-                    layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                    )
-                    addView(ui.rewardMark())
-                    addView(
-                        ui.tag(getString(R.string.quest_reclaimed_label)).apply {
-                            setTextColor(ui.palette.rewardDark)
+                addView(
+                    ui.row().apply {
+                        addView(ui.iconTile(hue, PixelMarks.quest(quest.category)))
+                        addView(ui.hgap(ui.dimens.m))
+                        addView(
+                            ui.weighted(
+                                ui.column().apply {
+                                    addView(ui.meta(getString(R.string.unit_minutes, quest.estimatedDurationMinutes)))
+                                    addView(ui.meta(getString(R.string.unit_minutes_gain, quest.rewardMinutes)))
+                                }
+                            )
+                        )
+                        if (completed) {
+                            // Gold means it already paid out, which is the one
+                            // thing a card has to say about its own history.
+                            addView(ui.pillBadge(getString(R.string.quest_reclaimed_label), ui.palette.rewardMid))
                         }
-                    )
-                }
-            } else {
-                // The row itself is the target, so a thumb anywhere on the line
-                // opens it and the chevron is only the promise.
-                ui.chevronBlock(getString(R.string.quest_open_for, quest.title))
+                    }
+                )
+                addView(ui.vgap(ui.dimens.groupGap))
+                addView(ui.lead(quest.title))
             }
         )
-        if (!completed) {
-            // Never a start: a row opens the page that explains the quest first, so
-            // a tap here cannot fail silently.
-            row.setOnClickListener { openQuestDetailPanel(quest.id) }
-        }
 
-        return row
+        // Never a start: a card opens the page that explains the quest first, so a
+        // tap here cannot fail silently.
+        wrapper.setOnClickListener { openQuestDetailPanel(quest.id) }
+        return wrapper
     }
 
     private fun openQuestDetailPanel(questId: String?) {
@@ -1322,11 +1322,11 @@ class MainActivity : AppCompatActivity() {
         val verifiable = AliveStates.isSelfVerifiable(quest.category)
 
         column.addView(
-            ui.pose(
+            ui.iconTile(
+                ContextCompat.getColor(this, QuestHues.quest(quest.category)),
                 PixelMarks.quest(quest.category),
-                ui.dimens.characterLarge,
-                getString(PixelMarks.description(quest.category))
-            )
+                ui.dimens.characterLarge
+            ).apply { contentDescription = getString(PixelMarks.description(quest.category)) }
         )
         column.addView(ui.vgap(ui.dimens.groupGap))
 
@@ -1832,13 +1832,11 @@ class MainActivity : AppCompatActivity() {
         card.addView(line)
 
         card.addView(ui.vgap(ui.dimens.groupGap))
-        card.addView(ui.rule())
         card.addView(
-            ui.row().apply {
-                addView(ui.weighted(ui.statTile(getString(R.string.stat_allowance), getString(R.string.stat_minutes, state.dailyLimitMinutes))))
-                addView(ui.ruleVertical())
-                addView(ui.weighted(ui.statTile(getString(R.string.stat_used), getString(R.string.stat_minutes, state.usedMinutesToday))))
-            }
+            statRow(
+                ui.statTile(getString(R.string.stat_allowance), getString(R.string.stat_minutes, state.dailyLimitMinutes)),
+                ui.statTile(getString(R.string.stat_used), getString(R.string.stat_minutes, state.usedMinutesToday))
+            )
         )
         return card
     }
@@ -1847,11 +1845,10 @@ class MainActivity : AppCompatActivity() {
     private fun buildBankCard(): LinearLayout {
         val card = ui.bentoCard(getString(R.string.time_bank_heading))
         card.addView(
-            ui.row().apply {
-                addView(ui.weighted(ui.statTile(getString(R.string.stat_bank_earned), getString(R.string.stat_minutes, state.earnedMinutes))))
-                addView(ui.ruleVertical())
-                addView(ui.weighted(ui.statTile(getString(R.string.stat_bank_spent), getString(R.string.stat_minutes, state.spentMinutes))))
-            }
+            statRow(
+                ui.statTile(getString(R.string.stat_bank_earned), getString(R.string.stat_minutes, state.earnedMinutes)),
+                ui.statTile(getString(R.string.stat_bank_spent), getString(R.string.stat_minutes, state.spentMinutes))
+            )
         )
         card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(
@@ -2032,3 +2029,6 @@ private const val CHART_RANGE_ID_BASE = 300
 
 /** The ring is a circle, so it does need a height of its own. */
 private const val DONUT_HEIGHT_DP = 200
+
+/** Cards per row on the quest board. Three is a mosaic; one is the list it was. */
+private const val QUEST_COLUMNS = 2

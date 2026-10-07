@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Tactile secondary action: paper face, ink border, same hard shadow. -->
+<!-- Tactile secondary action: paper face, ink border, same hard shadow. The
+     corner is the primary button's corner - two controls that do different jobs
+     are still the same family of object. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item android:state_pressed="true">
@@ -7,6 +9,7 @@
             <item>
                 <shape android:shape="rectangle">
                     <solid android:color="@color/alive_ink" />
+                    <corners android:radius="@dimen/radius_tile" />
                 </shape>
             </item>
             <item>
@@ -15,6 +18,7 @@
                     <stroke
                         android:width="@dimen/border_bold"
                         android:color="@color/alive_ink" />
+                    <corners android:radius="@dimen/radius_tile" />
                 </shape>
             </item>
         </layer-list>
@@ -26,6 +30,7 @@
             <stroke
                 android:width="@dimen/border_hairline"
                 android:color="@color/alive_ink_disabled" />
+            <corners android:radius="@dimen/radius_tile" />
         </shape>
     </item>
 
@@ -34,6 +39,7 @@
             <item>
                 <shape android:shape="rectangle">
                     <solid android:color="@color/alive_ink" />
+                    <corners android:radius="@dimen/radius_tile" />
                 </shape>
             </item>
             <item
@@ -44,6 +50,7 @@
                     <stroke
                         android:width="@dimen/border_bold"
                         android:color="@color/alive_ink" />
+                    <corners android:radius="@dimen/radius_tile" />
                 </shape>
             </item>
         </layer-list>

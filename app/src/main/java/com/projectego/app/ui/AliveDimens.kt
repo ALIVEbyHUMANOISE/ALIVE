@@ -69,6 +69,17 @@ class AliveDimens(context: Context) {
     /** How far a MINOR shadow sits: present, so the face still lifts, quiet. */
     val shadowMinor = px(R.dimen.shadow_minor)
 
+    /**
+     * The corner of each object family, in pixels. A pill is 999dp wide on
+     * purpose: half of it is always more than its own height, so it stays a
+     * capsule whatever text it ends up holding.
+     */
+    val radiusCard = px(R.dimen.radius_card)
+    val radiusField = px(R.dimen.radius_field)
+    val radiusTile = px(R.dimen.radius_tile)
+    val radiusStep = px(R.dimen.radius_step)
+    val radiusPill = px(R.dimen.radius_pill)
+
     /** One block of a meter. Square, because a stretched pixel is not a pixel. */
     val stepSize = px(R.dimen.step_size)
     val stepGap = px(R.dimen.step_gap)
