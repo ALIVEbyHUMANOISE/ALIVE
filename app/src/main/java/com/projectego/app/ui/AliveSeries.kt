@@ -34,6 +34,24 @@ object AliveSeries {
     @ColorRes
     val aggregate = R.color.alive_warm_gray
 
+    /**
+     * The same four positions, at the colour a *tile* wears.
+     *
+     * A ring can be solid ink; a square with an ink letter inside it cannot. These
+     * are the light end of each slice's own family, so a legend row's tile and its
+     * slice on the ring are unmistakably the same thing at two weights.
+     */
+    @ColorRes
+    val tile = listOf(
+        R.color.alive_white,
+        R.color.alive_gold_reward_pale,
+        R.color.alive_blue_work_pale,
+        R.color.alive_soft_forest
+    )
+
     @ColorRes
     fun sliceColor(index: Int): Int = donut[index % donut.size]
+
+    @ColorRes
+    fun tileColor(index: Int): Int = tile[index % tile.size]
 }

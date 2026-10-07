@@ -328,9 +328,15 @@ class AliveComponents(private val context: Context) {
         )
     }
 
-    /** A legend chip: the slice's own fill, with the same ink edge the chart draws. */
-    fun swatch(@ColorInt color: Int): View = View(context).apply {
-        layoutParams = LinearLayout.LayoutParams(dimens.l, dimens.l).apply {
+    /**
+     * A legend chip: the slice's own fill, with the same ink edge the chart draws.
+     *
+     * [sizePx] is a parameter because a legend sometimes has to copy a *shape*,
+     * not just a colour - a day with nothing spent is drawn as a tick, and a
+     * legend that shows it as a full square is lying about the chart.
+     */
+    fun swatch(@ColorInt color: Int, sizePx: Int = dimens.l): View = View(context).apply {
+        layoutParams = LinearLayout.LayoutParams(sizePx, sizePx).apply {
             marginEnd = dimens.m
         }
         background = GradientDrawable().apply {
@@ -361,6 +367,39 @@ class AliveComponents(private val context: Context) {
     /** Repaint a tile's face. The Focus picker swaps hue along with the mark. */
     fun tintTile(tile: ImageView, @ColorInt hue: Int) {
         tile.background = framed(hue, dimens.borderButton, dimens.shadowMinor, dimens.radiusTile.toFloat())
+    }
+
+    /**
+     * A tile whose content is one letter instead of a mark.
+     *
+     * This is the reference's logo square, drawn with the initial the device
+     * actually gives us. ALIVE does not ship app icons and will not pretend to
+     * have them - a letter is what a package name can honestly become at 32dp.
+     */
+    fun letterTile(letter: Char, @ColorInt hue: Int, sizePx: Int = dimens.markSmallSize): TextView =
+        TextView(context).apply {
+            text = letter.toString().uppercase()
+            setTextAppearance(R.style.TextAppearance_ALIVE_Option)
+            setTextColor(palette.ink)
+            gravity = Gravity.CENTER
+            background = framed(hue, dimens.borderButton, dimens.shadowMinor, dimens.radiusTile.toFloat())
+            layoutParams = LinearLayout.LayoutParams(sizePx, sizePx)
+        }
+
+    /**
+     * A block that wears a colour of its own rather than paper.
+     *
+     * For the one card on a screen that is raised without being asked - the
+     * coverage banner - where a white face would make it just another card.
+     */
+    fun tintedBlock(@ColorInt face: Int, weight: SurfaceWeight = SurfaceWeight.MINOR): LinearLayout {
+        val edge = if (weight == SurfaceWeight.MAJOR) dimens.borderBold else dimens.borderButton
+        val shadow = if (weight == SurfaceWeight.MAJOR) dimens.shadow else dimens.shadowMinor
+        val inset = dimens.cardInset
+        return column().apply {
+            background = framed(face, edge, shadow, dimens.radiusCard.toFloat())
+            setPadding(edge + inset, edge + inset, edge + shadow + inset, edge + shadow + inset)
+        }
     }
 
     /**

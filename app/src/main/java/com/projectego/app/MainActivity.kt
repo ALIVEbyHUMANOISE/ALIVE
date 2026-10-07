@@ -1637,9 +1637,23 @@ class MainActivity : AppCompatActivity() {
         val today = LocalDate.now()
         val todayKey = today.toString()
         val bars = chartBars(UsageChartStates.dateKeys(range, today), todayKey)
+        val (_, recordedCount) = UsageChartStates.totals(bars)
 
+        body.addView(ui.vgap(ui.dimens.groupGap))
+        body.addView(coverageBanner(bars, recordedCount))
+
+        // The chart and the meaning of its colours are two boxes side by side,
+        // the way the reference's analytics screen reads: nobody has to scroll
+        // past a picture to find out what the picture says.
         body.addView(ui.vgap(ui.dimens.cardGap))
-        body.addView(buildDayCard(range, todayKey, bars))
+        body.addView(
+            ui.row().apply {
+                gravity = Gravity.TOP
+                addView(ui.weighted(buildDayCard(range, todayKey, bars), 2.15f))
+                addView(ui.hgap(ui.dimens.cardGap))
+                addView(ui.weighted(buildKindLegend(bars), 1f))
+            }
+        )
 
         // Per-app time is only ever stated for today. It is stored for other
         // days, but a month of package names reads as surveillance, which is
@@ -1650,6 +1664,69 @@ class MainActivity : AppCompatActivity() {
             // left people wondering whether the feature had broken.
             body.addView(buildAppCard() ?: emptyAppCard())
         }
+    }
+
+    /**
+     * The one raised line on this screen: how much of the range ALIVE actually
+     * saw, said before any number below it is read.
+     *
+     * It is a banner rather than a footnote because the answer changes how every
+     * bar should be taken, and a footnote is how that gets skipped.
+     */
+    private fun coverageBanner(bars: List<DayBar>, recordedCount: Int): View {
+        val banner = ui.tintedBlock(ui.palette.softForest)
+        val line = ui.row()
+        line.addView(ui.iconTile(ui.palette.white, R.drawable.ic_pixel_chart, ui.dimens.character))
+        line.addView(ui.hgap(ui.dimens.m))
+        line.addView(
+            ui.weighted(
+                ui.column().apply {
+                    addView(ui.sectionHeader(getString(R.string.chart_coverage_eyebrow)))
+                    addView(ui.vgap(ui.dimens.pairGap))
+                    addView(ui.note(getString(UsageChartStates.coverageCopy(recordedCount, bars.size))))
+                }
+            )
+        )
+        banner.addView(line)
+        return banner
+    }
+
+    /**
+     * What each bar means, counted.
+     *
+     * The counts are the part a paragraph cannot do: eleven hollow stubs are easy
+     * to scan straight past on a chart, and "11 not seen" is not.
+     */
+    private fun buildKindLegend(bars: List<DayBar>): LinearLayout {
+        val card = ui.bentoCard(getString(R.string.chart_legend_heading))
+        card.addView(legendRow(bars, DayBarKind.SPENT, ui.palette.softForest, R.string.chart_kind_spent))
+        card.addView(ui.rowRule())
+        card.addView(legendRow(bars, DayBarKind.FULL, ui.palette.ink, R.string.chart_kind_full))
+        card.addView(ui.rowRule())
+        // The same ink as a full day, at the size the chart actually draws it: a
+        // day with an allowance and nothing spent is a tick on the line, not a
+        // bar and not an absence.
+        card.addView(
+            legendRow(bars, DayBarKind.ZERO, ui.palette.ink, R.string.chart_kind_zero, swatchPx = ui.dimens.s)
+        )
+        card.addView(ui.rowRule())
+        card.addView(legendRow(bars, DayBarKind.RECOVERY, ui.palette.warmGray, R.string.chart_kind_recovery))
+        card.addView(ui.rowRule())
+        card.addView(legendRow(bars, DayBarKind.MISSING, ui.palette.paper, R.string.chart_kind_missing))
+        return card
+    }
+
+    private fun legendRow(
+        bars: List<DayBar>,
+        kind: DayBarKind,
+        @ColorInt face: Int,
+        @StringRes name: Int,
+        swatchPx: Int = ui.dimens.l
+    ): View = ui.row().apply {
+        setPadding(0, ui.dimens.s, 0, ui.dimens.s)
+        addView(ui.swatch(face, swatchPx))
+        addView(ui.weighted(ui.meta(getString(name))))
+        addView(ui.tag(getString(R.string.chart_kind_count, bars.count { it.kind == kind })))
     }
 
     /** The app card with nothing in it - which is still a thing worth saying. */
@@ -1706,17 +1783,12 @@ class MainActivity : AppCompatActivity() {
             card.addView(ui.vgap(ui.dimens.pairGap))
             card.addView(ui.note(getString(R.string.chart_days_recorded, recordedCount, bars.size)))
         }
-        if (recordedCount < bars.size) {
-            card.addView(ui.vgap(ui.dimens.lineGap))
-            card.addView(ui.annotation(getString(UsageChartStates.coverageCopy(recordedCount, bars.size))))
-        }
 
         card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(ui.note(getString(R.string.chart_axis_note)))
-        card.addView(ui.vgap(ui.dimens.pairGap))
-        // The two marks that are not self-evident, named rather than left to
-        // guesswork: a gap in the record and a day with nothing to spend.
-        card.addView(ui.note(getString(R.string.chart_shape_note)))
+        // What each fill and shape means is the card beside this one, counted -
+        // a paragraph under the chart saying "hollow means unseen" was the same
+        // sentence twice.
         if (range == ChartRange.THIS_MONTH) {
             card.addView(ui.vgap(ui.dimens.pairGap))
             // A month has no room for 31 readable labels, so the row is
@@ -1790,7 +1862,14 @@ class MainActivity : AppCompatActivity() {
                 // ring does when tapped: the two never disagree.
                 setOnClickListener { donut.select(index) }
             }
-            row.addView(ui.swatch(slice.color))
+            // The tile wears the light end of the slice's own colour, so the row
+            // and its wedge on the ring are the same thing at two weights. The
+            // folded remainder keeps its warm gray fill - it is not one app and
+            // does not pretend to be.
+            val tileHue = if (slice.hatched) aggregateColor
+            else ContextCompat.getColor(this, AliveSeries.tileColor(index))
+            row.addView(ui.letterTile(slice.label.firstOrNull() ?: '?', tileHue))
+            row.addView(ui.hgap(ui.dimens.m))
             row.addView(
                 ui.weighted(ui.body(slice.label)).apply {
                     maxLines = 1

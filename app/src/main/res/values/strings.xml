@@ -251,6 +251,17 @@
     <string name="chart_range_week">Last 7 days</string>
     <string name="chart_range_month">This month</string>
     <string name="chart_axis_note">Each bar is a share of that day\'s own allowance.</string>
+    <!-- The legend card beside the chart: one line per kind of day, counted. -->
+    <string name="chart_legend_heading">The days</string>
+    <string name="chart_kind_spent">Spent</string>
+    <string name="chart_kind_full">Used it all</string>
+    <string name="chart_kind_zero">Nothing spent</string>
+    <string name="chart_kind_recovery">No allowance</string>
+    <string name="chart_kind_missing">Not seen</string>
+    <string name="chart_kind_count">%1$d</string>
+    <!-- The banner above both cards. It is a banner because the answer changes
+         how every bar should be read, and a footnote is how that gets skipped. -->
+    <string name="chart_coverage_eyebrow">Coverage</string>
     <string name="chart_month_axis">One column per day, left to right, then down to the next row - the 1st to today.</string>
     <string name="chart_days_heading">Days</string>
     <!-- Three glyphs, not five: a week's column is about 32dp wide and "TODAY"
@@ -261,7 +272,6 @@
     <string name="chart_day_detail">%1$s — %2$d of %3$d min.</string>
     <string name="chart_day_missing_detail">%1$s — ALIVE did not see this day.</string>
     <string name="chart_day_recovery_detail">%1$s — no entertainment time to spend.</string>
-    <string name="chart_shape_note">Hollow means ALIVE never saw the day. Hatched means there was no allowance to spend.</string>
     <string name="chart_total_label">Total</string>
     <string name="cd_usage_chart">Bar chart: entertainment minutes for each day in this range.</string>
     <string name="cd_app_donut">Ring chart: today\'s entertainment time, split by app.</string>
