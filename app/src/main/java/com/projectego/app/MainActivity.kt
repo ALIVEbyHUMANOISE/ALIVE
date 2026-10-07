@@ -1642,18 +1642,14 @@ class MainActivity : AppCompatActivity() {
         body.addView(ui.vgap(ui.dimens.groupGap))
         body.addView(coverageBanner(bars, recordedCount))
 
-        // The chart and the meaning of its colours are two boxes side by side,
-        // the way the reference's analytics screen reads: nobody has to scroll
-        // past a picture to find out what the picture says.
+        // The chart, then what its colours mean, one under the other. Side by side
+        // looked right in the reference and wrong on a phone: the legend's longest
+        // label, "No allowance", came out hyphenated across three lines in a
+        // sixty-dp column, and a chart is not worth reading if its key is broken.
         body.addView(ui.vgap(ui.dimens.cardGap))
-        body.addView(
-            ui.row().apply {
-                gravity = Gravity.TOP
-                addView(ui.weighted(buildDayCard(range, todayKey, bars), 2.15f))
-                addView(ui.hgap(ui.dimens.cardGap))
-                addView(ui.weighted(buildKindLegend(bars), 1f))
-            }
-        )
+        body.addView(buildDayCard(range, todayKey, bars))
+        body.addView(ui.vgap(ui.dimens.cardGap))
+        body.addView(buildKindLegend(bars))
 
         // Per-app time is only ever stated for today. It is stored for other
         // days, but a month of package names reads as surveillance, which is
@@ -1811,7 +1807,11 @@ class MainActivity : AppCompatActivity() {
      * Whatever is left over becomes one hatched slice that says so out loud.
      */
     private fun buildAppCard(): LinearLayout? {
-        val recorded = state.entertainmentAppDetails.filter { it.second > 0L }
+        // Sorted before it is cut off. The card claims the four biggest, and
+        // "whatever order the device happened to return" is not the four biggest.
+        val recorded = state.entertainmentAppDetails
+            .filter { it.second > 0L }
+            .sortedByDescending { it.second }
         if (recorded.isEmpty()) return null
 
         val total = recorded.sumOf { it.second }
@@ -1863,21 +1863,32 @@ class MainActivity : AppCompatActivity() {
                 setOnClickListener { donut.select(index) }
             }
             // The tile wears the light end of the slice's own colour, so the row
-            // and its wedge on the ring are the same thing at two weights. The
-            // folded remainder keeps its warm gray fill - it is not one app and
-            // does not pretend to be.
+            // and its wedge on the ring are one thing at two weights. The folded
+            // remainder keeps its warm gray fill - it is not one app and does not
+            // pretend to be.
             val tileHue = if (slice.hatched) aggregateColor
             else ContextCompat.getColor(this, AliveSeries.tileColor(index))
-            row.addView(ui.letterTile(slice.label.firstOrNull() ?: '?', tileHue))
+            row.addView(ui.textTile((index + 1).toString(), tileHue))
             row.addView(ui.hgap(ui.dimens.m))
             row.addView(
-                ui.weighted(ui.body(slice.label)).apply {
-                    maxLines = 1
-                    ellipsize = android.text.TextUtils.TruncateAt.END
-                    minimumWidth = 0
-                }
+                ui.weighted(
+                    ui.column().apply {
+                        addView(
+                            ui.body(slice.label).apply {
+                                maxLines = 1
+                                ellipsize = android.text.TextUtils.TruncateAt.END
+                                minimumWidth = 0
+                            }
+                        )
+                        addView(ui.vgap(ui.dimens.pairGap))
+                        // Measured against the day, not against first place: "half
+                        // my evening" is the fact, and a bar scaled to the biggest
+                        // app would make every other bar look nearly empty.
+                        addView(ui.meter(slice.minutes.toFloat() / total.toFloat(), slice.color))
+                    }
+                )
             )
-            row.addView(ui.hgap(ui.dimens.lineGap))
+            row.addView(ui.hgap(ui.dimens.m))
             row.addView(ui.tag(getString(R.string.unit_minutes, slice.minutes)))
             card.addView(row)
         }

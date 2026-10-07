@@ -370,20 +370,48 @@ class AliveComponents(private val context: Context) {
     }
 
     /**
-     * A tile whose content is one letter instead of a mark.
+     * A tile whose content is a short piece of text instead of a mark.
      *
-     * This is the reference's logo square, drawn with the initial the device
-     * actually gives us. ALIVE does not ship app icons and will not pretend to
-     * have them - a letter is what a package name can honestly become at 32dp.
+     * This is the reference's logo square, drawn with what ALIVE actually knows:
+     * the initial the device gives us, or the rank a row holds in a list. ALIVE
+     * does not ship app icons and will not pretend to have them.
      */
-    fun letterTile(letter: Char, @ColorInt hue: Int, sizePx: Int = dimens.markSmallSize): TextView =
+    fun textTile(value: CharSequence, @ColorInt hue: Int, sizePx: Int = dimens.markSmallSize): TextView =
         TextView(context).apply {
-            text = letter.toString().uppercase()
-            setTextAppearance(R.style.TextAppearance_ALIVE_Option)
+            text = value
+            setTextAppearance(R.style.TextAppearance_ALIVE_Number)
             setTextColor(palette.ink)
             gravity = Gravity.CENTER
+            includeFontPadding = false
             background = framed(hue, dimens.borderButton, dimens.shadowMinor, dimens.radiusTile.toFloat())
             layoutParams = LinearLayout.LayoutParams(sizePx, sizePx)
+        }
+
+    /**
+     * One proportional bar: this row's share of the whole it belongs to.
+     *
+     * A ranking is only readable if the gap between first and second is visible,
+     * and minutes alone make someone do the arithmetic.
+     */
+    fun meter(share: Float, @ColorInt fill: Int): View =
+        LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dimens.s)
+            background = outline(dimens.borderButton, dimens.radiusStep.toFloat(), palette.white)
+            val safe = share.coerceIn(0f, 1f)
+            addView(
+                View(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, safe)
+                    setBackgroundColor(fill)
+                }
+            )
+            if (safe < 1f) {
+                addView(
+                    View(context).apply {
+                        layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f - safe)
+                    }
+                )
+            }
         }
 
     /**
