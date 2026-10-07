@@ -1353,25 +1353,9 @@ class MainActivity : AppCompatActivity() {
                     }
                 )
                 addView(ui.vgap(ui.dimens.groupGap))
-                addView(ui.lead(quest.title))
-                if (completed) {
-                    // Under the name, not beside it. "Reclaimed" is nine glyphs in
-                    // the pixel face, and the eighty-odd dp left over next to a
-                    // tile in a half-width card clips them - so the gold goes on a
-                    // line of its own, where it can also be read out.
-                    addView(ui.vgap(ui.dimens.lineGap))
-                    addView(
-                        ui.row().apply {
-                            addView(ui.swatch(ui.palette.rewardMid))
-                            addView(
-                                ui.tag(getString(R.string.quest_reclaimed_label)).apply {
-                                    setTextColor(ui.palette.rewardDark)
-                                    gravity = Gravity.CENTER_VERTICAL
-                                }
-                            )
-                        }
-                    )
-                }
+                addView(ui.lead(quest.title).apply { minLines = QUEST_TITLE_LINES })
+                addView(ui.vgap(ui.dimens.lineGap))
+                addView(questCardFoot(quest, completed))
             }
         )
 
@@ -1379,6 +1363,32 @@ class MainActivity : AppCompatActivity() {
         // tap here cannot fail silently.
         wrapper.setOnClickListener { openQuestDetailPanel(quest.id) }
         return wrapper
+    }
+
+    /**
+     * The card's last line, which every card has.
+     *
+     * A grid whose rows are uneven reads as broken rather than varied, and the
+     * foot is where a card can say the one thing it knows about itself beyond its
+     * name: that it already paid out, or how hard it is. Both are one faded word
+     * or one gold square and a word - never a badge, a star, or a score.
+     */
+    private fun questCardFoot(quest: Quest, completed: Boolean): View = ui.row().apply {
+        if (completed) {
+            addView(ui.swatch(ui.palette.rewardMid))
+            addView(
+                ui.tag(getString(R.string.quest_reclaimed_label)).apply {
+                    setTextColor(ui.palette.rewardDark)
+                    gravity = Gravity.CENTER_VERTICAL
+                }
+            )
+        } else {
+            addView(
+                ui.tag(getString(AliveStates.difficultyLabel(quest.difficulty))).apply {
+                    setTextColor(ui.palette.inkMuted)
+                }
+            )
+        }
     }
 
     private fun openQuestDetailPanel(questId: String?) {
@@ -2121,3 +2131,9 @@ private const val DONUT_HEIGHT_DP = 200
 
 /** Cards per row on the quest board. Three is a mosaic; one is the list it was. */
 private const val QUEST_COLUMNS = 2
+
+/**
+ * Title lines every card reserves. Quest names are sentences, not words, so a
+ * grid without this is a grid of two heights.
+ */
+private const val QUEST_TITLE_LINES = 2

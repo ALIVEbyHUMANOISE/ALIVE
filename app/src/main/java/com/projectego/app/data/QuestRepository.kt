@@ -121,6 +121,15 @@ class QuestRepository(
                 difficulty = QuestDifficulty.EASY,
                 estimatedDurationMinutes = 20,
                 rewardMinutes = 15
+            ),
+            Quest(
+                id = "quest_draw_20",
+                title = "Draw for 20 Minutes",
+                description = "Sketch, ink, or paint something on paper or in a drawing app.",
+                category = QuestCategory.CREATIVE,
+                difficulty = QuestDifficulty.EASY,
+                estimatedDurationMinutes = 20,
+                rewardMinutes = 15
             )
         )
     }
