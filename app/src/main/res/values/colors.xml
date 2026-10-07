@@ -50,13 +50,5 @@
     <color name="alive_blue_work_dark">#27537A</color>
     <color name="alive_blue_work_mid">#4E86B4</color>
     <color name="alive_blue_work_pale">#D9E5EE</color>
-
-    <!-- Legacy template colors kept for resource compatibility -->
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
 </resources>
+

@@ -42,13 +42,21 @@
     <dimen name="shadow_offset">4dp</dimen>
     <dimen name="shadow_minor">2dp</dimen>
     <dimen name="radius_none">0dp</dimen>
-    <dimen name="step_width">10dp</dimen>
-    <dimen name="step_height">18dp</dimen>
-    <dimen name="step_gap">2dp</dimen>
 
     <dimen name="touch_min">48dp</dimen>
-    <dimen name="character_size">72dp</dimen>
+
+    <!-- Sprite sizes are multiples of 16dp because every sprite in this app is
+         drawn on a 16x16 grid; anything else puts a pixel on a fraction of a
+         device pixel and the art goes soft. AliveDimens.sprite() then rounds the
+         result to a whole multiple of 16 actual pixels, because a density of
+         1.75 makes even 64dp land at 10.5 px per cell. -->
+    <dimen name="character_size">64dp</dimen>
     <dimen name="character_size_large">96dp</dimen>
-    <dimen name="nav_icon_size">22dp</dimen>
+    <dimen name="mark_size">48dp</dimen>
+    <dimen name="mark_small_size">32dp</dimen>
+    <dimen name="nav_icon_size">32dp</dimen>
+    <dimen name="step_size">16dp</dimen>
+    <dimen name="step_gap">2dp</dimen>
+    <dimen name="caret_height">20dp</dimen>
 
 </resources>

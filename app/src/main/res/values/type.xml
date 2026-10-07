@@ -175,6 +175,9 @@
         <item name="itemTextColor">@color/nav_item_tint</item>
         <item name="itemActiveIndicatorStyle">@style/Widget.ALIVE.BottomNav.Indicator</item>
         <item name="labelVisibilityMode">labeled</item>
+        <!-- 32dp on the same 16 grid as every other sprite; it was 24dp, which
+             puts a 16-cell icon on 1.5 pixels per cell. -->
+        <item name="itemIconSize">@dimen/nav_icon_size</item>
         <item name="itemTextAppearanceActive">@style/TextAppearance.ALIVE.NavLabel</item>
         <item name="itemTextAppearanceInactive">@style/TextAppearance.ALIVE.NavLabel</item>
     </style>

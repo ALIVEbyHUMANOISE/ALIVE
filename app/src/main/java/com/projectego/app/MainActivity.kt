@@ -10,6 +10,7 @@ import android.provider.Settings
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -57,6 +58,7 @@ import com.projectego.app.ui.DayBar
 import com.projectego.app.ui.DayBarKind
 import com.projectego.app.ui.HomeAction
 import com.projectego.app.ui.PixelMarks
+import com.projectego.app.ui.RewardBurst
 import com.projectego.app.ui.StatusTone
 import com.projectego.app.ui.SurfaceWeight
 import com.projectego.app.ui.UsageChartStates
@@ -680,7 +682,7 @@ class MainActivity : AppCompatActivity() {
     private fun statGrid(signals: AliveSignals): LinearLayout = ui.column().apply {
         addView(
             ui.row().apply {
-                addView(ui.weighted(ui.statTile(getString(R.string.stat_streak), getString(R.string.stat_minutes, signals.currentStreak))))
+                addView(ui.weighted(streakTile(signals.currentStreak)))
                 addView(ui.ruleVertical())
                 addView(ui.weighted(ui.statTile(getString(R.string.stat_allowance), getString(R.string.stat_minutes, state.dailyLimitMinutes))))
             }
@@ -693,6 +695,22 @@ class MainActivity : AppCompatActivity() {
                 addView(ui.weighted(ui.statTile(getString(R.string.stat_bank), getString(R.string.stat_minutes, signals.reclaimedAvailableMinutes))))
             }
         )
+    }
+
+    /**
+     * The run twice over: as a number, and as the shape of that number.
+     *
+     * Seven gold cells filled from the left, and nothing else - the pips cannot
+     * say a bigger streak than seven, so the figure above them stays the one that
+     * is true. A run is worth showing as a shape because it is the only thing in
+     * this app that takes more than a day to build.
+     */
+    private fun streakTile(streak: Int): LinearLayout = ui.column().apply {
+        addView(ui.statTile(getString(R.string.stat_streak), getString(R.string.stat_minutes, streak)))
+        if (streak > 0) {
+            addView(ui.vgap(ui.dimens.lineGap))
+            addView(ui.streakPips(streak))
+        }
     }
 
     /**
@@ -778,12 +796,18 @@ class MainActivity : AppCompatActivity() {
         block.addView(ui.vgap(ui.dimens.groupGap))
 
         val available = state.signals?.reclaimedAvailableMinutes ?: 0L
-        val headline = when (attempt.state) {
-            QuestAttemptState.REWARDED ->
-                getString(R.string.attempt_rewarded, attempt.rewardMinutes ?: quest.rewardMinutes)
-            else -> getString(AliveStates.attemptHeadline(attempt.state))
+        if (attempt.state == QuestAttemptState.REWARDED) {
+            // The payout reads as a chip, not as a sentence: the word is the fact,
+            // the gold square is the amount, and the line below says where it went.
+            val rewardLine = ui.row()
+            rewardLine.addView(ui.lead(getString(R.string.quest_reclaimed_label)))
+            rewardLine.addView(ui.hgap(ui.dimens.m))
+            rewardLine.addView(ui.rewardChip(getString(R.string.unit_minutes_gain, attempt.rewardMinutes ?: quest.rewardMinutes)))
+            block.addView(rewardLine)
+            celebrateReward(block, attempt)
+        } else {
+            block.addView(ui.lead(getString(AliveStates.attemptHeadline(attempt.state))))
         }
-        block.addView(ui.lead(headline))
 
         val support = when (attempt.state) {
             // VERIFIED is not REWARDED: the minutes have counted, not landed.
@@ -813,9 +837,46 @@ class MainActivity : AppCompatActivity() {
         return block
     }
 
-    // ------------------------------------------------------------------
-    // TIME BANK
-    // ------------------------------------------------------------------
+    /**
+     * One party per quest.
+     *
+     * The burst is thrown from the rewarded card itself and fires the first time
+     * that attempt id is rendered, so re-renders, tab switches and returning to
+     * the app stay silent - a reward that celebrates for the fourth time is not a
+     * reward, it is a glitch. Which card wins is not decided here: Home, the Quest
+     * tab and the attempt panel all build this block, and the first one to render
+     * an unpaid-celebration attempt gets it. Nothing is owed a party after a
+     * restart, because the id is kept in memory only.
+     */
+    private fun celebrateReward(block: LinearLayout, attempt: QuestAttempt) {
+        if (state.celebratedAttemptId == attempt.attemptId) return
+        state.celebratedAttemptId = attempt.attemptId
+
+        val host = findViewById<ViewGroup>(android.R.id.content) ?: return
+        block.post {
+            if (block.width == 0) return@post
+            val card = IntArray(2)
+            val surface = IntArray(2)
+            block.getLocationInWindow(card)
+            host.getLocationInWindow(surface)
+            RewardBurst(this).apply {
+                paletteColors = intArrayOf(
+                    ui.palette.rewardMid,
+                    ui.palette.rewardDark,
+                    ui.palette.forest,
+                    ui.palette.ink
+                )
+                // Out of the sprite, not the middle of the screen: the reward has
+                // to look like it came from the thing that earned it.
+                show(
+                    host,
+                    (card[0] - surface[0] + block.width / 2f).coerceAtLeast(0f),
+                    (card[1] - surface[1] + block.height / 3f).coerceAtLeast(0f)
+                )
+            }
+        }
+    }
+
 
     /** Reclaimed time, stated as time - never as a currency or a score. */
     /**
@@ -1210,13 +1271,32 @@ class MainActivity : AppCompatActivity() {
         row.addView(info)
 
         row.addView(
-            if (completed) ui.note(getString(R.string.quest_reclaimed_label))
-            else ui.quiet(getString(R.string.quest_detail_open)).apply {
-                // A row never starts a quest in one tap: it opens the page that
-                // explains it first, so a tap here cannot fail silently.
-                setOnClickListener { openQuestDetailPanel(quest.id) }
+            if (completed) {
+                // A finished quest wears the same gold as the chip that paid it
+                // out, so "already banked" is recognisable without reading the word.
+                ui.row().apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    addView(ui.rewardMark())
+                    addView(
+                        ui.tag(getString(R.string.quest_reclaimed_label)).apply {
+                            setTextColor(ui.palette.rewardDark)
+                        }
+                    )
+                }
+            } else {
+                // The row itself is the target, so a thumb anywhere on the line
+                // opens it and the chevron is only the promise.
+                ui.chevronBlock(getString(R.string.quest_open_for, quest.title))
             }
         )
+        if (!completed) {
+            // Never a start: a row opens the page that explains the quest first, so
+            // a tap here cannot fail silently.
+            row.setOnClickListener { openQuestDetailPanel(quest.id) }
+        }
 
         return row
     }
@@ -1468,11 +1548,20 @@ class MainActivity : AppCompatActivity() {
         // days, but a month of package names reads as surveillance, which is
         // not what ALIVE claims to do.
         if (range == ChartRange.TODAY) {
-            buildAppCard()?.let { card ->
-                body.addView(ui.vgap(ui.dimens.cardGap))
-                body.addView(card)
-            }
+            body.addView(ui.vgap(ui.dimens.cardGap))
+            // An empty day is named, not omitted: a heading that vanished with it
+            // left people wondering whether the feature had broken.
+            body.addView(buildAppCard() ?: emptyAppCard())
         }
+    }
+
+    /** The app card with nothing in it - which is still a thing worth saying. */
+    private fun emptyAppCard(): LinearLayout {
+        val card = ui.bentoCard(getString(R.string.chart_apps_heading), weight = SurfaceWeight.PLAIN)
+        card.addView(ui.body(getString(R.string.chart_apps_none)))
+        card.addView(ui.vgap(ui.dimens.lineGap))
+        card.addView(ui.note(getString(R.string.chart_apps_none_support)))
+        return card
     }
 
     /** The days card: bars, what the marks mean, and how much of the range is real. */
@@ -1484,9 +1573,11 @@ class MainActivity : AppCompatActivity() {
         val detail = ui.note(getString(R.string.chart_tap_hint))
 
         val chart = BrutalistBarChart(this).apply {
+            // Wrap content, not a fixed height: the chart measures how many rows
+            // its own columns need.
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                ui.dimens.dp(if (range == ChartRange.THIS_MONTH) CHART_HEIGHT_MONTH else CHART_HEIGHT_DAY)
+                LinearLayout.LayoutParams.WRAP_CONTENT
             )
             contentDescription = getString(R.string.cd_usage_chart)
             setData(
@@ -1541,8 +1632,9 @@ class MainActivity : AppCompatActivity() {
     /**
      * Today's time by app: a ring, and the legend that names every slice.
      *
-     * Null when the device reported no entertainment apps, because a card that
-     * says "today, by app" with nothing in it is a card that should not exist.
+     * Null when the device reported no entertainment apps - the caller then
+     * prints [emptyAppCard], because the honest answer to "where did today go" is
+     * "nowhere that ALIVE could see", not a silent absence.
      *
      * The number in the middle of the ring is the day's total, not the sum of
      * the slices that fit: it used to be measured after the cut-off, so a fifth
@@ -1585,7 +1677,7 @@ class MainActivity : AppCompatActivity() {
         val donut = BrutalistDonut(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                ui.dimens.dp(CHART_HEIGHT_DAY)
+                ui.dimens.dp(DONUT_HEIGHT_DP)
             )
             totalCaption = getString(R.string.chart_total_label)
             contentDescription = getString(R.string.cd_app_donut)
@@ -1725,6 +1817,12 @@ class MainActivity : AppCompatActivity() {
                 addView(ui.body(getString(AliveStates.annotationFor(signals))))
                 addView(ui.vgap(ui.dimens.lineGap))
                 addView(ui.note(streakLine(signals.currentStreak)))
+                if (signals.currentStreak > 0) {
+                    addView(ui.vgap(ui.dimens.lineGap))
+                    // The sentence is the fact; the pips are its shape, capped at
+                    // seven because a run longer than that is read from the number.
+                    addView(ui.streakPips(signals.currentStreak, sizePx = ui.dimens.m))
+                }
                 if (state.guardGapOpen || state.guardGapRepairedToday) {
                     addView(ui.vgap(ui.dimens.lineGap))
                     addView(ui.note(getString(R.string.guard_profile_line)))
@@ -1846,17 +1944,19 @@ class MainActivity : AppCompatActivity() {
     // ------------------------------------------------------------------
 
     private fun renderDevPanel() {
-        val block = ui.column()
-        block.addView(ui.tag("[dev]"))
+        // A hairline and no shadow - the same veto a closed door gets. This panel
+        // is a way into the engine's switches and must never read as one of the
+        // things ALIVE shows a person.
+        val block = ui.block(SurfaceWeight.MINOR, StatusTone.QUIET)
+        block.addView(ui.sectionHeader(getString(R.string.dev_eyebrow)))
         block.addView(ui.vgap(ui.dimens.lineGap))
 
         block.addView(
             ui.quiet(
-                if (lockStateManager.isDevTestModeEnabled()) {
-                    "[dev] test mode ON - 1 min allowance"
-                } else {
-                    "[dev] test mode OFF - 120 min allowance"
-                }
+                getString(
+                    if (lockStateManager.isDevTestModeEnabled()) R.string.dev_test_mode_on
+                    else R.string.dev_test_mode_off
+                )
             ).apply {
                 setOnClickListener {
                     val enabled = lockStateManager.isDevTestModeEnabled()
@@ -1868,17 +1968,17 @@ class MainActivity : AppCompatActivity() {
         )
 
         block.addView(
-            ui.quiet("[dev] start 15-second test focus").apply {
+            ui.quiet(getString(R.string.dev_start_test_focus)).apply {
                 setOnClickListener {
                     focusSessionManager.startTestFocusSession(FocusActivityType.STUDY, "Test 15s Goal", 15)
-                    Toast.makeText(this@MainActivity, "[dev] 15-second study focus started", Toast.LENGTH_SHORT).show()
+                    toast(R.string.dev_test_focus_started)
                     renderDashboard()
                 }
             }
         )
 
         block.addView(
-            ui.quiet("[dev] simulate rollover - day kept").apply {
+            ui.quiet(getString(R.string.dev_rollover_kept)).apply {
                 setOnClickListener {
                     lockStateManager.simulateRollover(yesterday(), simulateLock = false)
                     renderDashboard()
@@ -1887,7 +1987,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         block.addView(
-            ui.quiet("[dev] simulate rollover - day exceeded").apply {
+            ui.quiet(getString(R.string.dev_rollover_exceeded)).apply {
                 setOnClickListener {
                     lockStateManager.simulateRollover(yesterday(), simulateLock = true)
                     renderDashboard()
@@ -1898,7 +1998,7 @@ class MainActivity : AppCompatActivity() {
         // The old direct-reward button stays inert: a reward has to come out of
         // the verification pipeline, and re-implementing it here would be a
         // second reward path.
-        val inert = ui.quiet("[dev] reward requires the verification pipeline")
+        val inert = ui.quiet(getString(R.string.dev_reward_locked))
         inert.isEnabled = false
         block.addView(inert)
 
@@ -1930,6 +2030,5 @@ class MainActivity : AppCompatActivity() {
 /** Kept clear of the focus form's 100/200 offsets, which are also view ids. */
 private const val CHART_RANGE_ID_BASE = 300
 
-/** Chart heights in dp. A month is shorter: 31 columns need width, not height. */
-private const val CHART_HEIGHT_DAY = 200
-private const val CHART_HEIGHT_MONTH = 150
+/** The ring is a circle, so it does need a height of its own. */
+private const val DONUT_HEIGHT_DP = 200

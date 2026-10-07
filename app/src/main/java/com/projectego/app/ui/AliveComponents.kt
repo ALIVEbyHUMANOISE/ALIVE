@@ -220,15 +220,24 @@ class AliveComponents(private val context: Context) {
 
     private fun drawableFor(surface: Surface): Drawable? {
         val face = surface.face ?: return null
+        return framed(face, surface.edge, surface.shadow)
+    }
+
+    /**
+     * A face with an ink edge and a hard ink shadow to its bottom-right - the one
+     * picture every raised object in this app wears, shared by cards and chips so
+     * a 10sp tag and a whole card are unmistakably the same kind of thing.
+     */
+    private fun framed(@ColorInt face: Int, edge: Int, shadow: Int): Drawable {
         val ink = GradientDrawable().apply { setColor(palette.ink) }
         val top = GradientDrawable().apply {
             setColor(face)
-            setStroke(surface.edge, palette.ink)
+            setStroke(edge, palette.ink)
         }
         // The face covers the ink layer everywhere but bottom-right, which is
         // what leaves a hard shadow rather than a blurred one.
         return LayerDrawable(arrayOf(ink, top)).apply {
-            setLayerInset(1, 0, 0, surface.shadow, surface.shadow)
+            setLayerInset(1, 0, 0, shadow, shadow)
         }
     }
 
@@ -356,7 +365,7 @@ class AliveComponents(private val context: Context) {
         for (index in 0 until segments) {
             addView(
                 View(context).apply {
-                    layoutParams = LinearLayout.LayoutParams(dimens.stepWidth, dimens.stepHeight).apply {
+                    layoutParams = LinearLayout.LayoutParams(dimens.stepSize, dimens.stepSize).apply {
                         marginEnd = if (index == segments - 1) 0 else dimens.stepGap
                     }
                     background = step(if (index < filled) fill else palette.white)
@@ -369,6 +378,59 @@ class AliveComponents(private val context: Context) {
     private fun step(@ColorInt face: Int): GradientDrawable = GradientDrawable().apply {
         setColor(face)
         setStroke(dimens.borderButton, palette.ink)
+    }
+
+    /**
+     * A run of days, as squares: one pip per day up to seven, and after that the
+     * row stays full while the sentence beside it keeps counting.
+     *
+     * The pips are the shape of the number, never the number itself - the text
+     * next to them stays authoritative, which is what "colour is never the only
+     * signal" means in practice. Gold is reserved for this and for time that was
+     * actually earned.
+     */
+    fun streakPips(filled: Int, total: Int = 7, sizePx: Int = dimens.l): LinearLayout = row().apply {
+        for (index in 0 until total) {
+            addView(
+                View(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(sizePx, sizePx).apply {
+                        marginEnd = if (index == total - 1) 0 else dimens.pairGap
+                    }
+                    background = step(if (index < filled) palette.rewardMid else palette.white)
+                }
+            )
+        }
+    }
+
+    /**
+     * Time that was actually paid out, on paper the colour of a reward.
+     *
+     * A chip rather than a sentence because it is a fact with a number in it, not
+     * a claim about the day: it arrives, it is small, and it never rewraps. Gold is
+     * only ever used here, on the pips above, and on the sprites that mark a
+     * finished quest - which is what lets it mean "earned" without a legend.
+     */
+    fun rewardChip(value: CharSequence): TextView = tag(value).apply {
+        setTextColor(palette.rewardDark)
+        background = framed(palette.rewardPale, dimens.borderButton, dimens.shadowMinor)
+        val inset = dimens.s
+        // The shadow is inside these bounds, so the right and bottom carry its
+        // width as padding or the gold sits on the glyph. Vertically the chip
+        // only needs the edge, because a 10sp line already carries its own air.
+        setPadding(
+            dimens.borderButton + inset,
+            dimens.borderButton + dimens.xs,
+            dimens.borderButton + dimens.shadowMinor + inset,
+            dimens.borderButton + dimens.shadowMinor + dimens.xs
+        )
+    }
+
+    /** One gold token: the marker beside a quest that has already paid out. */
+    fun rewardMark(sizePx: Int = dimens.s): View = View(context).apply {
+        layoutParams = LinearLayout.LayoutParams(sizePx, sizePx).apply {
+            marginEnd = dimens.pairGap
+        }
+        background = step(palette.rewardMid)
     }
 
     private fun Float.roundToIntClamped(max: Int): Int =
@@ -522,6 +584,34 @@ class AliveComponents(private val context: Context) {
         setCompoundDrawablesRelative(arrow, null, null, null)
         compoundDrawablePadding = dimens.m
     }
+
+    /**
+     * The square that says "this row opens": an edged block holding one glyph and
+     * no word.
+     *
+     * It is not a button, and the row it sits in is. A word like `Details` cost a
+     * list row eleven characters of width that the quest itself needed, and two
+     * tap targets in one row is two chances to miss. Mirroring the row's pressed
+     * state is what lets it still wear the pushed-in face when the row is pushed.
+     */
+    fun chevronBlock(name: CharSequence, sizePx: Int = dimens.touchMin): ImageView =
+        ImageView(context).apply {
+            setImageResource(R.drawable.ic_chevron_right_pixel)
+            contentDescription = name
+            isDuplicateParentStateEnabled = true
+            setBackgroundResource(R.drawable.bg_brutal_button_secondary)
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
+            val slack = (sizePx - dimens.markSmallSize) / 2
+            // Centred on the face, not on the bounds: the shadow is inside the
+            // bounds and would otherwise push the glyph toward the top-left.
+            setPadding(
+                slack + dimens.borderBold,
+                slack + dimens.borderBold,
+                slack + dimens.borderBold - dimens.shadow,
+                slack + dimens.borderBold - dimens.shadow
+            )
+            layoutParams = LinearLayout.LayoutParams(sizePx, sizePx)
+        }
 
     // ---------- FORM WIDGETS ----------
 

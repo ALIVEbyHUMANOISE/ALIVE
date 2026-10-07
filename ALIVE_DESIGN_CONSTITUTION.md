@@ -122,20 +122,38 @@ Storytelling needs **breathing room**.
 
 ### ALIVE Palette
 
-| Role | Color | Hex |
+Nine colours. Each one answers a question the other eight cannot.
+
+| Role | Answers | Hex |
 |---|---|---|
-| Paper | Main background | `#F5F1E8` |
-| Ink | Primary text / lines | `#1D1D1B` |
-| Forest | Main ALIVE identity | `#315C45` |
-| Soft Forest | Surfaces / highlights | `#DCE5DC` |
-| Warm Gray | Secondary elements | `#D8D2C7` |
-| White | Contrast areas | `#FFFDF8` |
+| Paper | Where am I? | `#F5F1E8` |
+| Ink | What is written? | `#1D1D1B` |
+| Forest | What is ALIVE offering? | `#315C45` |
+| Soft Forest | What is resting? | `#DCE5DC` |
+| Warm Gray | What is secondary, or not really here? | `#D8D2C7` |
+| White | What is a face? | `#FFFDF8` |
+| Gold | What did I actually earn? | mid `#E0A526`, dark `#6F4E0C`, pale `#F6E7C2` |
+| Red | What is running out? | mid `#D9553F`, dark `#9E2F22`, pale `#F3DAD3` |
+| Blue | What was worked for? | mid `#4E86B4`, dark `#27537A`, pale `#D9E5EE` |
+
+Gold, red and blue arrived late, and they had to argue for it: the palette read
+as one beige wall, and a game that keeps score needs a colour for a score. They
+were added for **data, chrome, illustration and reward** — nowhere else.
 
 Rule:
 
-> **Don't add a new color unless there is a real reason.**
+> **Don't add a new colour unless a role exists that no colour already plays.**
 
-Color must not be the only way to communicate status; use icons and text where appropriate.
+And the second rule, which is what the first one costs:
+
+> **A role colour must pass 4.5:1 as text against every surface it will sit on.**
+
+That is measured, not eyeballed — `AlivePaletteTest` runs the numbers so a
+future tweak cannot quietly make a label unreadable.
+
+Red is a threshold, not a decoration: it appears exactly where the app already
+states the same number as critical. Colour is never the only signal — the
+minutes are printed next to it.
 
 ---
 
@@ -281,6 +299,119 @@ The same character can move through states such as:
 **ALIVE**
 
 The application should therefore feel like **one continuous story**, not a collection of unrelated UI screens that merely share the same colors.
+
+---
+
+## 14 — Weight and Rhythm
+
+A box has two independent properties, and collapsing them is how every card on
+a screen ends up shouting.
+
+**Weight** — how loudly the eye should treat it: `MAJOR`, `MINOR`, `PLAIN`.
+**Tone** — what happened: `NEUTRAL`, `HELD`, `LANDED`, `QUIET`.
+
+> **A screen gets exactly one MAJOR.**
+
+What earns it is something broken or something in flight — the guard gap, a
+missing permission, a live quest — not whatever happened to render first.
+Ordinary content sits on the canvas with no edge at all.
+
+A closed door never wins: `QUIET` overrides weight down to a hairline and no
+shadow, whatever asked.
+
+No surface is dark. Weight comes from the edge and the shadow, never from an
+inverted fill.
+
+### Rhythm
+
+Six numbers, one per relationship (`res/values/dimens.xml`):
+
+| Token | Used for |
+|---|---|
+| `card_gap` 16dp | Air between cards |
+| `group_gap` 12dp | Inside a card, between groups |
+| `line_gap` 8dp | Between lines of one group |
+| `pair_gap` 4dp | Between two things that belong together |
+| `card_inset` 16dp | Inside a card's edge |
+| `ledger_inset` 12dp | Inside a ruled table cell |
+
+> **Nothing inside one card is `card_gap` or more apart.** If two things want
+> that much air, they are two cards.
+
+`card_gap` is wide so a MAJOR's 4dp shadow always lands on clean canvas: two
+cards must never touch. `card_inset + ledger_inset` equals the page gutter, so a
+tile inside a card lines up with the page edge instead of overhanging it.
+
+Padding is measured from the **face**, not from the view's bounds — the right
+and bottom carry the shadow's width as well, or a glyph ends up sitting on it.
+
+---
+
+## 15 — Type Scale
+
+Ten steps, one job each:
+
+| Step | Size | Job |
+|---|---|---|
+| Timer | 56sp | The one big number on a screen |
+| Display | 34sp | Wordmark, screen name |
+| Number | 28sp | A ledger figure |
+| Headline | 26sp | A statement worth its own line |
+| Lead | 20sp | Row titles, in-flight facts |
+| Body | 16sp | What is being read |
+| Note | 16sp | Support and disclosure — same size, one step quieter |
+| Annotation | 20sp | The handwritten aside |
+| SectionHeader | 13sp caps | The name of a block |
+| Tag | 10sp pixel | A number with a unit |
+
+Three faces, and they are not interchangeable: `sans-serif-black` carries
+structure, `vt323` carries numbers, `press_start_2p` carries labels.
+
+> **A size exists only if it does a job its neighbour cannot.**
+
+Two steps within 2sp of each other are one step wearing a different name — that
+is how a screen ends up with four "different" body sizes and no hierarchy.
+
+And the pixel face has a hard limit:
+
+> **Ten glyphs, and never a sentence.**
+
+Below that size it stops being readable text. It used to carry the bottom
+navigation and 32-character disclosures; both now use a face a person can read
+at a glance.
+
+Body prose is 16sp or larger, and no text may fall under the contrast floor
+measured in `AlivePaletteTest`.
+
+---
+
+## 16 — The Game Layer
+
+ALIVE keeps score, so it is allowed to look like a game — inside one budget.
+
+**What may move on its own:** the masthead's one-cell bob, the wordmark's block
+caret, and a 780ms burst of squares when a quest actually pays out. Everything
+else is still until touched.
+
+> **One celebration per earned thing, not per render.**
+
+The app remembers which attempt it already celebrated; a reward that parties for
+the fourth time is a glitch.
+
+All of it stops when the device says *remove animated transitions*. That setting
+is obeyed, not overridden.
+
+**Gold means earned**, and only appears on: the reward chip, the streak pips, the
+marker beside a finished quest, and one chart slice. Pips are the *shape* of a
+number, never the number itself — the figure beside them stays authoritative.
+
+There are no levels, no XP, no rarity, no badges, no streak scores, and no
+confetti for something nobody did.
+
+**Pixel geometry:** every sprite is a 16×16 grid and every sprite size snaps to
+whole device cells, because a stretched pixel is not a pixel. Charts wrap into
+balanced rows rather than shrinking past an 18dp slot, labels are printed only
+where they actually fit, and the label floor is 8sp.
 
 ---
 

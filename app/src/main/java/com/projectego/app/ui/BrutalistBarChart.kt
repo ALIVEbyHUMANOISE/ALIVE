@@ -9,6 +9,7 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import com.projectego.app.R
+import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
 
@@ -24,6 +25,10 @@ import kotlin.math.min
  *
  * No entry animation and no springs: the bar is already where it belongs when
  * the card opens. Touch only ever selects, so a drag still scrolls the panel.
+ *
+ * Columns are laid out by [ChartGeometry]: when a month cannot have an honest
+ * slot width in one row, it becomes several balanced rows, each with its own
+ * baseline. A chart that shrinks to fit 31 days is a chart of 31 hairlines.
  */
 class BrutalistBarChart(context: Context) : View(context) {
 
@@ -61,7 +66,9 @@ class BrutalistBarChart(context: Context) : View(context) {
     }
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         typeface = resources.getFont(R.font.press_start_2p)
-        textSize = sp(7f)
+        // Eight is the floor. Below it this face stops being text and becomes a
+        // texture, which is exactly what seven sp made the month's labels.
+        textSize = sp(8f)
         textAlign = Paint.Align.CENTER
         color = palette.inkSecondary
     }
@@ -90,7 +97,7 @@ class BrutalistBarChart(context: Context) : View(context) {
 
     private val taps = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
         override fun onSingleTapUp(event: MotionEvent): Boolean {
-            selectAt(event.x)
+            selectAt(event.x, event.y)
             return true
         }
     })
@@ -110,47 +117,80 @@ class BrutalistBarChart(context: Context) : View(context) {
         invalidate()
     }
 
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val measuredWidth = resolveSize(suggestedMinimumWidth, widthMeasureSpec)
+        val grid = geometryFor(measuredWidth)
+        setMeasuredDimension(measuredWidth, resolveSize(ceil(desiredHeight(grid)).toInt(), heightMeasureSpec))
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        if (columns.isEmpty()) return
+        val grid = geometry()
+        if (columns.isEmpty() || grid.isEmpty) return
 
-        val labelMetrics = labelPaint.fontMetrics
-        val labelBand = (labelMetrics.descent - labelMetrics.ascent) + dimens.s
+        val labelBand = labelBandHeight()
         val left = paddingLeft + dimens.s.toFloat()
         val right = width - paddingRight - dimens.s.toFloat()
-        val baseline = height - paddingBottom - labelBand
-        val top = paddingTop + bubbleBand()
-        val plotHeight = baseline - top
-        if (right <= left || plotHeight <= 0f) return
+        if (right <= left) return
 
-        val slot = (right - left) / columns.size
-        val barWidth = min(slot * 0.62f, dp(30f)).coerceAtLeast(dp(3f))
+        val singleRow = grid.rowCount == 1
+        val headroom = if (singleRow) bubbleBand() else dimens.s.toFloat()
+        val top = paddingTop + headroom
+        val foot = height - paddingBottom - labelBand
+        val pitch = (foot - top - edge.strokeWidth) / grid.rowCount
+        val plotHeight = pitch - rowGap()
+        if (plotHeight <= 0f) return
 
-        // The axis: one ink rule every bar stands on.
-        face.color = palette.ink
-        canvas.drawRect(left, baseline, right, baseline + edge.strokeWidth, face)
+        val slot = (right - left) / grid.columnsPerRow
+        val barWidth = ChartGeometry.barWidth(slot, dp(30f), dp(3f))
+        val labelMargin = ChartGeometry.LABEL_MARGIN_DP * resources.displayMetrics.density
 
         columns.forEachIndexed { index, column ->
-            val centre = left + slot * index + slot / 2f
+            val row = grid.rowOf(index)
+            val centre = left + slot * (index - row * grid.columnsPerRow) + slot / 2f
+            val baseline = top + row * pitch + plotHeight
+
             if (index == selected) {
                 // The selection is a band across the whole slot rather than a
                 // hairline around the bar: at month width a bar is 4dp and an
                 // inset outline on it is invisible, while a band is legible at
                 // any width and cannot overflow its own column.
-                shape.set(centre - slot / 2f, top, centre + slot / 2f, baseline)
+                shape.set(centre - slot / 2f, baseline - plotHeight, centre + slot / 2f, baseline)
                 canvas.drawRect(shape, band)
-                canvas.drawLine(shape.left, top, shape.left, baseline, edge)
-                canvas.drawLine(shape.right, top, shape.right, baseline, edge)
+                canvas.drawLine(shape.left, top + row * pitch, shape.left, baseline, edge)
+                canvas.drawLine(shape.right, top + row * pitch, shape.right, baseline, edge)
             }
-            drawColumn(canvas, column, centre, barWidth, top, baseline, plotHeight)
-            labelPaint.color = if (index == selected) palette.ink else palette.inkSecondary
-            if (column.label.isNotEmpty()) {
-                canvas.drawText(column.label, centre, baseline + dimens.s - labelMetrics.ascent, labelPaint)
+            drawColumn(canvas, column, centre, barWidth, baseline - plotHeight, baseline, plotHeight)
+
+            // Only the last row is named: a label per row would be three bands of
+            // type between the bars, and the day each column is stays readable
+            // from its order.
+            if (row == grid.rowCount - 1 &&
+                ChartGeometry.labelFits(labelPaint.measureText(column.label), slot, labelMargin)
+            ) {
+                labelPaint.color = if (index == selected) palette.ink else palette.inkSecondary
+                canvas.drawText(column.label, centre, baseline + dimens.s - labelPaint.fontMetrics.ascent, labelPaint)
             }
         }
 
-        if (selected in columns.indices) {
-            drawValueBubble(canvas, columns[selected], left + slot * selected + slot / 2f, top)
+        // One ink rule per row, because each row is its own axis: a bar's height
+        // is that day's share of its allowance, measured from the line under it.
+        face.color = palette.ink
+        for (row in 0 until grid.rowCount) {
+            val baseline = top + row * pitch + plotHeight
+            canvas.drawRect(left, baseline, right, baseline + edge.strokeWidth, face)
+        }
+
+        // The number belongs in the sky above a bar, and a wrapped month has no
+        // sky - the day line under the chart says it instead.
+        if (singleRow && selected in columns.indices) {
+            val row = grid.rowOf(selected)
+            drawValueBubble(
+                canvas,
+                columns[selected],
+                left + slot * (selected - row * grid.columnsPerRow) + slot / 2f,
+                top
+            )
         }
     }
 
@@ -270,13 +310,57 @@ class BrutalistBarChart(context: Context) : View(context) {
 
     private fun bubbleBand(): Float = dp(24f)
 
-    private fun selectAt(x: Float) {
+    private fun rowGap(): Float = dp(10f)
+
+    private fun labelBandHeight(): Float =
+        (labelPaint.fontMetrics.descent - labelPaint.fontMetrics.ascent) + dimens.s
+
+    /** The columns this width asks for - and therefore how tall the view wants to be. */
+    private fun geometry(): ChartLayout = geometryFor(width)
+
+    private fun geometryFor(viewWidth: Int): ChartLayout = ChartGeometry.layout(
+        viewWidth - paddingLeft - paddingRight - 2f * dimens.s,
+        columns.size,
+        resources.displayMetrics.density
+    )
+
+    /**
+     * The height a grid needs, asked for rather than imposed.
+     *
+     * A month used to be handed 150dp for 31 columns and expected to fit; the
+     * result was bars thinner than their own outline. Here the chart says how
+     * many rows its columns need and how tall those rows are, and the card gives
+     * it that.
+     */
+    private fun desiredHeight(grid: ChartLayout): Float {
+        if (grid.isEmpty) return dimens.xl.toFloat()
+        val headroom = if (grid.rowCount == 1) bubbleBand() else dimens.s.toFloat()
+        val plot = dp(if (grid.rowCount == 1) SINGLE_ROW_PLOT_DP else WRAPPED_ROW_PLOT_DP)
+        return paddingTop + headroom +
+            grid.rowCount * (plot + rowGap()) - rowGap() +
+            edge.strokeWidth + labelBandHeight() + paddingBottom
+    }
+
+    private fun selectAt(x: Float, y: Float) {
         if (columns.isEmpty()) return
+        val grid = geometry()
+        if (grid.isEmpty) return
         val left = paddingLeft + dimens.s.toFloat()
         val right = width - paddingRight - dimens.s.toFloat()
         if (x < left || x > right) return
-        val slot = (right - left) / columns.size
-        val index = ((x - left) / slot).toInt().coerceIn(0, columns.lastIndex)
+
+        val singleRow = grid.rowCount == 1
+        val top = paddingTop + (if (singleRow) bubbleBand() else dimens.s.toFloat())
+        val foot = height - paddingBottom - labelBandHeight()
+        val pitch = (foot - top - edge.strokeWidth) / grid.rowCount
+        if (pitch <= 0f) return
+
+        val slot = (right - left) / grid.columnsPerRow
+        val row = ((y - top) / pitch).toInt().coerceIn(0, grid.rowCount - 1)
+        val column = ((x - left) / slot).toInt().coerceIn(0, grid.columnsPerRow - 1)
+        val index = grid.indexAt(row, column)
+        if (index < 0) return
+
         selected = if (selected == index) -1 else index
         invalidate()
         onColumnTapped?.invoke(selected)
@@ -305,4 +389,12 @@ class BrutalistBarChart(context: Context) : View(context) {
 
     private fun sp(value: Float): Float =
         TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, value, resources.displayMetrics)
+
+    private companion object {
+        /** One row gets a whole chart's plot height: there is nothing above it. */
+        const val SINGLE_ROW_PLOT_DP = 140f
+
+        /** A wrapped month is a grid, and a grid row is a step, not a stage. */
+        const val WRAPPED_ROW_PLOT_DP = 48f
+    }
 }

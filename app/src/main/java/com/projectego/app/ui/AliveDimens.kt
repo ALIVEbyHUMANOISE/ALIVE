@@ -53,8 +53,6 @@ class AliveDimens(context: Context) {
     val ledgerInset = px(R.dimen.ledger_inset)
 
     val touchMin = px(R.dimen.touch_min)
-    val character = px(R.dimen.character_size)
-    val characterLarge = px(R.dimen.character_size_large)
 
     /** Thick ink edge on a MAJOR block. */
     val borderBold = px(R.dimen.border_bold)
@@ -71,12 +69,45 @@ class AliveDimens(context: Context) {
     /** How far a MINOR shadow sits: present, so the face still lifts, quiet. */
     val shadowMinor = px(R.dimen.shadow_minor)
 
-    val stepWidth = px(R.dimen.step_width)
-    val stepHeight = px(R.dimen.step_height)
+    /** One block of a meter. Square, because a stretched pixel is not a pixel. */
+    val stepSize = px(R.dimen.step_size)
     val stepGap = px(R.dimen.step_gap)
+
+    /** A full-size sprite, snapped to whole device pixels. */
+    val character = sprite(R.dimen.character_size)
+    val characterLarge = sprite(R.dimen.character_size_large)
+
+    /** A category mark beside a list row, and the smaller one in the history. */
+    val markSize = sprite(R.dimen.mark_size)
+    val markSmallSize = sprite(R.dimen.mark_small_size)
+
+    /** The bottom navigation icon, which used to be 24dp on a 16 grid. */
+    val navIcon = sprite(R.dimen.nav_icon_size)
+
+    /** The block cursor's height; its width is half of it. */
+    val caretHeight = px(R.dimen.caret_height)
+
+    /**
+     * A sprite size in pixels, rounded so one cell of its 16x16 grid is a whole
+     * number of device pixels.
+     *
+     * Every sprite here is drawn on 16 cells. At a density of 1.75 even a "clean"
+     * 64dp is 112 px, which is 7 - fine - but 48dp is 84, or 5.25 cells, and that
+     * is how crisp pixel art ends up soft at the edges.
+     */
+    fun sprite(@DimenRes id: Int): Int = snap(px(id))
+
+    fun spriteDp(value: Int): Int = snap(dp(value))
+
+    private fun snap(pixels: Int): Int = (pixels + SPRITE_CELL / 2) / SPRITE_CELL * SPRITE_CELL
 
     /** For one-off measurements that do not deserve their own dimen resource. */
     fun dp(value: Int): Int = (value * density).toInt()
 
     private fun px(@DimenRes id: Int): Int = resources.getDimensionPixelSize(id)
+
+    private companion object {
+        /** Every sprite in this app is drawn on a 16x16 grid. */
+        const val SPRITE_CELL = 16
+    }
 }

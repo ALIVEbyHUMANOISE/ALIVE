@@ -28,8 +28,12 @@ class CriticalAlertActivity : AppCompatActivity() {
         val limit = intent.getLongExtra("EXTRA_CRITICAL_LIMIT_MINUTES", 0L)
 
         // Zero belongs to the lock, not to a note. If the extras ever arrive
-        // empty there is nothing honest to say, so say nothing.
+        // empty there is nothing honest to say, so say nothing - and take the
+        // dim with it. The theme greys the screen for the card's benefit, and a
+        // card that never appears would otherwise leave a rectangle of grey over
+        // someone's dialler for a frame.
         if (remaining <= 0L) {
+            window.attributes = window.attributes.apply { dimAmount = 0f }
             finish()
             return
         }

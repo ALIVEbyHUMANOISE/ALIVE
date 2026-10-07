@@ -79,6 +79,13 @@ class AliveRenderState {
     var guardGapOpen: Boolean = false
     var guardGapRepairedToday: Boolean = false
 
+    /**
+     * The last attempt ALIVE has already celebrated, so the burst is one event
+     * per quest instead of one per render. Memory only, like everything here:
+     * nothing is owed a party after a restart.
+     */
+    var celebratedAttemptId: String? = null
+
     var panel: AlivePanel = AlivePanel.NONE
 
     /** The quest the detail panel is showing. */

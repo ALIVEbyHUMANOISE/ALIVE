@@ -89,7 +89,9 @@
     <string name="quest_yours">Your quests</string>
     <string name="quest_current">Current quest</string>
     <string name="quest_reclaimed_label">Reclaimed</string>
-    <string name="quest_detail_open">Details</string>
+    <!-- The chevron block has no word on it, so the row's name is said here
+         instead: what a screen reader announces for the whole line. -->
+    <string name="quest_open_for">Open %1$s</string>
     <string name="quest_not_verifiable">ALIVE can\'t verify this kind of session automatically yet.</string>
     <string name="quest_cannot_start">One thing at a time. Finish what\'s running first.</string>
     <string name="quest_start_failed">ALIVE couldn\'t start that quest.</string>
@@ -244,7 +246,7 @@
     <string name="chart_range_week">Last 7 days</string>
     <string name="chart_range_month">This month</string>
     <string name="chart_axis_note">Each bar is a share of that day\'s own allowance.</string>
-    <string name="chart_month_axis">One column per day, left to right, first of the month to today.</string>
+    <string name="chart_month_axis">One column per day, left to right, then down to the next row - the 1st to today.</string>
     <string name="chart_days_heading">Days</string>
     <!-- Three glyphs, not five: a week's column is about 32dp wide and "TODAY"
          does not fit a pixel label at the floor size. -->
@@ -271,6 +273,8 @@
     <string name="chart_apps_heading">Today, by app</string>
     <string name="chart_labels_note">ALIVE only gets the names the device is willing to give it. Some show as part of their package name.</string>
     <string name="chart_apps_folded">%1$d smaller ones</string>
+    <string name="chart_apps_none">No app minutes for today yet.</string>
+    <string name="chart_apps_none_support">ALIVE writes down only what it sees, so a day it saw nothing in stays a day with nothing in it.</string>
     <string name="chart_total_minutes">%1$d min across the days ALIVE saw</string>
     <string name="chart_days_recorded">%1$d of %2$d days recorded</string>
     <string name="chart_none">ALIVE hasn\'t recorded a day yet.</string>
@@ -303,4 +307,18 @@
     <string name="guard_profile_line">Today had a stretch with the guard off.</string>
     <string name="cd_guard_mark">Pixel figure, awake and looking sideways.</string>
     <string name="permissions_accessibility_why">Accessibility is how ALIVE closes an app when its time is up. Without it nothing is closed, and the day is marked as unguarded.</string>
+
+    <!-- ============ DEV PANEL ============
+
+         Debug builds only, reached by seven quick taps on the wordmark. Every
+         line keeps its [dev] prefix so a screenshot of a test mode can never be
+         mistaken for copy ALIVE says to a person. -->
+    <string name="dev_eyebrow">[dev]</string>
+    <string name="dev_test_mode_on">[dev] test mode ON - 1 min allowance</string>
+    <string name="dev_test_mode_off">[dev] test mode OFF - 120 min allowance</string>
+    <string name="dev_start_test_focus">[dev] start 15-second test focus</string>
+    <string name="dev_rollover_kept">[dev] simulate rollover - day kept</string>
+    <string name="dev_rollover_exceeded">[dev] simulate rollover - day exceeded</string>
+    <string name="dev_reward_locked">[dev] reward requires the verification pipeline</string>
+    <string name="dev_test_focus_started">[dev] 15-second study focus started</string>
 </resources>
