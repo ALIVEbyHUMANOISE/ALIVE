@@ -91,6 +91,23 @@
     <string name="cd_shortcut_bank">Pixel clock: jump to the Time Bank.</string>
     <string name="cd_shortcut_focus">Pixel target: jump to starting a focus session.</string>
 
+    <!-- ============ THE BOARD ITSELF ============
+
+         The catalog's words live here, not in QuestRepository, so the board can
+         speak the language the screen speaks. Only quest ids are ever stored. -->
+    <string name="quest_walk_title">Walk 20 Minutes</string>
+    <string name="quest_walk_body">Go for a brisk walk outside or on a treadmill without looking at social media.</string>
+    <string name="quest_study_title">Study for 30 Minutes</string>
+    <string name="quest_study_body">Focus on focused learning, course materials, or technical documentation.</string>
+    <string name="quest_read_title">Read for 30 Minutes</string>
+    <string name="quest_read_body">Read a physical book, kindle, or educational long-form article.</string>
+    <string name="quest_exercise_title">Exercise for 20 Minutes</string>
+    <string name="quest_exercise_body">Complete a workout routine, calisthenics, gym session, or stretching.</string>
+    <string name="quest_clean_title">Clean Your Room for 20 Minutes</string>
+    <string name="quest_clean_body">Organize your desk, make your bed, clean your living environment.</string>
+    <string name="quest_draw_title">Draw for 20 Minutes</string>
+    <string name="quest_draw_body">Sketch, ink, or paint something on paper or in a drawing app.</string>
+
     <!-- ============ QUEST BOARD ============ -->
     <!-- The board's headline is a statement in two lines, the way the reference
          says what a screen is for before anything on it is read. -->
@@ -269,14 +286,16 @@
     <string name="chart_range_week">Last 7 days</string>
     <string name="chart_range_month">This month</string>
     <string name="chart_axis_note">Each bar is a share of that day\'s own allowance.</string>
-    <!-- The legend card beside the chart: one line per kind of day, counted. -->
-    <string name="chart_legend_heading">The days</string>
+    <!-- The key under the chart: one row per kind of day, counted, and tappable. -->
+    <string name="chart_legend_all">All days</string>
+    <string name="chart_legend_row">%1$s · %2$d</string>
+    <string name="chart_legend_showing_all">Showing every day in this range.</string>
+    <string name="chart_legend_showing">Showing only %1$s days · %2$d</string>
     <string name="chart_kind_spent">Spent</string>
     <string name="chart_kind_full">Used it all</string>
     <string name="chart_kind_zero">Nothing spent</string>
     <string name="chart_kind_recovery">No allowance</string>
     <string name="chart_kind_missing">Not seen</string>
-    <string name="chart_kind_count">%1$d</string>
     <!-- The banner above both cards. It is a banner because the answer changes
          how every bar should be read, and a footnote is how that gets skipped. -->
     <string name="chart_coverage_eyebrow">Coverage</string>
@@ -309,7 +328,6 @@
     <string name="chart_apps_none">No app minutes for today yet.</string>
     <string name="chart_apps_none_support">ALIVE writes down only what it sees, so a day it saw nothing in stays a day with nothing in it.</string>
     <string name="chart_total_minutes">%1$d min across the days ALIVE saw</string>
-    <string name="chart_days_recorded">%1$d of %2$d days recorded</string>
     <string name="chart_none">ALIVE hasn\'t recorded a day yet.</string>
     <string name="chart_just_started">This is the first day ALIVE has recorded.</string>
     <string name="chart_partial">Only the days ALIVE saw are counted. Nothing is filled in.</string>

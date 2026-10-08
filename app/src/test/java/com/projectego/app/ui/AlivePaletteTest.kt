@@ -146,6 +146,16 @@ class AlivePaletteTest {
         assertTrue("amber against reward gold = $ratio", ratio >= 1.3)
     }
 
+    @Test
+    fun `the two kinds that share a bar shape are told apart by more than height`() {
+        // A tall bar is either a day that ran its allowance out or a day that spent
+        // part of it, and those say opposite things about the same evening. Every
+        // other kind in the chart is separated by shape - a tick, a hatched stub, a
+        // hollow one - so this is the one pair colour has to carry on its own.
+        val ratio = contrast(color(R.color.alive_red_short_mid), color(R.color.alive_soft_forest))
+        assertTrue("shortMid against softForest = $ratio", ratio >= 1.3)
+    }
+
     /** WCAG 2.1 relative luminance, after compositing any alpha onto the ground. */
     private fun contrast(foreground: Int, background: Int): Double {
         val blended = blend(foreground, background)

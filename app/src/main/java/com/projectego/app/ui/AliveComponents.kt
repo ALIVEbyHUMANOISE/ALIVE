@@ -2,6 +2,7 @@ package com.projectego.app.ui
 
 import android.content.Context
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
@@ -731,6 +732,45 @@ class AliveComponents(private val context: Context) {
     }
 
     // ---------- FORM WIDGETS ----------
+
+    /**
+     * A legend row you can choose.
+     *
+     * The swatch is drawn the way the chart draws its bars - same fill, same ink
+     * edge, same corner - so a key and its picture cannot drift apart. The count
+     * rides in the label, and the chosen row is marked by a thicker frame plus a
+     * sentence under the group, because a highlight that only changes colour says
+     * nothing to the person who cannot see the difference.
+     */
+    fun legendOption(value: CharSequence, @ColorInt swatchColor: Int, swatchPx: Int = dimens.l): RadioButton =
+        RadioButton(context).apply {
+            setTextAppearance(R.style.TextAppearance_ALIVE_Meta)
+            text = value
+            setTextColor(palette.ink)
+            buttonDrawable = null
+            gravity = Gravity.CENTER_VERTICAL
+            minHeight = dimens.touchMin
+            setPadding(dimens.m, dimens.xs, dimens.m, dimens.xs)
+            val swatch = GradientDrawable().apply {
+                setColor(swatchColor)
+                setStroke(dimens.borderButton, palette.ink)
+                cornerRadius = dimens.radiusStep.toFloat()
+                setBounds(0, 0, swatchPx, swatchPx)
+            }
+            setCompoundDrawablesRelative(swatch, null, null, null)
+            compoundDrawablePadding = dimens.m
+            background = StateListDrawable().apply {
+                addState(
+                    intArrayOf(android.R.attr.state_checked),
+                    outline(dimens.borderBold, dimens.radiusTile.toFloat(), palette.white)
+                )
+                addState(intArrayOf(), ColorDrawable(Color.TRANSPARENT))
+            }
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
 
     /**
      * A single-choice tile: the hue it wears once it is the one picked, an

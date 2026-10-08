@@ -6,6 +6,7 @@ import com.projectego.app.model.Quest
 import com.projectego.app.model.QuestAttempt
 import com.projectego.app.model.QuestAttemptState
 import com.projectego.app.model.QuestCategory
+import com.projectego.app.R
 import com.projectego.app.model.QuestDifficulty
 import com.projectego.app.model.QuestStatus
 import com.projectego.app.model.VerificationMethod
@@ -81,64 +82,79 @@ class QuestRepository(
         private const val ATTEMPT_FIELD_COUNT = 14
         private const val LEGACY_ATTEMPT_FIELD_COUNT = 12
 
-        // Static initial quests for Phase 2.1
-        private val INITIAL_QUESTS = listOf(
-            Quest(
-                id = "quest_walk_20",
-                title = "Walk 20 Minutes",
-                description = "Go for a brisk walk outside or on a treadmill without looking at social media.",
-                category = QuestCategory.WALKING,
-                difficulty = QuestDifficulty.EASY,
-                estimatedDurationMinutes = 20,
-                rewardMinutes = 15
-            ),
-            Quest(
-                id = "quest_study_30",
-                title = "Study for 30 Minutes",
-                description = "Focus on focused learning, course materials, or technical documentation.",
-                category = QuestCategory.STUDY,
-                difficulty = QuestDifficulty.MEDIUM,
-                estimatedDurationMinutes = 30,
-                rewardMinutes = 20
-            ),
-            Quest(
-                id = "quest_read_30",
-                title = "Read for 30 Minutes",
-                description = "Read a physical book, kindle, or educational long-form article.",
-                category = QuestCategory.READING,
-                difficulty = QuestDifficulty.MEDIUM,
-                estimatedDurationMinutes = 30,
-                rewardMinutes = 20
-            ),
-            Quest(
-                id = "quest_exercise_20",
-                title = "Exercise for 20 Minutes",
-                description = "Complete a workout routine, calisthenics, gym session, or stretching.",
-                category = QuestCategory.EXERCISE,
-                difficulty = QuestDifficulty.MEDIUM,
-                estimatedDurationMinutes = 20,
-                rewardMinutes = 25
-            ),
-            Quest(
-                id = "quest_clean_20",
-                title = "Clean Your Room for 20 Minutes",
-                description = "Organize your desk, make your bed, clean your living environment.",
-                category = QuestCategory.CLEANING,
-                difficulty = QuestDifficulty.EASY,
-                estimatedDurationMinutes = 20,
-                rewardMinutes = 15
-            ),
-            Quest(
-                id = "quest_draw_20",
-                title = "Draw for 20 Minutes",
-                description = "Sketch, ink, or paint something on paper or in a drawing app.",
-                category = QuestCategory.CREATIVE,
-                difficulty = QuestDifficulty.EASY,
-                estimatedDurationMinutes = 20,
-                rewardMinutes = 15
-            )
+        // The board's quests, by id. The text lives in resources so the board can
+        // speak the language the screen is speaking; only these ids ever reach
+        // storage, so re-resolving the words on every read costs nothing.
+        val INITIAL_QUEST_IDS = listOf(
+            "quest_walk_20", "quest_study_30", "quest_read_30",
+            "quest_exercise_20", "quest_clean_20", "quest_draw_20"
         )
     }
+
+    /**
+     * The quest board, built from resources.
+     *
+     * Titles and descriptions used to be English literals baked into the catalog,
+     * which is how an Indonesian app ended up showing "Walk 20 Minutes" on every
+     * card. Nothing stores a title, so this is resolved fresh on each read and
+     * follows the language the moment it changes.
+     */
+    private fun catalog(): List<Quest> = listOf(
+        Quest(
+            id = "quest_walk_20",
+            title = context.getString(R.string.quest_walk_title),
+            description = context.getString(R.string.quest_walk_body),
+            category = QuestCategory.WALKING,
+            difficulty = QuestDifficulty.EASY,
+            estimatedDurationMinutes = 20,
+            rewardMinutes = 15
+        ),
+        Quest(
+            id = "quest_study_30",
+            title = context.getString(R.string.quest_study_title),
+            description = context.getString(R.string.quest_study_body),
+            category = QuestCategory.STUDY,
+            difficulty = QuestDifficulty.MEDIUM,
+            estimatedDurationMinutes = 30,
+            rewardMinutes = 20
+        ),
+        Quest(
+            id = "quest_read_30",
+            title = context.getString(R.string.quest_read_title),
+            description = context.getString(R.string.quest_read_body),
+            category = QuestCategory.READING,
+            difficulty = QuestDifficulty.MEDIUM,
+            estimatedDurationMinutes = 30,
+            rewardMinutes = 20
+        ),
+        Quest(
+            id = "quest_exercise_20",
+            title = context.getString(R.string.quest_exercise_title),
+            description = context.getString(R.string.quest_exercise_body),
+            category = QuestCategory.EXERCISE,
+            difficulty = QuestDifficulty.MEDIUM,
+            estimatedDurationMinutes = 20,
+            rewardMinutes = 25
+        ),
+        Quest(
+            id = "quest_clean_20",
+            title = context.getString(R.string.quest_clean_title),
+            description = context.getString(R.string.quest_clean_body),
+            category = QuestCategory.CLEANING,
+            difficulty = QuestDifficulty.EASY,
+            estimatedDurationMinutes = 20,
+            rewardMinutes = 15
+        ),
+        Quest(
+            id = "quest_draw_20",
+            title = context.getString(R.string.quest_draw_title),
+            description = context.getString(R.string.quest_draw_body),
+            category = QuestCategory.CREATIVE,
+            difficulty = QuestDifficulty.EASY,
+            estimatedDurationMinutes = 20,
+            rewardMinutes = 15
+        )
+    )
 
     // ============================================================
     // Legacy Phase 2.1 quest board (AVAILABLE/ACTIVE/COMPLETED).
@@ -162,7 +178,7 @@ class QuestRepository(
         val activeId = getActiveQuestId()
         val completedIds = getCompletedIds()
 
-        return INITIAL_QUESTS.map { quest ->
+        return catalog().map { quest ->
             val status = when {
                 completedIds.contains(quest.id) -> QuestStatus.COMPLETED
                 quest.id == activeId -> QuestStatus.ACTIVE
@@ -194,7 +210,7 @@ class QuestRepository(
             return false
         }
 
-        val exists = INITIAL_QUESTS.any { it.id == questId }
+        val exists = INITIAL_QUEST_IDS.contains(questId)
         if (!exists) return false
 
         prefs.edit().putString(KEY_ACTIVE_QUEST_ID, questId).apply()
@@ -245,7 +261,7 @@ class QuestRepository(
      */
     @Synchronized
     fun commitQuest(questId: String, method: VerificationMethod, committedDurationMinutes: Long): Boolean {
-        val exists = INITIAL_QUESTS.any { it.id == questId }
+        val exists = INITIAL_QUEST_IDS.contains(questId)
         if (!exists) return false
 
         if (getCompletedIds().contains(questId)) return false
@@ -385,7 +401,7 @@ class QuestRepository(
         val current = getCurrentAttempt() ?: return null
         if (current.state != QuestAttemptState.VERIFIED) return null
 
-        val quest = INITIAL_QUESTS.find { it.id == current.questId } ?: return null
+        val quest = catalog().find { it.id == current.questId } ?: return null
 
         val rewardedAttempt = current.copy(
             state = QuestAttemptState.REWARDED,

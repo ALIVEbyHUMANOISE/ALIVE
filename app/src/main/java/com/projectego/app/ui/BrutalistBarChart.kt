@@ -9,6 +9,7 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
+import androidx.annotation.ColorInt
 import com.projectego.app.R
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -96,6 +97,20 @@ class BrutalistBarChart(context: Context) : View(context) {
 
     private var columns: List<Column> = emptyList()
     private var selected = -1
+    private var emphasisAlpha = FULL_ALPHA
+
+    /**
+     * The kind of day the screen is asking about, or null for all of them.
+     *
+     * Set from the legend. It never removes bars - the month is the same month
+     * either way - it dims everything that is not the kind asked for, so the
+     * answer stays a shape in the chart instead of a shorter chart.
+     */
+    var highlightedKind: DayBarKind? = null
+        set(value) {
+            field = value
+            invalidate()
+        }
 
     /** How far a finger may wander and still be called a tap. */
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
@@ -156,6 +171,7 @@ class BrutalistBarChart(context: Context) : View(context) {
             val row = grid.rowOf(index)
             val centre = left + slot * (index - row * grid.columnsPerRow) + slot / 2f
             val baseline = top + row * pitch + plotHeight
+            setEmphasis(highlightedKind != null && column.kind != highlightedKind)
 
             if (index == selected) {
                 // The selection is a band across the whole slot rather than a
@@ -176,9 +192,15 @@ class BrutalistBarChart(context: Context) : View(context) {
                 ChartGeometry.labelFits(labelPaint.measureText(column.label), slot, labelMargin)
             ) {
                 labelPaint.color = if (index == selected) palette.ink else palette.inkSecondary
+                // Setting a colour resets the alpha, so the emphasis goes back on
+                // after it - otherwise a dimmed column keeps a bright label.
+                labelPaint.alpha = emphasisAlpha
                 canvas.drawText(column.label, centre, baseline + dimens.s - labelPaint.fontMetrics.ascent, labelPaint)
             }
         }
+
+        // The axes and the bubble are not part of any kind, so they never dim.
+        setEmphasis(dim = false)
 
         // One ink rule per row, because each row is its own axis: a bar's height
         // is that day's share of its allowance, measured from the line under it.
@@ -201,6 +223,24 @@ class BrutalistBarChart(context: Context) : View(context) {
         }
     }
 
+    /**
+     * Push every stroke of the column being drawn to the background, or pull it
+     * back. The paints are shared, so this is always paired with a call that
+     * restores them - the axes and the bubble are not part of any kind.
+     */
+    private fun setEmphasis(dim: Boolean) {
+        emphasisAlpha = if (dim) DIM_ALPHA else FULL_ALPHA
+        edge.alpha = emphasisAlpha
+        hatchPaint.alpha = emphasisAlpha
+        band.alpha = emphasisAlpha
+    }
+
+    /** The bar paint, at whatever emphasis the column it is being filled for wants. */
+    private fun fillWith(@ColorInt color: Int) {
+        face.color = color
+        face.alpha = emphasisAlpha
+    }
+
     private fun drawColumn(
         canvas: Canvas,
         column: Column,
@@ -221,7 +261,7 @@ class BrutalistBarChart(context: Context) : View(context) {
             // instead of being flattened into a zero.
             DayBarKind.MISSING -> {
                 shape.set(centre - half, baseline - stubHeight, centre + half, baseline)
-                face.color = palette.paper
+                fillWith(palette.paper)
                 canvas.drawRoundRect(shape, corner, corner, face)
                 canvas.drawRoundRect(shape, corner, corner, edge)
             }
@@ -230,7 +270,7 @@ class BrutalistBarChart(context: Context) : View(context) {
             // cannot be mistaken for a day that was merely unseen.
             DayBarKind.RECOVERY -> {
                 shape.set(centre - half, baseline - stubHeight, centre + half, baseline)
-                face.color = palette.warmGray
+                fillWith(palette.warmGray)
                 canvas.drawRoundRect(shape, corner, corner, face)
                 hatch(canvas, shape)
                 canvas.drawRoundRect(shape, corner, corner, edge)
@@ -241,7 +281,7 @@ class BrutalistBarChart(context: Context) : View(context) {
             DayBarKind.ZERO -> {
                 val tick = min(barWidth, dp(8f))
                 shape.set(centre - tick / 2f, baseline - tick, centre + tick / 2f, baseline)
-                face.color = palette.ink
+                fillWith(palette.ink)
                 canvas.drawRoundRect(shape, corner, corner, face)
             }
 
@@ -252,10 +292,11 @@ class BrutalistBarChart(context: Context) : View(context) {
                 shape.set(centre - half, baseline - height, centre + half, baseline)
                 val full = column.kind == DayBarKind.FULL
                 // Soft forest, not forest: forest means "ALIVE is offering a
-                // choice", and a bar of minutes used is not a choice the app
-                // made. A day that used its whole allowance goes to solid ink,
-                // which is the darkest thing in the chart and needs no legend.
-                face.color = if (full) palette.ink else palette.softForest
+                // choice", and a bar of minutes used is not a choice the app made.
+                // A day that ran its allowance out goes to the red that already
+                // means "this is running out" everywhere else in the app - the
+                // number under the chart says the same thing, as it always must.
+                fillWith(if (full) palette.shortMid else palette.softForest)
                 canvas.drawRoundRect(shape, corner, corner, face)
                 if (barWidth >= dp(11f)) {
                     texture(canvas, shape, if (full) dotPaper else dotInk)
@@ -423,5 +464,9 @@ class BrutalistBarChart(context: Context) : View(context) {
 
         /** A wrapped month is a grid, and a grid row is a step, not a stage. */
         const val WRAPPED_ROW_PLOT_DP = 48f
+
+        /** A column that is not the kind being asked about. Still a bar, just quiet. */
+        const val DIM_ALPHA = 76
+        const val FULL_ALPHA = 255
     }
 }

@@ -86,6 +86,21 @@
     <string name="cd_shortcut_bank">Jam pixel: lompat ke Bank Waktu.</string>
     <string name="cd_shortcut_focus">Target pixel: lompat ke memulai sesi fokus.</string>
 
+    <!-- ====== ISINYA PAPAN ====== kata-kata katalog ikut bahasa layar, bukan
+         menempel di QuestRepository. -->
+    <string name="quest_walk_title">Jalan 20 Menit</string>
+    <string name="quest_walk_body">Jalan cepat di luar atau di treadmill tanpa melihat media sosial.</string>
+    <string name="quest_study_title">Belajar 30 Menit</string>
+    <string name="quest_study_body">Fokus ke pelajaran, materi kursus, atau dokumentasi teknis.</string>
+    <string name="quest_read_title">Membaca 30 Menit</string>
+    <string name="quest_read_body">Baca buku fisik, e-reader, atau artikel panjang yang berguna.</string>
+    <string name="quest_exercise_title">Olahraga 20 Menit</string>
+    <string name="quest_exercise_body">Selesaikan rutinitas latihan, kalistenik, sesi gym, atau peregangan.</string>
+    <string name="quest_clean_title">Bereskan Kamarmu 20 Menit</string>
+    <string name="quest_clean_body">Rapikan meja, rapikan tempat tidur, bersihkan tempat tinggalmu.</string>
+    <string name="quest_draw_title">Menggambar 20 Menit</string>
+    <string name="quest_draw_body">Coret, gambar, atau warnai sesuatu di kertas atau di aplikasi gambar.</string>
+
     <!-- ============ PAPAN MISI ============ -->
     <string name="quest_heading">Pilih sebuah misi.</string>
     <string name="quest_heading_second">Tumbuh setiap hari.</string>
@@ -250,13 +265,15 @@
     <string name="chart_range_week">7 hari terakhir</string>
     <string name="chart_range_month">Bulan ini</string>
     <string name="chart_axis_note">Setiap batang adalah bagian dari jatah hari itu sendiri.</string>
-    <string name="chart_legend_heading">Hari-harinya</string>
+    <string name="chart_legend_all">Semua hari</string>
+    <string name="chart_legend_row">%1$s · %2$d</string>
+    <string name="chart_legend_showing_all">Semua hari di rentang ini ditampilkan.</string>
+    <string name="chart_legend_showing">Hanya hari %1$s · %2$d</string>
     <string name="chart_kind_spent">Terpakai</string>
     <string name="chart_kind_full">Habis jatah</string>
     <string name="chart_kind_zero">Nol terpakai</string>
     <string name="chart_kind_recovery">Tanpa jatah</string>
     <string name="chart_kind_missing">Tak terlihat</string>
-    <string name="chart_kind_count">%1$d</string>
     <string name="chart_coverage_eyebrow">Cakupan</string>
     <string name="chart_month_axis">Satu kolom per hari, kiri ke kanan, lalu turun ke baris berikutnya — dari tanggal 1 sampai hari ini.</string>
     <string name="chart_days_heading">Hari</string>
@@ -285,7 +302,6 @@
     <string name="chart_apps_none">Belum ada menit aplikasi untuk hari ini.</string>
     <string name="chart_apps_none_support">ALIVE mencatat hanya yang dilihatnya, jadi hari yang tidak terlihat apa pun tetap hari tanpa catatan.</string>
     <string name="chart_total_minutes">%1$d menit di hari-hari yang ALIVE lihat</string>
-    <string name="chart_days_recorded">%1$d dari %2$d hari tercatat</string>
     <string name="chart_none">ALIVE belum mencatat satu hari pun.</string>
     <string name="chart_just_started">Ini hari pertama yang ALIVE catat.</string>
     <string name="chart_partial">Hanya hari yang ALIVE lihat yang dihitung. Tidak ada yang ditebak.</string>

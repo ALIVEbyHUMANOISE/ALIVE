@@ -1773,14 +1773,12 @@ class MainActivity : AppCompatActivity() {
         body.addView(ui.vgap(ui.dimens.groupGap))
         body.addView(coverageBanner(bars, recordedCount))
 
-        // The chart, then what its colours mean, one under the other. Side by side
-        // looked right in the reference and wrong on a phone: the legend's longest
-        // label, "No allowance", came out hyphenated across three lines in a
-        // sixty-dp column, and a chart is not worth reading if its key is broken.
+        // One card holds the chart and its key. Side by side looked right in the
+        // reference and wrong on a phone: the legend's longest label, "No
+        // allowance", hyphenated across three lines in a sixty-dp column, and a
+        // chart whose key is broken is not worth reading.
         body.addView(ui.vgap(ui.dimens.cardGap))
         body.addView(buildDayCard(range, todayKey, bars))
-        body.addView(ui.vgap(ui.dimens.cardGap))
-        body.addView(buildKindLegend(bars))
 
         // Per-app time is only ever stated for today. It is stored for other
         // days, but a month of package names reads as surveillance, which is
@@ -1819,42 +1817,61 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * What each bar means, counted.
+     * What each bar means, counted, and tappable.
      *
-     * The counts are the part a paragraph cannot do: eleven hollow stubs are easy
-     * to scan straight past on a chart, and "11 not seen" is not.
+     * Choosing a kind dims every bar that is not one, which is the only way to
+     * answer "how many of these days did ALIVE never see" without asking somebody
+     * to count stubs by eye. The count is printed in the row and repeated in the
+     * line under it, so the answer is a number and a word - not a colour.
      */
-    private fun buildKindLegend(bars: List<DayBar>): LinearLayout {
-        val card = ui.bentoCard(getString(R.string.chart_legend_heading))
-        card.addView(legendRow(bars, DayBarKind.SPENT, ui.palette.softForest, R.string.chart_kind_spent))
-        card.addView(ui.rowRule())
-        card.addView(legendRow(bars, DayBarKind.FULL, ui.palette.ink, R.string.chart_kind_full))
-        card.addView(ui.rowRule())
-        // The same ink as a full day, at the size the chart actually draws it: a
-        // day with an allowance and nothing spent is a tick on the line, not a
-        // bar and not an absence.
-        card.addView(
-            legendRow(bars, DayBarKind.ZERO, ui.palette.ink, R.string.chart_kind_zero, swatchPx = ui.dimens.s)
+    private fun kindLegend(bars: List<DayBar>, chart: BrutalistBarChart): LinearLayout {
+        val options = listOf(
+            KindOption(null, R.string.chart_legend_all, ui.palette.white),
+            KindOption(DayBarKind.SPENT, R.string.chart_kind_spent, ui.palette.softForest),
+            KindOption(DayBarKind.FULL, R.string.chart_kind_full, ui.palette.shortMid),
+            KindOption(DayBarKind.ZERO, R.string.chart_kind_zero, ui.palette.ink),
+            KindOption(DayBarKind.RECOVERY, R.string.chart_kind_recovery, ui.palette.warmGray),
+            KindOption(DayBarKind.MISSING, R.string.chart_kind_missing, ui.palette.paper)
         )
-        card.addView(ui.rowRule())
-        card.addView(legendRow(bars, DayBarKind.RECOVERY, ui.palette.warmGray, R.string.chart_kind_recovery))
-        card.addView(ui.rowRule())
-        card.addView(legendRow(bars, DayBarKind.MISSING, ui.palette.paper, R.string.chart_kind_missing))
-        return card
+        val group = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
+        val note = ui.note(getString(R.string.chart_legend_showing_all))
+
+        options.forEachIndexed { index, option ->
+            group.addView(
+                ui.legendOption(
+                    getString(R.string.chart_legend_row, getString(option.label), countOf(bars, option.kind)),
+                    option.hue
+                ).apply {
+                    id = KIND_FILTER_ID_BASE + index
+                    // "All days" is checked on open: the chart starts showing the
+                    // whole range it was asked about, not a slice of it.
+                    isChecked = index == 0
+                }
+            )
+        }
+        group.setOnCheckedChangeListener { _, checkedId ->
+            val option = options.getOrNull(checkedId - KIND_FILTER_ID_BASE) ?: return@setOnCheckedChangeListener
+            chart.highlightedKind = option.kind
+            note.text = if (option.kind == null) getString(R.string.chart_legend_showing_all)
+            else getString(R.string.chart_legend_showing, getString(option.label), countOf(bars, option.kind))
+        }
+
+        return ui.column().apply {
+            addView(group)
+            addView(ui.vgap(ui.dimens.lineGap))
+            addView(note)
+        }
     }
 
-    private fun legendRow(
-        bars: List<DayBar>,
-        kind: DayBarKind,
-        @ColorInt face: Int,
-        @StringRes name: Int,
-        swatchPx: Int = ui.dimens.l
-    ): View = ui.row().apply {
-        setPadding(0, ui.dimens.s, 0, ui.dimens.s)
-        addView(ui.swatch(face, swatchPx))
-        addView(ui.weighted(ui.meta(getString(name))))
-        addView(ui.tag(getString(R.string.chart_kind_count, bars.count { it.kind == kind })))
-    }
+    /** Every day in the range when nothing is chosen, and the kind's own count when it is. */
+    private fun countOf(bars: List<DayBar>, kind: DayBarKind?): Int =
+        if (kind == null) bars.size else bars.count { it.kind == kind }
+
+    private data class KindOption(
+        val kind: DayBarKind?,
+        @StringRes val label: Int,
+        @ColorInt val hue: Int
+    )
 
     /** The app card with nothing in it - which is still a thing worth saying. */
     private fun emptyAppCard(): LinearLayout {
@@ -1903,19 +1920,21 @@ class MainActivity : AppCompatActivity() {
         card.addView(ui.vgap(ui.dimens.lineGap))
         card.addView(detail)
 
-        val (totalMinutes, recordedCount) = UsageChartStates.totals(bars)
+        // The key belongs under the picture, not in a card beside it: the question
+        // "what is that hollow one?" is asked while looking at this chart.
+        card.addView(ui.vgap(ui.dimens.groupGap))
+        card.addView(ui.rule())
+        card.addView(ui.vgap(ui.dimens.lineGap))
+        card.addView(kindLegend(bars, chart))
+
+        val (totalMinutes, _) = UsageChartStates.totals(bars)
         card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(ui.note(getString(R.string.chart_total_minutes, totalMinutes)))
-        if (bars.size > 1) {
-            card.addView(ui.vgap(ui.dimens.pairGap))
-            card.addView(ui.note(getString(R.string.chart_days_recorded, recordedCount, bars.size)))
-        }
 
         card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(ui.note(getString(R.string.chart_axis_note)))
-        // What each fill and shape means is the card beside this one, counted -
-        // a paragraph under the chart saying "hollow means unseen" was the same
-        // sentence twice.
+        // The fills and shapes are named by the rows above, counted; a paragraph
+        // here would be the same sentence twice.
         if (range == ChartRange.THIS_MONTH) {
             card.addView(ui.vgap(ui.dimens.pairGap))
             // A month has no room for 31 readable labels, so the row is
@@ -2420,6 +2439,9 @@ private const val CHART_RANGE_ID_BASE = 300
 
 /** The language row's two options. Same synthetic-id contract as the pickers. */
 private const val LANGUAGE_ID_BASE = 500
+
+/** The chart's legend rows: "All days" first, then one per kind. */
+private const val KIND_FILTER_ID_BASE = 700
 
 /** The ring is a circle, so it does need a height of its own. */
 private const val DONUT_HEIGHT_DP = 200
