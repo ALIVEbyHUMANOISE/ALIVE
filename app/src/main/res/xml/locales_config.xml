@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The two languages ALIVE is written in. Declaring them is what lets Android 13
+     offer the switch in its own Settings screen as well; inside the app the choice
+     lives on Profile, so a person never has to leave to change it. -->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="in" />
+</locale-config>

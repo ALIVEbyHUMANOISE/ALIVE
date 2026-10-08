@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Suara ALIVE dalam Bahasa Indonesia.
+
+         Aturan yang sama dengan strings.xml bahasa Inggris:
+           - Waktu yang direbut kembali, bukan poin, koin, XP, atau level.
+           - "ALIVE tidak bisa memverifikasi" tidak pernah jadi "kamu gagal".
+           - Tidak ada satu kalimat pun yang mengklaim ALIVE tahu apa yang
+             kamu lakukan di dalam sebuah aplikasi.
+           - Tidak ada emoji, tidak ada label fase pengembangan.
+         String dev_* sengaja dibiarkan bahasa Inggris: panel dev hanya bisa
+         dibuka dari build debug dan tidak pernah dilihat orang lain. -->
+
+    <string name="app_name">ALIVE</string>
+    <string name="accessibility_service_description">ALIVE memakai layanan ini hanya untuk mengenali aplikasi yang sedang tampil, supaya batas waktu layar harian bisa berlaku dan tidak bisa dilewati.</string>
+
+    <!-- Navigasi -->
+    <string name="nav_home">Beranda</string>
+    <string name="nav_quest">Misi</string>
+    <string name="nav_profile">Profil</string>
+
+    <!-- Wordmark -->
+    <string name="alive_wordmark">ALIVE</string>
+    <string name="alive_tagline">Bangun untuk hidupmu.</string>
+
+    <!-- ============ BERANDA: WAKTUMU ============ -->
+    <string name="time_minutes_left">%1$d menit tersisa hari ini</string>
+    <string name="time_minutes_left_critical">Tinggal sekitar %1$d menit.</string>
+    <string name="time_last_minute">Satu menit terakhir.</string>
+    <string name="stat_minutes">%1$d</string>
+    <string name="stat_min_left">menit\ntersisa</string>
+    <string name="stat_reclaimed">kembali</string>
+    <string name="time_no_panic">Tidak ada panik di sini. Ini memang sisanya.</string>
+    <string name="time_allowance_support">Jatah harianmu sendiri — terpisah dari waktu yang sudah kembali.</string>
+    <string name="today_card_title">Hari ini</string>
+    <string name="stat_streak">Beruntun</string>
+    <string name="stat_allowance">Jatah</string>
+    <string name="stat_used">Terpakai</string>
+    <string name="stat_bank">Bank</string>
+    <string name="stat_unit_note">Semua angka di sini dalam menit.</string>
+    <string name="unit_minutes">%1$d menit</string>
+    <string name="unit_minutes_gain">+%1$d menit</string>
+    <string name="time_hero_line">Menit hiburan tersisa sebelum ALIVE menutupnya.</string>
+    <string name="time_of_allowance">dari %1$d</string>
+    <string name="time_closed">Waktu hiburan hari ini sudah ditutup.</string>
+    <string name="time_closed_support">Buka lagi besok. Tidak ada yang perlu diperbaiki malam ini.</string>
+    <string name="zero_day_heading">Hari ini tanpa hiburan.</string>
+    <string name="zero_day_support">Sengaja, setelah kemarin. Hal-hal produktif tetap jalan.</string>
+
+    <!-- ============ BERANDA: TINDAKAN SAAT INI ============ -->
+    <string name="action_start_focus">Mulai fokus</string>
+    <string name="action_continue_quest">Lanjutkan misi</string>
+    <string name="action_return_session">Kembali ke sesi</string>
+    <string name="action_continue">Lanjut</string>
+    <string name="action_back">Kembali</string>
+    <string name="action_start_quest">Mulai misi</string>
+
+    <!-- ============ KEADAAN KOSONG ============ -->
+    <string name="empty_heading">Belum ada apa pun</string>
+    <string name="empty_body">Kamu tidak harus melakukan apa pun di sini.</string>
+    <string name="empty_body_second">Buat waktumu sendiri.</string>
+
+    <!-- ============ IZIN ============ -->
+    <string name="permissions_heading">ALIVE belum bisa melihat yang dibutuhkan</string>
+    <string name="permissions_body">Akses pemakaian dan layanan aksesibilitas adalah cara ALIVE tahu kapan waktu hiburanmu habis. Selama keduanya belum aktif, apa pun di layar ini belum bisa dipercaya.</string>
+    <string name="permissions_usage_action">Aktifkan akses pemakaian</string>
+    <string name="permissions_accessibility_action">Aktifkan aksesibilitas</string>
+    <string name="permissions_granted">Aktif</string>
+    <string name="permissions_not_granted">Belum aktif</string>
+
+    <!-- ============ BANK WAKTU ============ -->
+    <string name="time_bank_heading">Bank Waktu</string>
+    <string name="time_bank_empty">Belum ada waktu yang kembali. Sesi yang terverifikasi mengembalikan waktumu.</string>
+    <string name="time_bank_use_running">Ada sesi fokus yang sedang jalan. Di situlah menit-menit ini membeli waktu.</string>
+    <string name="time_bank_use_cta">Buka sesi yang sedang jalan</string>
+    <string name="time_bank_use_none">Tidak ada yang bisa diperpanjang. Mulai sesi fokus, lalu pakai di sana.</string>
+    <string name="time_bank_not_enough">Waktu yang kembali belum cukup untuk itu.</string>
+    <string name="time_bank_available_total">%1$d menit tersedia</string>
+    <string name="stat_bank_earned">Masuk</string>
+    <string name="stat_bank_spent">Keluar</string>
+    <string name="time_bank_explain">Misi yang terverifikasi memasukkan menit. Memperpanjang sesi fokus mengeluarkannya.</string>
+    <string name="cd_time_bank">Jam pixel: Bank Waktu, tempat menit yang kembali disimpan.</string>
+    <string name="cd_shortcut_chart">Bar pixel: buka grafik pemakaian.</string>
+    <string name="cd_shortcut_bank">Jam pixel: lompat ke Bank Waktu.</string>
+    <string name="cd_shortcut_focus">Target pixel: lompat ke memulai sesi fokus.</string>
+
+    <!-- ============ PAPAN MISI ============ -->
+    <string name="quest_heading">Pilih sebuah misi.</string>
+    <string name="quest_heading_second">Tumbuh setiap hari.</string>
+    <string name="quest_subhead">Kamu mau menyisihkan waktu untuk apa?</string>
+    <string name="quest_yours">Misi kamu</string>
+    <string name="quest_current">Misi saat ini</string>
+    <string name="quest_reclaimed_label">Kembali</string>
+    <string name="quest_cannot_start">Satu dulu. Selesaikan yang sedang jalan.</string>
+    <string name="quest_start_failed">ALIVE tidak bisa memulai misi itu.</string>
+    <string name="quest_physical_how">ALIVE tidak bisa melihat misi ini. Jamnya nyata; sisanya kepercayaan. Tombolnya terbuka setelah %1$d menit.</string>
+    <string name="quest_gate_left">%1$d menit lagi sebelum kata-katamu dihitung.</string>
+    <string name="quest_gate_open">Waktunya sudah lewat. Katakan kamu selesai.</string>
+    <string name="quest_declare_done">Saya selesai</string>
+    <string name="quest_declare_failed">ALIVE tidak bisa mencatat itu.</string>
+
+    <!-- ============ HALAMAN MISI ============ -->
+    <string name="quest_detail_duration_title">Menit</string>
+    <string name="quest_detail_how_title">Cara kerjanya</string>
+    <string name="quest_step_start">Kamu tekan mulai.</string>
+    <string name="quest_step_watch_digital">ALIVE melihat aplikasi yang diizinkan untuk sesi ini.</string>
+    <string name="quest_step_watch_physical">ALIVE tidak bisa melihat yang satu ini — ia menjaga jamnya sementara kamu mengerjakannya.</string>
+    <string name="quest_step_reward">%1$d menit kembali ke Bank Waktumu.</string>
+    <string name="quest_detail_reward_title">Hadiah</string>
+
+    <!-- ============ STATUS PERCOBAAN ============ -->
+    <string name="attempt_committed">Kamu sudah berkomitmen ke ini.</string>
+    <string name="attempt_committed_support">ALIVE mulai menghitung sejak kamu memulai.</string>
+    <string name="attempt_in_progress">Kamu sedang mengerjakannya sekarang.</string>
+    <string name="attempt_in_progress_support">Tidak ada yang perlu ditekan. ALIVE memeriksanya saat kamu kembali.</string>
+    <string name="attempt_pending">ALIVE sedang memeriksa sesi ini.</string>
+    <string name="attempt_pending_support">Belum dipastikan — di sini waktu dibandingkan dengan yang kamu komitkan.</string>
+    <string name="attempt_verified">Sesi ini dihitung.</string>
+    <string name="attempt_verified_support">Waktu yang kembali masuk pada pemeriksaan ALIVE berikutnya.</string>
+    <string name="attempt_rewarded">Kembali +%1$d menit.</string>
+    <string name="attempt_rewarded_total">Bank Waktu sekarang %1$d menit.</string>
+    <string name="attempt_failed">ALIVE tidak bisa memverifikasi sesi ini.</string>
+    <string name="attempt_failed_neutral">Tidak ada yang berubah tentang dirimu. Mulai lagi kapan pun bisa.</string>
+
+    <!-- ============ ALASAN GAGAL ============ -->
+    <string name="reason_restricted_app">Aplikasi di luar daftar fokusmu muncul, jadi sesi ini tidak dihitung.</string>
+    <string name="reason_monitoring_gap">ALIVE tidak bisa melihat sepanjang waktu itu. Ini bukan tentang apa yang kamu lakukan.</string>
+    <string name="reason_not_supported">ALIVE belum bisa memverifikasi sesi semacam ini secara otomatis.</string>
+    <string name="reason_activity_mismatch">Aktivitas yang kamu pilih tidak cocok dengan misi ini.</string>
+    <string name="reason_technical_link">ALIVE tidak bisa menghubungkan sesi ke misimu. Itu masalah teknis, bukan salahmu.</string>
+    <string name="reason_unknown">ALIVE tidak bisa memverifikasi sesi ini.</string>
+    <string name="verified_reason">Sesinya berjalan selama waktu yang kamu komitkan.</string>
+
+    <!-- ============ FOKUS ============ -->
+    <string name="focus_heading">Fokus</string>
+    <string name="focus_intro">Blok waktu yang tenang untuk satu hal.</string>
+    <string name="focus_activity_heading">Lagi ngapain?</string>
+    <string name="focus_goal_heading">Tujuannya apa?</string>
+    <string name="focus_goal_hint">mis. Selesaikan bab empat</string>
+    <string name="focus_duration_heading">Berapa lama? (menit)</string>
+    <string name="focus_duration_value">%1$d</string>
+    <string name="focus_activity_option">%1$s · %2$d aplikasi diizinkan</string>
+    <string name="focus_start">Mulai fokus</string>
+    <string name="focus_goal_required">Beri sesinya tujuan dulu.</string>
+    <string name="focus_started_toast">Fokus dimulai: %1$d menit.</string>
+    <string name="focus_start_failed">ALIVE tidak bisa memulai sesi itu.</string>
+    <string name="focus_active_heading">Kamu sedang sesi %1$s.</string>
+    <string name="focus_remaining_minutes">Tersisa %1$d menit</string>
+    <string name="focus_remaining_minute">Tersisa 1 menit</string>
+    <string name="focus_remaining_none">Waktunya habis.</string>
+    <string name="focus_of_total">dari %1$d menit</string>
+    <string name="focus_goal_quoted">Tujuan: %1$s</string>
+    <string name="focus_allowed_heading">Yang tetap terbuka</string>
+    <string name="focus_allowed_body">%1$d aplikasi yang diizinkan tetap bisa dipakai. Selain itu — hiburan, browser, apa pun di luar daftar itu — tertutup selama sesi jalan.</string>
+    <string name="focus_monitors">ALIVE hanya melihat aplikasi mana yang ada di layar. Ia tidak membuka aplikasimu atau membaca isinya.</string>
+    <string name="focus_next">Saat waktunya habis, sesinya selesai begitu saja.</string>
+    <string name="focus_extend">Perpanjang 15 menit</string>
+    <string name="focus_extend_support">Mengambil 15 menit dari Bank Waktumu.</string>
+    <string name="focus_extended_toast">Diperpanjang 15 menit.</string>
+    <string name="focus_setup_hint">Fokus itu sesi, bukan tempat yang kamu kunjungi. Mulai dari sini.</string>
+
+    <!-- ============ PROFIL ============ -->
+    <string name="profile_heading">Profil</string>
+    <string name="profile_identity">Perangkat ini</string>
+    <string name="profile_identity_support">Tanpa akun, tanpa sinkronisasi. Semua yang ALIVE tahu tetap di sini.</string>
+    <string name="profile_state_heading">Posisimu sekarang</string>
+    <string name="profile_days_in_a_row">%1$d hari beruntun</string>
+    <string name="profile_one_day_in_a_row">1 hari beruntun</string>
+    <string name="profile_no_days">Belum ada rangkaian. Tidak apa-apa.</string>
+    <string name="profile_history_heading">Untuk apa kamu menyisihkan waktu</string>
+    <string name="profile_history_empty">Belum ada yang terverifikasi.</string>
+    <string name="profile_history_row">%1$s · %2$d menit kembali</string>
+    <string name="profile_permissions_heading">Yang bisa ALIVE lihat</string>
+    <string name="profile_language_heading">Bahasa</string>
+    <string name="profile_language_support">Hanya aplikasi ini yang berubah. Ponselmu tetap seperti adanya.</string>
+    <string name="language_english">English</string>
+    <string name="language_indonesian">Bahasa Indonesia</string>
+    <string name="profile_how_title">Cara ALIVE memutuskan</string>
+    <string name="profile_how_body">ALIVE tahu aplikasi mana yang ada di layar dan berapa lama. Itu saja. Ia tidak membuka aplikasimu, tidak membaca isinya, dan tidak menilai apa yang kamu lakukan di dalamnya.</string>
+
+    <!-- ============ LAYAR TERTUTUP ============ -->
+    <string name="lock_title_over">Waktu hiburan ditutup</string>
+    <string name="lock_title_zero">Hari tanpa hiburan</string>
+    <string name="lock_title_focus">Sesimu masih jalan</string>
+    <string name="lock_intent">Ini memang disengaja. Buka lagi besok.</string>
+    <string name="lock_over_body">Kamu sudah di ujung waktu hiburan hari ini.</string>
+    <string name="lock_allowance_line">Jatah: %1$d menit</string>
+    <string name="lock_used_line">Terpakai: %1$d menit</string>
+    <string name="lock_zero_body">Hari ini memang tidak punya waktu hiburan — ia melanjutkan kemarin.</string>
+    <string name="lock_zero_support">Tidak ada yang perlu dibuka, dan tidak ada yang salah kamu lakukan.</string>
+    <string name="lock_blocked_app">Aplikasi yang muncul: %1$s</string>
+    <string name="lock_blocked_app_unknown">Sebuah aplikasi hiburan</string>
+    <string name="lock_days_row">Kamu sedang %1$d hari beruntun.</string>
+    <string name="lock_essential">Telepon, pesan, layar utama, dan Setelan tetap jalan.</string>
+    <string name="lock_do_instead">Ada hal lain yang bisa kamu kerjakan.</string>
+    <string name="lock_focus_body">%1$s masih berjalan. Hiburan dan apa pun di luar aplikasi yang kamu izinkan tetap tertutup sampai selesai.</string>
+    <string name="lock_focus_blocked">Tertutup selama ini jalan: %1$s</string>
+    <string name="lock_action_focus">Sisihkan waktu untuk sesuatu</string>
+    <string name="lock_action_home">Ke layar utama</string>
+    <string name="lock_action_dashboard">Buka ALIVE</string>
+
+    <!-- ============ FASE KARAKTER ============ -->
+    <string name="stage_disconnected">Terputus</string>
+    <string name="stage_unaware">Belum sadar</string>
+    <string name="stage_controlled">Dikendalikan</string>
+    <string name="stage_aware">Sadar</string>
+    <string name="stage_reclaiming">Merebut kembali</string>
+    <string name="stage_alive">Hidup</string>
+
+    <string name="pose_disconnected_note">Layar yang menang hari ini.</string>
+    <string name="pose_unaware_note">Tidak harus ada yang terjadi di sini.</string>
+    <string name="pose_controlled_note">Ia masih menahanmu.</string>
+    <string name="pose_aware_note">Sekarang kamu bisa melihatnya.</string>
+    <string name="pose_reclaiming_note">Kamu sedang menyisihkan waktu untuk sesuatu.</string>
+    <string name="pose_alive_note">Waktu itu milikmu sekarang.</string>
+    <string name="pose_pending_note">ALIVE masih membaca sesi ini.</string>
+    <string name="pose_failed_note">Yang tadi tidak dihitung. Coba lagi boleh.</string>
+    <string name="pose_streak_note">Kamu sudah pernah melakukan ini.</string>
+
+    <string name="cd_character_pose">Karakter ALIVE, %1$s</string>
+
+    <!-- Jenis misi, dengan kata-kata pengguna. Nama enum mesin tidak pernah tampil. -->
+    <string name="category_exercise">Gerak</string>
+    <string name="category_study">Belajar</string>
+    <string name="category_reading">Membaca</string>
+    <string name="category_walking">Jalan</string>
+    <string name="category_cleaning">Beres-beres</string>
+    <string name="category_creative">Berkarya</string>
+    <string name="category_coding">Koding</string>
+    <string name="category_writing">Menulis</string>
+    <string name="category_other">Lainnya</string>
+
+    <string name="focus_activity_study">Belajar</string>
+    <string name="focus_activity_work">Kerja</string>
+    <string name="focus_activity_coding">Koding</string>
+    <string name="focus_activity_creative">Kreatif</string>
+    <string name="focus_activity_writing">Menulis</string>
+
+    <string name="difficulty_easy">mudah</string>
+    <string name="difficulty_medium">sedang</string>
+    <string name="difficulty_hard">sulit</string>
+
+    <!-- ============ GRAFIK PEMAKAIAN ============ -->
+    <string name="chart_heading">Pemakaian</string>
+    <string name="chart_subhead">Ke mana waktunya pergi.</string>
+    <string name="chart_open">Pemakaian hari ini</string>
+    <string name="chart_range_today">Hari ini</string>
+    <string name="chart_range_week">7 hari terakhir</string>
+    <string name="chart_range_month">Bulan ini</string>
+    <string name="chart_axis_note">Setiap batang adalah bagian dari jatah hari itu sendiri.</string>
+    <string name="chart_legend_heading">Hari-harinya</string>
+    <string name="chart_kind_spent">Terpakai</string>
+    <string name="chart_kind_full">Habis jatah</string>
+    <string name="chart_kind_zero">Nol terpakai</string>
+    <string name="chart_kind_recovery">Tanpa jatah</string>
+    <string name="chart_kind_missing">Tak terlihat</string>
+    <string name="chart_kind_count">%1$d</string>
+    <string name="chart_coverage_eyebrow">Cakupan</string>
+    <string name="chart_month_axis">Satu kolom per hari, kiri ke kanan, lalu turun ke baris berikutnya — dari tanggal 1 sampai hari ini.</string>
+    <string name="chart_days_heading">Hari</string>
+    <string name="chart_label_today">KINI</string>
+    <string name="chart_tap_hint">Ketuk batang untuk hari itu.</string>
+    <string name="chart_day_name">%1$s %2$d</string>
+    <string name="chart_day_detail">%1$s — %2$d dari %3$d menit.</string>
+    <string name="chart_day_missing_detail">%1$s — ALIVE tidak melihat hari ini.</string>
+    <string name="chart_day_recovery_detail">%1$s — tidak ada waktu hiburan untuk dipakai.</string>
+    <string name="chart_total_label">Total</string>
+    <string name="cd_usage_chart">Grafik batang: menit hiburan untuk tiap hari di rentang ini.</string>
+    <string name="cd_app_donut">Grafik cincin: waktu hiburan hari ini, per aplikasi.</string>
+    <string name="cd_mark_exercise">Barbel pixel: misi olahraga.</string>
+    <string name="cd_mark_study">Buku terbuka pixel: misi belajar.</string>
+    <string name="cd_mark_reading">Tumpukan buku pixel: misi membaca.</string>
+    <string name="cd_mark_walking">Jejak kaki pixel: misi jalan.</string>
+    <string name="cd_mark_cleaning">Sapu pixel: misi beres-beres.</string>
+    <string name="cd_mark_creative">Kuas pixel: misi berkarya.</string>
+    <string name="cd_mark_coding">Terminal pixel: misi koding.</string>
+    <string name="cd_mark_writing">Pena pixel: misi menulis.</string>
+    <string name="cd_mark_other">Bintang pixel: misi tanpa kategori.</string>
+    <string name="cd_focus_mark">Penanda pixel: fokus %1$s.</string>
+    <string name="chart_apps_heading">Hari ini, per aplikasi</string>
+    <string name="chart_labels_note">ALIVE hanya mendapat nama yang perangkat mau berikan. Sebagian tampil sebagai bagian dari nama paketnya.</string>
+    <string name="chart_apps_folded">%1$d lainnya lebih kecil</string>
+    <string name="chart_apps_none">Belum ada menit aplikasi untuk hari ini.</string>
+    <string name="chart_apps_none_support">ALIVE mencatat hanya yang dilihatnya, jadi hari yang tidak terlihat apa pun tetap hari tanpa catatan.</string>
+    <string name="chart_total_minutes">%1$d menit di hari-hari yang ALIVE lihat</string>
+    <string name="chart_days_recorded">%1$d dari %2$d hari tercatat</string>
+    <string name="chart_none">ALIVE belum mencatat satu hari pun.</string>
+    <string name="chart_just_started">Ini hari pertama yang ALIVE catat.</string>
+    <string name="chart_partial">Hanya hari yang ALIVE lihat yang dihitung. Tidak ada yang ditebak.</string>
+    <string name="chart_complete">Semua hari di rentang ini tercatat.</string>
+
+    <!-- ============ CATATAN WAKTU KRITIS ============ -->
+    <string name="chart_alert_eyebrow">Waktu hari ini</string>
+    <string name="alert_minutes_left">Tersisa %1$d menit hiburan hari ini.</string>
+    <string name="alert_support">Tidak ada yang akan ditutup. Ini hanya posisi angkanya.</string>
+
+    <!-- ============ CELAH PENJAGA ============ -->
+    <string name="guard_off_heading">ALIVE tidak sedang melihat</string>
+    <string name="guard_off_body">Layanan yang menutup aplikasi sedang mati, jadi tidak ada yang ditutup sekarang.</string>
+    <string name="guard_repair_needed">Nyalakan lagi dan selesaikan satu misi. Sampai saat itu, hari ini bukan hari yang terjaga.</string>
+    <string name="guard_back_heading">Penjaga sudah aktif lagi</string>
+    <string name="guard_back_body">Tidak ada yang terlewat lagi. Hari ini tetap tercatat tanpa penjaga, karena bagian itu memang terjadi.</string>
+    <string name="guard_repair_done">Tandanya tetap ada di hari ini. Runtunanmu aman.</string>
+    <string name="guard_who_turned_it_off">ALIVE tidak bisa tahu kamu yang mematikannya atau ponsel yang melakukannya demi baterai.</string>
+    <string name="guard_enable_action">Nyalakan lagi penjaganya</string>
+    <string name="guard_profile_line">Hari ini punya bagian tanpa penjaga.</string>
+    <string name="cd_guard_mark">Figur pixel, terjaga dan melihat ke samping.</string>
+    <string name="permissions_accessibility_why">Aksesibilitas adalah cara ALIVE menutup aplikasi saat waktunya habis. Tanpanya tidak ada yang tertutup, dan hari itu ditandai tanpa penjaga.</string>
+</resources>

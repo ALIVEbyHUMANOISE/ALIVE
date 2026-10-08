@@ -454,11 +454,17 @@ class AliveComponents(private val context: Context) {
      * to. They are cards rather than ruled table cells because the grid is what
      * the rest of the screen is made of, and a ruled box in the middle of a grid
      * of boxes reads as a different app.
+     *
+     * [face] carries meaning, not mood: gold for something earned, blue for the
+     * budget, forest for the day's own figure. A tile that is only colourful is
+     * a tile nobody learns anything from.
      */
-    fun statTile(name: CharSequence, value: CharSequence): LinearLayout = column().apply {
-        background = framed(
-            palette.white, dimens.borderButton, dimens.shadowMinor, dimens.radiusTile.toFloat()
-        )
+    fun statTile(
+        name: CharSequence,
+        value: CharSequence,
+        @ColorInt face: Int = palette.white
+    ): LinearLayout = column().apply {
+        background = framed(face, dimens.borderButton, dimens.shadowMinor, dimens.radiusTile.toFloat())
         val inset = dimens.ledgerInset
         val edge = dimens.borderButton
         setPadding(
@@ -689,7 +695,19 @@ class AliveComponents(private val context: Context) {
         stateListAnimator = null
         gravity = Gravity.CENTER
         minHeight = dimens.touchMin
-        setPadding(dimens.xl, dimens.m, dimens.xl, dimens.m - dimens.shadow)
+        // The AppCompat button style stamps every label in capitals, and a text
+        // appearance cannot undo it - only the widget can. So the type ladder's
+        // "say it in words, not in stamps" rule is enforced here, on every button.
+        isAllCaps = false
+        // Centred on the *face*, not on the bounds: the shadow is inside the
+        // bounds on the right and bottom, so a label centred on the bounds sits
+        // visibly low and to the left of the box it is written on.
+        setPadding(
+            dimens.xl + dimens.borderBold,
+            dimens.m,
+            dimens.xl + dimens.borderBold + dimens.shadow,
+            dimens.m + dimens.shadow
+        )
         includeFontPadding = false
     }
 

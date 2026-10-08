@@ -22,6 +22,8 @@ import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import androidx.core.widget.addTextChangedListener
 import androidx.core.content.ContextCompat
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -528,32 +530,47 @@ class MainActivity : AppCompatActivity() {
      */
     private fun renderGuardCard() {
         val repaired = !state.guardGapOpen
-        val card = ui.bentoCard(
-            getString(if (repaired) R.string.guard_back_heading else R.string.guard_off_heading),
+        // A tinted card, and the tint is the documented meaning of this pale: a
+        // closed door is a pale surface with an ink edge, never a red alarm.
+        val card = ui.tintedBlock(
+            if (repaired) ui.palette.softForest else ui.palette.shortPale,
             weight = if (homeMajor == HomeMajor.GUARD) SurfaceWeight.MAJOR else SurfaceWeight.MINOR
         )
 
-        card.addView(
-            ui.mark(
-                R.drawable.ic_alive_character_aware,
-                ui.dimens.character,
-                getString(R.string.cd_guard_mark)
+        // The figure used to sit above three grey paragraphs of the same size,
+        // which is how the most important sentence on the screen ended up looking
+        // like fine print. Now the figure and the headline share a line, and the
+        // rest is separated by what it is for.
+        val line = ui.row()
+        line.addView(
+            ui.iconTile(ui.palette.white, R.drawable.ic_alive_character_aware, ui.dimens.character).apply {
+                contentDescription = getString(R.string.cd_guard_mark)
+            }
+        )
+        line.addView(ui.hgap(ui.dimens.m))
+        line.addView(
+            ui.weighted(
+                ui.column().apply {
+                    addView(
+                        ui.headline(
+                            getString(if (repaired) R.string.guard_back_heading else R.string.guard_off_heading)
+                        )
+                    )
+                    addView(ui.vgap(ui.dimens.pairGap))
+                    addView(ui.body(getString(if (repaired) R.string.guard_back_body else R.string.guard_off_body)))
+                }
             )
         )
+        card.addView(line)
+
+        card.addView(ui.vgap(ui.dimens.groupGap))
+        card.addView(ui.rowRule())
         card.addView(ui.vgap(ui.dimens.lineGap))
         card.addView(
-            ui.note(
-                getString(if (repaired) R.string.guard_back_body else R.string.guard_off_body)
-            )
+            ui.body(getString(if (repaired) R.string.guard_repair_done else R.string.guard_repair_needed))
         )
-        card.addView(ui.vgap(ui.dimens.pairGap))
-        card.addView(
-            ui.note(
-                getString(if (repaired) R.string.guard_repair_done else R.string.guard_repair_needed)
-            )
-        )
-        card.addView(ui.vgap(ui.dimens.pairGap))
-        card.addView(ui.note(getString(R.string.guard_who_turned_it_off)))
+        card.addView(ui.vgap(ui.dimens.lineGap))
+        card.addView(ui.annotation(getString(R.string.guard_who_turned_it_off)))
 
         if (!repaired) {
             card.addView(ui.vgap(ui.dimens.groupGap))
@@ -737,13 +754,25 @@ class MainActivity : AppCompatActivity() {
         addView(
             statRow(
                 streakTile(signals.currentStreak),
-                ui.statTile(getString(R.string.stat_allowance), getString(R.string.stat_minutes, state.dailyLimitMinutes))
+                ui.statTile(
+                    getString(R.string.stat_allowance),
+                    getString(R.string.stat_minutes, state.dailyLimitMinutes),
+                    ui.palette.workPale
+                )
             )
         )
         addView(
             statRow(
-                ui.statTile(getString(R.string.stat_used), getString(R.string.stat_minutes, state.usedMinutesToday)),
-                ui.statTile(getString(R.string.stat_bank), getString(R.string.stat_minutes, signals.reclaimedAvailableMinutes))
+                ui.statTile(
+                    getString(R.string.stat_used),
+                    getString(R.string.stat_minutes, state.usedMinutesToday),
+                    ui.palette.softForest
+                ),
+                ui.statTile(
+                    getString(R.string.stat_bank),
+                    getString(R.string.stat_minutes, signals.reclaimedAvailableMinutes),
+                    ui.palette.rewardPale
+                )
             )
         )
     }
@@ -768,8 +797,11 @@ class MainActivity : AppCompatActivity() {
      * is true. A run is worth showing as a shape because it is the only thing in
      * this app that takes more than a day to build.
      */
-    private fun streakTile(streak: Int): View =
-        ui.statTile(getString(R.string.stat_streak), getString(R.string.stat_minutes, streak)).apply {
+    private fun streakTile(streak: Int): View = ui.statTile(
+        getString(R.string.stat_streak),
+        getString(R.string.stat_minutes, streak),
+        ui.palette.rewardPale
+    ).apply {
             if (streak > 0) {
                 addView(ui.vgap(ui.dimens.lineGap))
                 addView(ui.streakPips(streak))
@@ -1425,6 +1457,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** One numbered step: the number in a tile, the sentence beside it. */
+    private fun stepRow(number: Int, text: String): View = ui.row().apply {
+        gravity = Gravity.TOP
+        addView(ui.textTile(number.toString(), ui.palette.softForest))
+        addView(ui.hgap(ui.dimens.m))
+        addView(ui.weighted(ui.body(text)))
+    }
+
     private fun openQuestDetailPanel(questId: String?) {
         val quest = state.quest(questId) ?: return
 
@@ -1445,42 +1485,65 @@ class MainActivity : AppCompatActivity() {
     private fun buildQuestDetailInto(column: LinearLayout, quest: Quest) {
         val verifiable = AliveStates.isSelfVerifiable(quest.category)
 
-        column.addView(
-            ui.iconTile(
-                ContextCompat.getColor(this, QuestHues.quest(quest.category)),
-                PixelMarks.quest(quest.category),
-                ui.dimens.characterLarge
-            ).apply { contentDescription = getString(PixelMarks.description(quest.category)) }
-        )
-        column.addView(ui.vgap(ui.dimens.groupGap))
+        val hue = ContextCompat.getColor(this, QuestHues.quest(quest.category))
 
-        column.addView(ui.headline(quest.title))
-        column.addView(ui.vgap(ui.dimens.lineGap))
-        column.addView(ui.lead(getString(R.string.quest_detail_duration, quest.estimatedDurationMinutes)))
+        // Name, mark, and what kind of doing it is - one line. The page used to
+        // open with a paragraph, which is the last thing anyone reads about a quest
+        // they are deciding whether to spend twenty minutes on.
+        val hero = ui.row()
+        hero.addView(
+            ui.iconTile(hue, PixelMarks.quest(quest.category), ui.dimens.characterLarge)
+                .apply { contentDescription = getString(PixelMarks.description(quest.category)) }
+        )
+        hero.addView(ui.hgap(ui.dimens.l))
+        hero.addView(
+            ui.weighted(
+                ui.column().apply {
+                    addView(ui.headline(quest.title))
+                    addView(ui.vgap(ui.dimens.pairGap))
+                    addView(
+                        ui.meta(
+                            getString(AliveStates.categoryLabel(quest.category)) + "  ·  " +
+                                getString(AliveStates.difficultyLabel(quest.difficulty))
+                        )
+                    )
+                }
+            )
+        )
+        column.addView(hero)
+
+        // The two numbers a quest is actually decided by, as tiles: what it takes
+        // out of the day, and what it puts back.
+        column.addView(ui.vgap(ui.dimens.groupGap))
+        column.addView(
+            statRow(
+                ui.statTile(
+                    getString(R.string.quest_detail_duration_title),
+                    getString(R.string.stat_minutes, quest.estimatedDurationMinutes),
+                    ui.palette.workPale
+                ),
+                ui.statTile(
+                    getString(R.string.quest_detail_reward_title),
+                    getString(R.string.unit_minutes_gain, quest.rewardMinutes),
+                    ui.palette.rewardPale
+                )
+            )
+        )
+
         column.addView(ui.vgap(ui.dimens.groupGap))
         column.addView(ui.body(quest.description))
 
         column.addView(ui.vgap(ui.dimens.groupGap))
         column.addView(ui.sectionHeader(getString(R.string.quest_detail_how_title)))
         column.addView(ui.vgap(ui.dimens.lineGap))
-        column.addView(
-            ui.note(
-                getString(if (verifiable) R.string.quest_detail_how_body else R.string.quest_detail_how_body_unsupported)
-            )
-        )
-
-        column.addView(ui.vgap(ui.dimens.groupGap))
-        column.addView(ui.sectionHeader(getString(R.string.quest_detail_reward_title)))
-        column.addView(ui.vgap(ui.dimens.lineGap))
-        column.addView(ui.note(getString(R.string.quest_detail_reward_body, quest.rewardMinutes)))
-
-        column.addView(ui.vgap(ui.dimens.groupGap))
-        column.addView(
-            ui.note(
-                getString(AliveStates.categoryLabel(quest.category)) + "  ·  " +
-                    getString(AliveStates.difficultyLabel(quest.difficulty))
-            )
-        )
+        listOf(
+            getString(R.string.quest_step_start),
+            getString(if (verifiable) R.string.quest_step_watch_digital else R.string.quest_step_watch_physical),
+            getString(R.string.quest_step_reward, quest.rewardMinutes)
+        ).forEachIndexed { index, step ->
+            if (index > 0) column.addView(ui.vgap(ui.dimens.pairGap))
+            column.addView(stepRow(index + 1, step))
+        }
 
         column.addView(ui.vgap(ui.dimens.groupGap))
 
@@ -2023,6 +2086,7 @@ class MainActivity : AppCompatActivity() {
         profileContainer.addView(buildBankCard())
 
         renderProfilePermissions()
+        renderProfileLanguage()
         renderProfileHistory()
 
         profileContainer.addView(ui.vgap(ui.dimens.groupGap))
@@ -2067,8 +2131,16 @@ class MainActivity : AppCompatActivity() {
         card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(
             statRow(
-                ui.statTile(getString(R.string.stat_allowance), getString(R.string.stat_minutes, state.dailyLimitMinutes)),
-                ui.statTile(getString(R.string.stat_used), getString(R.string.stat_minutes, state.usedMinutesToday))
+                ui.statTile(
+                    getString(R.string.stat_allowance),
+                    getString(R.string.stat_minutes, state.dailyLimitMinutes),
+                    ui.palette.workPale
+                ),
+                ui.statTile(
+                    getString(R.string.stat_used),
+                    getString(R.string.stat_minutes, state.usedMinutesToday),
+                    ui.palette.softForest
+                )
             )
         )
         return card
@@ -2079,8 +2151,16 @@ class MainActivity : AppCompatActivity() {
         val card = ui.bentoCard(getString(R.string.time_bank_heading))
         card.addView(
             statRow(
-                ui.statTile(getString(R.string.stat_bank_earned), getString(R.string.stat_minutes, state.earnedMinutes)),
-                ui.statTile(getString(R.string.stat_bank_spent), getString(R.string.stat_minutes, state.spentMinutes))
+                ui.statTile(
+                    getString(R.string.stat_bank_earned),
+                    getString(R.string.stat_minutes, state.earnedMinutes),
+                    ui.palette.rewardPale
+                ),
+                ui.statTile(
+                    getString(R.string.stat_bank_spent),
+                    getString(R.string.stat_minutes, state.spentMinutes),
+                    ui.palette.warmGray
+                )
             )
         )
         card.addView(ui.vgap(ui.dimens.groupGap))
@@ -2097,6 +2177,51 @@ class MainActivity : AppCompatActivity() {
         streak <= 0 -> getString(R.string.profile_no_days)
         streak == 1 -> getString(R.string.profile_one_day_in_a_row)
         else -> getString(R.string.profile_days_in_a_row, streak)
+    }
+
+    /**
+     * The one setting ALIVE has.
+     *
+     * Both names are written in their own language - "Bahasa Indonesia" never
+     * becomes "Indonesian" in the Indonesian list - because a language you cannot
+     * recognise in your own writing is a language you cannot choose.
+     */
+    private fun renderProfileLanguage() {
+        val card = ui.bentoCard(getString(R.string.profile_language_heading))
+        val group = RadioGroup(this).apply { orientation = RadioGroup.HORIZONTAL }
+        val currentTag = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+        val selected = if (currentTag.startsWith("in")) 1 else 0
+
+        listOf(
+            getString(R.string.language_english) to "en",
+            getString(R.string.language_indonesian) to "in"
+        ).forEachIndexed { index, (label, tag) ->
+            group.addView(
+                ui.tileOption(label, 0, ui.palette.workPale).apply {
+                    id = LANGUAGE_ID_BASE + index
+                    gravity = Gravity.CENTER
+                    isChecked = index == selected
+                    layoutParams = RadioGroup.LayoutParams(
+                        0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f
+                    ).apply {
+                        if (index > 0) marginStart = ui.dimens.pairGap
+                    }
+                    setOnClickListener {
+                        if (currentTag != tag) {
+                            // AppCompat stores the choice and recreates the screen;
+                            // ALIVE keeps no settings of its own to write first.
+                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(tag))
+                        }
+                    }
+                }
+            )
+        }
+        card.addView(group)
+        card.addView(ui.vgap(ui.dimens.lineGap))
+        card.addView(ui.note(getString(R.string.profile_language_support)))
+
+        profileContainer.addView(ui.vgap(ui.dimens.groupGap))
+        profileContainer.addView(card)
     }
 
     private fun renderProfilePermissions() {
@@ -2261,6 +2386,9 @@ class MainActivity : AppCompatActivity() {
 
 /** Kept clear of the focus form's 100/200 offsets, which are also view ids. */
 private const val CHART_RANGE_ID_BASE = 300
+
+/** The language row's two options. Same synthetic-id contract as the pickers. */
+private const val LANGUAGE_ID_BASE = 500
 
 /** The ring is a circle, so it does need a height of its own. */
 private const val DONUT_HEIGHT_DP = 200
