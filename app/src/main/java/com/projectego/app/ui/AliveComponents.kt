@@ -198,8 +198,11 @@ class AliveComponents(private val context: Context) {
      * `MATCH_PARENT` is how a grid usually does this, and inside a ScrollView it
      * means "the height of the screen" - which is exactly how two stat tiles once
      * ate a whole page and pushed its buttons off the bottom. So this row measures
-     * its children honestly first, then asks the short ones to be as tall as the
-     * tallest one it just saw.
+     * its children honestly first, then pins every cell to the tallest height it
+     * just saw. Pinning matters: a mere `minimumHeight` makes the box taller, but
+     * a card inside it is then measured against an AT_MOST hint and never learns
+     * it is allowed to spend that extra air - its name and foot line sit above
+     * the bottom of the ink instead of on it.
      */
     class EqualRow(context: Context) : LinearLayout(context) {
 
@@ -226,11 +229,14 @@ class AliveComponents(private val context: Context) {
             val tallest = cells.maxOfOrNull { getChildAt(it).measuredHeight } ?: 0
             if (tallest == 0) return
 
+            // The exact height is written into the layout params, so the next pass
+            // measures every cell with an EXACTLY spec - and a cell that hands its
+            // slack to a weighted spacer can then do so for real.
             var shortFound = false
             for (index in cells) {
-                val child = getChildAt(index)
-                if (child.measuredHeight < tallest) {
-                    child.minimumHeight = tallest
+                val lp = getChildAt(index).layoutParams as LayoutParams
+                if (lp.height != tallest) {
+                    lp.height = tallest
                     shortFound = true
                 }
             }
