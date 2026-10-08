@@ -10,7 +10,10 @@ import com.projectego.app.model.AppCategory
 
 object AppClassifier {
 
-    // Known entertainment, video, social, gaming packages
+    // Every package below must also appear in the <queries> block of
+    // AndroidManifest.xml: without it, Android 11+ refuses to hand the package's
+    // label over, and the chart falls back to a fragment of the package name.
+    // A package added here and not there shows up under a made-up name.
     private val KNOWN_ENTERTAINMENT_PACKAGES = setOf(
         // Social Media & Video
         "com.google.android.youtube",
@@ -48,6 +51,13 @@ object AppClassifier {
         "com.roblox.client"
     )
 
+    // Counted, never locked - see AppCategory.TRACKED. Same manifest rule as
+    // the entertainment set above.
+    private val TRACKED_PACKAGES = setOf(
+        "com.whatsapp",
+        "com.whatsapp.w4b"
+    )
+
     // System components that must never be counted or blocked
     private val SYSTEM_IGNORED_PACKAGES = setOf(
         "android",
@@ -58,6 +68,8 @@ object AppClassifier {
     fun categorize(context: Context, packageName: String?): AppCategory {
         if (packageName.isNullOrBlank()) return AppCategory.SYSTEM_IGNORED
         if (SYSTEM_IGNORED_PACKAGES.contains(packageName)) return AppCategory.SYSTEM_IGNORED
+
+        if (TRACKED_PACKAGES.contains(packageName)) return AppCategory.TRACKED
 
         // Essential: Default Phone Dialer
         val dialerIntent = Intent(Intent.ACTION_DIAL)

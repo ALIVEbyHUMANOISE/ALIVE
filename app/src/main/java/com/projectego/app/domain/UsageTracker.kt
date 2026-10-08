@@ -68,7 +68,9 @@ class UsageTracker(private val context: Context) {
                     if (stat.totalTimeInForeground <= 0) continue
 
                     val category = AppClassifier.categorize(context, stat.packageName)
-                    if (category == AppCategory.ENTERTAINMENT) {
+                    // TRACKED apps (messaging) count toward the day and appear in
+                    // the chart, but the lock path never touches them.
+                    if (category == AppCategory.ENTERTAINMENT || category == AppCategory.TRACKED) {
                         totalMillis += stat.totalTimeInForeground
                         val appMinutes = stat.totalTimeInForeground / 1000 / 60
                         if (appMinutes > 0) {
