@@ -21,7 +21,9 @@ import com.projectego.app.model.VerificationMethod
  *   6. read the created FocusSession
  *   7. linkFocusSession(focusSession.focusSessionId)
  *
- * Only DIGITAL quests in STUDY/CODING/WRITING/CREATIVE are supported.
+ * Only DIGITAL quests in STUDY/CODING/WRITING/CREATIVE go through
+ * [startDigitalQuest]; every other category goes through
+ * [startPhysicalQuest], which starts a clock and no session.
  *
  * Failure handling: once the attempt is IN_PROGRESS, any failure in steps
  * 5-7 fails the attempt via failQuest(reason) with an explicit technical
@@ -146,6 +148,39 @@ class QuestStartCoordinator(
             return false
         }
 
+        return true
+    }
+
+    /**
+     * Runs the full PHYSICAL startup flow for [questId]: commit, start, and
+     * nothing else. No Focus session is created, because a Focus session watches
+     * a screen and a walk does not happen on one.
+     *
+     * The attempt is left IN_PROGRESS with its start timestamp written, which is
+     * the only clock [PhysicalQuestVerifier] can measure a later self-report
+     * against - so starting is what commits ALIVE to the time, not just the
+     * person.
+     *
+     * @return true only when the attempt is IN_PROGRESS and can be declared done.
+     */
+    @Synchronized
+    fun startPhysicalQuest(questId: String): Boolean {
+        val quest = questRepository.getAllQuests().find { it.id == questId } ?: return false
+        if (quest.status == QuestStatus.COMPLETED) return false
+
+        // A category ALIVE can watch does not come through here. Two paths for the
+        // same quest would mean two answers to whether it was earned.
+        if (focusActivityTypeFor(quest.category) != null) return false
+
+        val durationMinutes = quest.estimatedDurationMinutes.toLong()
+
+        if (!questRepository.commitQuest(questId, VerificationMethod.PHYSICAL, durationMinutes)) {
+            return false
+        }
+        if (!questRepository.startAttempt()) {
+            questRepository.failQuest(REASON_ATTEMPT_START_FAILED)
+            return false
+        }
         return true
     }
 }

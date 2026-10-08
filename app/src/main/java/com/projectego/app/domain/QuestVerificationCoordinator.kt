@@ -8,6 +8,7 @@ import com.projectego.app.data.QuestRepository
 import com.projectego.app.model.DigitalQuestEvidence
 import com.projectego.app.model.DigitalQuestVerificationResult
 import com.projectego.app.model.QuestCategory
+import com.projectego.app.model.QuestAttempt
 import com.projectego.app.model.QuestAttemptState
 import com.projectego.app.model.VerificationMethod
 import com.projectego.app.model.VerificationOutcome
@@ -41,6 +42,11 @@ class QuestVerificationCoordinator(
      */
     fun evaluateAttemptOnResume(context: Context): Boolean {
         val attempt = questRepository.getCurrentAttempt() ?: return false
+
+        // A PHYSICAL attempt is judged on the clock and the person's own word,
+        // never on which apps were open, so it never touches the monitoring or
+        // Focus checks below.
+        if (attempt.method == VerificationMethod.PHYSICAL) return evaluatePhysicalAttempt(attempt)
 
         // Only DIGITAL attempts are evaluated by this coordinator.
         if (attempt.method != VerificationMethod.DIGITAL) return false
@@ -124,6 +130,64 @@ class QuestVerificationCoordinator(
     }
 
     /**
+     * The person said they finished a quest ALIVE cannot watch.
+     *
+     * The declaration is recorded first - `requestVerification()` stamps the end
+     * of the window - and only then judged, so the measurement is of the time
+     * they actually spent rather than of whenever the app next gets opened. The
+     * gate is checked here as well as in the screen, because a button that should
+     * have been disabled is exactly what a modified clock produces.
+     *
+     * @return true when the attempt reached VERIFIED and its reward was claimed.
+     */
+    fun declarePhysicalAttemptDone(): Boolean {
+        val attempt = questRepository.getCurrentAttempt() ?: return false
+        if (attempt.method != VerificationMethod.PHYSICAL) return false
+        if (attempt.state != QuestAttemptState.IN_PROGRESS) return false
+        if (PhysicalQuestVerifier.remainingMinutes(
+                attempt.activityStartTimestamp,
+                System.currentTimeMillis(),
+                attempt.committedDurationMinutes
+            ) > 0L
+        ) return false
+
+        if (!questRepository.requestVerification()) return false
+        return settlePhysicalAttempt(questRepository.getCurrentAttempt() ?: attempt)
+    }
+
+    /**
+     * On resume, finish work a previous session left half-done: a declaration
+     * that never reached a verdict, or a verdict that never reached its reward.
+     *
+     * A running physical attempt is deliberately left alone. It ends when the
+     * person says it does, and nothing here may say it for them.
+     */
+    private fun evaluatePhysicalAttempt(attempt: QuestAttempt): Boolean = when (attempt.state) {
+        QuestAttemptState.VERIFIED -> questRepository.claimReward() != null
+        QuestAttemptState.PENDING_VERIFICATION -> settlePhysicalAttempt(attempt)
+        else -> false
+    }
+
+    private fun settlePhysicalAttempt(attempt: QuestAttempt): Boolean {
+        val result = PhysicalQuestVerifier.verify(
+            startedAt = attempt.activityStartTimestamp,
+            declaredAt = attempt.activityEndTimestamp ?: System.currentTimeMillis(),
+            committedMinutes = attempt.committedDurationMinutes
+        )
+        val verified = when (result) {
+            is PhysicalQuestVerifier.Result.Passed ->
+                questRepository.verifyQuest(VerificationOutcome.PASS, result.reason)
+            is PhysicalQuestVerifier.Result.Failed ->
+                questRepository.verifyQuest(VerificationOutcome.FAIL, result.reason)
+            PhysicalQuestVerifier.Result.Waiting -> false
+        }
+        // The reward leaves through the one door every quest uses: claimReward()
+        // after VERIFIED, and nothing else.
+        if (verified) questRepository.claimReward()
+        return verified
+    }
+
+    /**
      * Called by EgoAccessibilityService when a confirmed violation occurs.
      *
      * Immediate FAIL; bypasses PENDING_VERIFICATION entirely.
@@ -180,17 +244,13 @@ class QuestVerificationCoordinator(
     }
 
     /**
-     * Resolves the quest category from the static quest catalog.
-     * Returns null for unknown quest IDs (non-DIGITAL quests are already filtered).
+     * Resolves the quest category from the catalog the repository actually
+     * serves, rather than a list of identifiers kept here.
+     *
+     * The list used to be hardcoded, and it had already fallen behind the board:
+     * a quest added to the catalog without a matching line here would build
+     * evidence with a null category and never verify, silently, forever.
      */
-    private fun getQuestCategoryForAttempt(questId: String): QuestCategory? {
-        return when (questId) {
-            "quest_study_30" -> QuestCategory.STUDY
-            "quest_read_30" -> QuestCategory.READING
-            "quest_walk_20" -> QuestCategory.WALKING
-            "quest_exercise_20" -> QuestCategory.EXERCISE
-            "quest_clean_20" -> QuestCategory.CLEANING
-            else -> null
-        }
-    }
+    private fun getQuestCategoryForAttempt(questId: String): QuestCategory? =
+        questRepository.getAllQuests().find { it.id == questId }?.category
 }

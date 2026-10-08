@@ -96,15 +96,21 @@
     <string name="quest_yours">Your quests</string>
     <string name="quest_current">Current quest</string>
     <string name="quest_reclaimed_label">Reclaimed</string>
-    <string name="quest_not_verifiable">ALIVE can\'t verify this kind of session automatically yet.</string>
     <string name="quest_cannot_start">One thing at a time. Finish what\'s running first.</string>
     <string name="quest_start_failed">ALIVE couldn\'t start that quest.</string>
+    <!-- A quest no sensor can see. The rule and the limit are both said here, in
+         that order: what ALIVE can check (the clock), and what it cannot (the rest). -->
+    <string name="quest_physical_how">ALIVE can\'t see this one. The clock is real; the rest is your word. The button opens after %1$d minutes.</string>
+    <string name="quest_gate_left">%1$d minutes to go before your word counts.</string>
+    <string name="quest_gate_open">That\'s the time. Say you\'re done.</string>
+    <string name="quest_declare_done">I\'m done</string>
+    <string name="quest_declare_failed">ALIVE couldn\'t record that.</string>
 
     <!-- ============ QUEST DETAIL (journal page) ============ -->
     <string name="quest_detail_duration">%1$d minutes</string>
     <string name="quest_detail_how_title">How it works</string>
     <string name="quest_detail_how_body">ALIVE will verify the digital session automatically. Nothing to press at the end.</string>
-    <string name="quest_detail_how_body_unsupported">ALIVE can only verify sessions that happen on this device, by watching which app is open. This one it can\'t prove — so it stays on the list as something to do, not something to earn.</string>
+    <string name="quest_detail_how_body_unsupported">ALIVE can check sessions that happen on this device by watching which app is open. It cannot watch a walk, a clean room or a paper book — so for this one, the clock is ALIVE\'s part and the rest is yours.</string>
     <string name="quest_detail_reward_title">Reward</string>
     <string name="quest_detail_reward_body">+%1$d minutes reclaimed</string>
 

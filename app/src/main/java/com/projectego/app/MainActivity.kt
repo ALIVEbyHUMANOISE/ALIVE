@@ -32,6 +32,7 @@ import com.projectego.app.data.TimeBankRepository
 import com.projectego.app.data.UsageHistoryRepository
 import com.projectego.app.domain.CriticalAlertPolicy
 import com.projectego.app.domain.FocusAppPolicy
+import com.projectego.app.domain.PhysicalQuestVerifier
 import com.projectego.app.domain.QuestStartCoordinator
 import com.projectego.app.domain.QuestVerificationCoordinator
 import com.projectego.app.domain.UsageReport
@@ -45,6 +46,7 @@ import com.projectego.app.model.QuestAttemptState
 import com.projectego.app.model.QuestStatus
 import com.projectego.app.model.TimeStatus
 import com.projectego.app.model.UsageDay
+import com.projectego.app.model.VerificationMethod
 import com.projectego.app.service.EgoAccessibilityService
 import com.projectego.app.ui.AliveComponents
 import com.projectego.app.ui.AlivePanel
@@ -870,10 +872,27 @@ class MainActivity : AppCompatActivity() {
             block.addView(ui.lead(getString(AliveStates.attemptHeadline(attempt.state))))
         }
 
-        val support = when (attempt.state) {
+        // A physical quest in flight is the one state whose support line has to be
+        // recomputed rather than looked up: what is true about it changes with the
+        // clock, and "nothing to press" would be a lie with a button below it.
+        val physicalWait = attempt.method == VerificationMethod.PHYSICAL &&
+            attempt.state == QuestAttemptState.IN_PROGRESS
+        val gateLeft = if (physicalWait) {
+            PhysicalQuestVerifier.remainingMinutes(
+                attempt.activityStartTimestamp,
+                System.currentTimeMillis(),
+                attempt.committedDurationMinutes
+            )
+        } else 0L
+
+        val support = when {
+            physicalWait -> getString(
+                if (gateLeft > 0L) R.string.quest_gate_left else R.string.quest_gate_open,
+                gateLeft
+            )
             // VERIFIED is not REWARDED: the minutes have counted, not landed.
-            QuestAttemptState.VERIFIED -> getString(AliveStates.verifiedSupport())
-            QuestAttemptState.REWARDED -> getString(R.string.attempt_rewarded_total, available)
+            attempt.state == QuestAttemptState.VERIFIED -> getString(AliveStates.verifiedSupport())
+            attempt.state == QuestAttemptState.REWARDED -> getString(R.string.attempt_rewarded_total, available)
             else -> getString(AliveStates.attemptSupport(attempt.state))
         }
         block.addView(ui.vgap(ui.dimens.lineGap))
@@ -888,7 +907,30 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        if (AliveStates.offersAction(attempt.state)) {
+        if (physicalWait) {
+            block.addView(ui.vgap(ui.dimens.groupGap))
+            block.addView(
+                ui.primary(getString(R.string.quest_declare_done)).apply {
+                    // Disabled is a statement about the clock, not a punishment, and
+                    // the line above says exactly how much clock is left.
+                    isEnabled = gateLeft == 0L
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    setOnClickListener {
+                        if (questVerificationCoordinator.declarePhysicalAttemptDone()) {
+                            renderDashboard()
+                            renderQuestSection()
+                        } else {
+                            toast(R.string.quest_declare_failed)
+                        }
+                    }
+                }
+            )
+        }
+
+        if (!physicalWait && AliveStates.offersAction(attempt.state)) {
             block.addView(ui.vgap(ui.dimens.groupGap))
             block.addView(ui.secondary(getString(R.string.action_continue)).apply {
                 setOnClickListener { openCurrentQuestPanel() }
@@ -1443,8 +1485,6 @@ class MainActivity : AppCompatActivity() {
         column.addView(ui.vgap(ui.dimens.groupGap))
 
         when {
-            !verifiable -> column.addView(ui.note(getString(R.string.quest_not_verifiable)))
-
             AliveStates.isAttemptActive(state.attempt?.state) -> {
                 val blocked = ui.primary(getString(R.string.action_start_quest))
                 blocked.isEnabled = false
@@ -1453,20 +1493,34 @@ class MainActivity : AppCompatActivity() {
                 column.addView(ui.annotation(getString(R.string.quest_cannot_start)))
             }
 
-            else -> column.addView(
-                ui.primary(getString(R.string.action_start_quest)).apply {
-                    setOnClickListener {
-                        // One call owns the whole commit -> start -> link chain.
-                        if (questStartCoordinator.startDigitalQuest(quest.id)) {
-                            closeOverlay()
-                            renderDashboard()
-                            renderQuestSection()
-                        } else {
-                            toast(R.string.quest_start_failed)
+            else -> {
+                column.addView(
+                    ui.primary(getString(R.string.action_start_quest)).apply {
+                        setOnClickListener {
+                            // One call owns the whole chain, and which chain it is
+                            // comes down to what ALIVE can watch. A quest it cannot
+                            // see starts a clock and nothing else.
+                            val started = if (verifiable) questStartCoordinator.startDigitalQuest(quest.id)
+                            else questStartCoordinator.startPhysicalQuest(quest.id)
+                            if (started) {
+                                closeOverlay()
+                                renderDashboard()
+                                renderQuestSection()
+                            } else {
+                                toast(R.string.quest_start_failed)
+                            }
                         }
                     }
+                )
+                if (!verifiable) {
+                    // Said under the button, not instead of it: the button works,
+                    // and what it promises is bounded by the clock.
+                    column.addView(ui.vgap(ui.dimens.lineGap))
+                    column.addView(
+                        ui.annotation(getString(R.string.quest_physical_how, quest.estimatedDurationMinutes))
+                    )
                 }
-            )
+            }
         }
     }
 
