@@ -8,8 +8,8 @@
     android:viewportHeight="16">
     <path
         android:fillColor="@color/alive_pink_soft"
-        android:pathData="M5,3h6v1h-6zM4,4h8v1h-8zM4,5h8v1h-8zM4,6h8v1h-8zM4,7h8v1h-8zM2,8h12v1h-12zM2,9h12v1h-12zM4,10h8v1h-8zM4,11h8v1h-8zM5,12h2v1h-2zM9,12h2v1h-2zM5,13h2v1h-2zM9,13h2v1h-2z" />
+        android:pathData="M5,3h6v1h-6zM4,4h8v1h-8zM4,5h8v1h-8zM4,6h8v1h-8zM2,7h12v1h-12zM2,8h12v1h-12zM4,9h8v1h-8zM5,10h6v1h-6zM5,11h2v1h-2zM9,11h2v1h-2zM5,12h2v1h-2zM9,12h2v1h-2z" />
     <path
         android:fillColor="@color/alive_ink"
-        android:pathData="M5,6h2v2h-2zM9,6h2v2h-2z" />
+        android:pathData="M5,5h2v2h-2zM9,5h2v2h-2z" />
 </vector>

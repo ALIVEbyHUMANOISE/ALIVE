@@ -3,6 +3,7 @@ package com.projectego.app
 import android.app.AppOpsManager
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
 import android.os.Process
@@ -548,8 +549,9 @@ class MainActivity : AppCompatActivity() {
         // rest is separated by what it is for.
         val line = ui.row()
         line.addView(
-            ui.iconTile(ui.palette.white, R.drawable.ic_alive_character_aware, ui.dimens.character).apply {
+            ui.iconTile(ui.palette.white, R.drawable.alive_anim_cycle, ui.dimens.character).apply {
                 contentDescription = getString(R.string.cd_guard_mark)
+                (drawable as? AnimationDrawable)?.start()
             }
         )
         line.addView(ui.hgap(ui.dimens.m))

@@ -7,10 +7,10 @@
     android:viewportHeight="16">
     <path
         android:fillColor="@color/alive_pink_soft"
-        android:pathData="M4,3h6v1h-6zM3,4h8v1h-8zM3,5h8v1h-8zM3,6h8v1h-8zM3,7h8v1h-8zM1,8h12v1h-12zM1,9h12v1h-12zM3,10h8v1h-8zM3,11h8v1h-8zM4,12h2v1h-2zM8,12h2v1h-2zM4,13h2v1h-2zM8,13h2v1h-2z" />
+        android:pathData="M4,3h6v1h-6zM3,4h8v1h-8zM3,5h8v1h-8zM3,6h8v1h-8zM1,7h12v1h-12zM1,8h12v1h-12zM3,9h8v1h-8zM4,10h6v1h-6zM4,11h2v1h-2zM8,11h2v1h-2zM4,12h2v1h-2zM8,12h2v1h-2z" />
     <path
         android:fillColor="@color/alive_ink"
-        android:pathData="M4,6h2v2h-2zM8,6h2v2h-2z" />
+        android:pathData="M4,5h2v2h-2zM8,5h2v2h-2z" />
     <path
         android:fillColor="@color/alive_forest"
         android:pathData="M13,1h1v14h-1z" />

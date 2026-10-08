@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ALIVE animation frame: the critter sits behind an open laptop, hands on
+     the keyboard. One of the frames in alive_anim_cycle. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="@color/alive_pink_soft"
+        android:pathData="M4,2h6v1h-6zM3,3h8v1h-8zM3,4h8v1h-8zM3,5h8v1h-8zM3,6h8v1h-8zM4,7h6v1h-6z" />
+    <path
+        android:fillColor="@color/alive_ink"
+        android:pathData="M4,4h2v2h-2zM8,4h2v2h-2zM2,7h10v1h-10zM2,11h10v1h-10zM2,8h1v3h-1zM11,8h1v3h-1zM1,12h12v2h-12z" />
+    <path
+        android:fillColor="@color/alive_white"
+        android:pathData="M3,8h8v3h-8z" />
+    <path
+        android:fillColor="@color/alive_pink_soft"
+        android:pathData="M3,13h2v2h-2zM9,13h2v2h-2z" />
+    <path
+        android:fillColor="@color/alive_forest"
+        android:pathData="M13,1h1v14h-1z" />
+    <path
+        android:fillColor="@color/alive_soft_forest"
+        android:pathData="M14,6h1v3h-1z" />
+</vector>
