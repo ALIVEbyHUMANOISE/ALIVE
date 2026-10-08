@@ -248,6 +248,64 @@ class AliveComponents(private val context: Context) {
     /** A row of cells that are the same height as each other. */
     fun equalRow(): EqualRow = EqualRow(context)
 
+    /**
+     * A board of horizontal rows whose cells all end up one shared height, so a
+     * card in the last row is the same size as one in the first - not merely
+     * even with its own neighbour.
+     *
+     * The cells are pinned directly, not their rows: a row refuses to take its
+     * height from a MATCH_PARENT child while the board is still measuring
+     * honestly, so equalising the rows instead would collapse the honest pass
+     * and hide the tallest card's true size.
+     */
+    class EqualGrid(context: Context) : LinearLayout(context) {
+
+        init {
+            orientation = VERTICAL
+            layoutParams = LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+            val cells = mutableListOf<View>()
+            for (rowIndex in 0 until childCount) {
+                val row = getChildAt(rowIndex) as? LinearLayout ?: continue
+                if (row.orientation != HORIZONTAL) continue
+                for (cellIndex in 0 until row.childCount) {
+                    val cell = row.getChildAt(cellIndex)
+                    // The same rule as EqualRow: only a cell that sizes itself to
+                    // its content is comparable; a gap or filler has a fixed or
+                    // MATCH_PARENT height on purpose.
+                    if (cell.visibility == View.GONE) continue
+                    val lp = cell.layoutParams as? LayoutParams ?: continue
+                    if (lp.height == LayoutParams.WRAP_CONTENT) cells.add(cell)
+                }
+            }
+            val tallest = cells.maxOfOrNull { it.measuredHeight } ?: 0
+            if (tallest == 0) return
+
+            // The exact height is written into the layout params, so the next pass
+            // measures every cell with an EXACTLY spec - and a card that hands its
+            // slack to a weighted spacer can then do so for real.
+            var shortFound = false
+            for (cell in cells) {
+                val lp = cell.layoutParams as LayoutParams
+                if (lp.height != tallest) {
+                    lp.height = tallest
+                    shortFound = true
+                }
+            }
+            // One correction pass, then the numbers agree.
+            if (shortFound) super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        }
+    }
+
+    /** A column of rows whose cells can be one shared size. */
+    fun equalGrid(): EqualGrid = EqualGrid(context)
+
     /** The thinnest ink rule, for between the rows of one list. */
     fun rowRule(): View = View(context).apply {
         layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dimens.borderThin)

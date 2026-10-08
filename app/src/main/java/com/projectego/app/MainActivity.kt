@@ -1375,16 +1375,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     /** Two cards per row, with the same air between them as between the rows. */
-    private fun questGrid(quests: List<Quest>): LinearLayout = ui.stack(ui.dimens.cardGap).apply {
-        quests.chunked(QUEST_COLUMNS).forEach { pair ->
-            // Cells of one row end up the same height, so the shorter card's foot
-            // sits on the same line as its neighbour's instead of the row reading
-            // as two cards of different kinds.
-            val row = ui.equalRow()
+    private fun questGrid(quests: List<Quest>): LinearLayout = ui.equalGrid().apply {
+        quests.chunked(QUEST_COLUMNS).forEachIndexed { rowIndex, pair ->
+            if (rowIndex > 0) addView(ui.vgap(ui.dimens.cardGap))
+            val row = ui.row()
             pair.forEachIndexed { index, quest ->
                 if (index > 0) row.addView(ui.hgap(ui.dimens.cardGap))
                 row.addView(
                     questCard(quest).apply {
+                        // WRAP_CONTENT on purpose: the grid pins every card to the
+                        // tallest one itself, and a MATCH_PARENT height would stop
+                        // the row from reporting that card's size honestly.
                         layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                     }
                 )
