@@ -10,6 +10,10 @@
     <color name="alive_soft_forest">#DCE5DC</color>
     <color name="alive_warm_gray">#D8D2C7</color>
     <color name="alive_white">#FFFDF8</color>
+    <!-- Decorative only: the character's cheeks. It never labels, never carries
+         text, never draws an edge - it only makes the character blush, so the
+         working palette above stays six colours. -->
+    <color name="alive_blush">#E58194</color>
 
     <!-- Ink with alpha. These are the same ink hue, not new colors, so the
          palette stays six colors while still having a readable hierarchy.
