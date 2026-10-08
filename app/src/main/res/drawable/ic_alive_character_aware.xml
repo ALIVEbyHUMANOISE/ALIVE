@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ALIVE sprite, lock moment: the little alien faces the opening in the wall. -->
+<!-- ALIVE sprite, lock moment: the blocky critter faces the opening in the wall. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="48dp"
     android:height="48dp"
@@ -7,14 +7,14 @@
     android:viewportHeight="16">
     <path
         android:fillColor="@color/alive_ink"
-        android:pathData="M2,6h1v1h-1zM9,6h1v1h-1zM2,7h1v1h-1zM4,7h2v1h-2zM7,7h2v1h-2zM9,7h1v1h-1zM2,8h1v1h-1zM4,8h2v1h-2zM7,8h2v1h-2zM9,8h2v1h-2zM2,9h1v1h-1zM5,9h2v1h-2zM9,9h1v1h-1zM11,9h2v1h-2zM2,10h1v1h-1zM9,10h1v1h-1zM2,11h1v1h-1zM9,11h1v1h-1zM3,12h6v1h-6zM3,13h1v1h-1zM7,13h1v1h-1zM2,14h1v1h-1zM8,14h1v1h-1z" />
+        android:pathData="M4,3h6v1h-6zM3,4h1v1h-1zM10,4h1v1h-1zM3,5h1v1h-1zM10,5h1v1h-1zM3,6h1v1h-1zM5,6h2v1h-2zM8,6h2v1h-2zM10,6h1v1h-1zM3,7h1v1h-1zM5,7h2v1h-2zM8,7h2v1h-2zM10,7h1v1h-1zM1,8h2v1h-2zM3,8h1v1h-1zM10,8h1v1h-1zM11,8h2v1h-2zM1,9h2v1h-2zM3,9h1v1h-1zM6,9h2v1h-2zM10,9h1v1h-1zM11,9h2v1h-2zM3,10h1v1h-1zM10,10h1v1h-1zM3,11h1v1h-1zM10,11h1v1h-1zM4,12h6v1h-6zM5,13h2v1h-2zM8,13h2v1h-2z" />
     <path
         android:fillColor="@color/alive_forest"
-        android:pathData="M3,5h6v1h-6zM13,1h1v14h-1z" />
+        android:pathData="M13,1h1v14h-1z" />
     <path
         android:fillColor="@color/alive_soft_forest"
-        android:pathData="M14,6h1v3h-1z" />
+        android:pathData="M4,4h6v1h-6zM4,5h6v1h-6zM4,6h1v1h-1zM7,6h1v1h-1zM4,7h1v1h-1zM7,7h1v1h-1zM4,8h6v1h-6zM4,9h2v1h-2zM8,9h2v1h-2zM4,10h1v1h-1zM9,10h1v1h-1zM4,11h1v1h-1zM9,11h1v1h-1zM14,6h1v3h-1z" />
     <path
         android:fillColor="@color/alive_white"
-        android:pathData="M3,6h6v1h-6zM3,7h1v1h-1zM4,7h1v1h-1zM6,7h1v1h-1zM7,7h1v1h-1zM3,8h1v1h-1zM6,8h1v1h-1zM3,9h2v1h-2zM7,9h2v1h-2zM3,10h6v1h-6zM3,11h6v1h-6z" />
+        android:pathData="M6,6h1v1h-1zM9,6h1v1h-1zM5,10h4v2h-4z" />
 </vector>
