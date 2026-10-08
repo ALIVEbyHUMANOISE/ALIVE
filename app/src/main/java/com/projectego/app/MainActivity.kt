@@ -777,13 +777,21 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    /** Two tiles side by side, half each, and stretched to the same height. */
+    /**
+     * Two tiles side by side, half each.
+     *
+     * WRAP_CONTENT on purpose: inside a panel - a ScrollView that fills its own
+     * viewport - a match-parent height means the whole screen, and the pair then
+     * pushes the description and the Start button off it. A streak tile carrying
+     * pips is legitimately taller than its neighbour, and that is information.
+     */
     private fun statRow(left: View, right: View): LinearLayout = ui.row().apply {
+        gravity = Gravity.TOP
         listOf(left, right).forEachIndexed { index, tile ->
             if (index > 0) addView(ui.hgap(ui.dimens.pairGap))
             addView(
                 tile.apply {
-                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                 }
             )
         }

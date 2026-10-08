@@ -478,15 +478,9 @@ class AliveComponents(private val context: Context) {
         addView(number(value))
     }
 
-    /** A thick ink rule: the horizontal half of a table's cross. */
+    /** A thick ink rule between the parts of one card. */
     fun rule(): View = View(context).apply {
         layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dimens.borderButton)
-        setBackgroundColor(palette.ink)
-    }
-
-    /** The vertical half of the same cross. */
-    fun ruleVertical(): View = View(context).apply {
-        layoutParams = LinearLayout.LayoutParams(dimens.borderButton, ViewGroup.LayoutParams.MATCH_PARENT)
         setBackgroundColor(palette.ink)
     }
 

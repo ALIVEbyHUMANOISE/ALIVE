@@ -8,7 +8,9 @@ import android.util.TypedValue
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import com.projectego.app.R
+import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
@@ -94,6 +96,11 @@ class BrutalistBarChart(context: Context) : View(context) {
 
     private var columns: List<Column> = emptyList()
     private var selected = -1
+
+    /** How far a finger may wander and still be called a tap. */
+    private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
+    private var downX = 0f
+    private var downY = 0f
 
     private val taps = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
         override fun onSingleTapUp(event: MotionEvent): Boolean {
@@ -381,10 +388,26 @@ class BrutalistBarChart(context: Context) : View(context) {
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                downX = event.x
+                downY = event.y
+                // A thumb tap is never perfectly still, and the panel's ScrollView
+                // claims the gesture the moment it drifts past the touch slop -
+                // which is why tapping a bar used to answer with nothing at all.
+                // Ask for the gesture up front, and hand it straight back as soon
+                // as this really is a drag, so scrolling keeps working.
+                parent?.requestDisallowInterceptTouchEvent(true)
+            }
+
+            MotionEvent.ACTION_MOVE ->
+                if (abs(event.x - downX) > touchSlop || abs(event.y - downY) > touchSlop) {
+                    parent?.requestDisallowInterceptTouchEvent(false)
+                }
+
+            else -> parent?.requestDisallowInterceptTouchEvent(false)
+        }
         taps.onTouchEvent(event)
-        // Claiming the gesture is what lets a tap arrive at all. The panel's
-        // scroll view still intercepts once the finger moves, so dragging keeps
-        // scrolling the card rather than being swallowed by the chart.
         return true
     }
 
