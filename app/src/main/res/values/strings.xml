@@ -72,10 +72,9 @@
     <!-- ============ TIME BANK ============ -->
     <string name="time_bank_heading">Time Bank</string>
     <string name="time_bank_empty">Nothing reclaimed yet. A verified session gives you time back.</string>
-    <string name="time_bank_use_intro">Use reclaimed time to extend a session.</string>
-    <string name="time_bank_use_10">Use 10 minutes</string>
-    <string name="time_bank_use_15">Use 15 minutes</string>
-    <string name="time_bank_spent_toast">%1$d minutes moved out of your Time Bank.</string>
+    <string name="time_bank_use_running">A focus session is running. That is where these minutes buy time.</string>
+    <string name="time_bank_use_cta">Go to the running session</string>
+    <string name="time_bank_use_none">Nothing is running to extend. Start a focus session and spend them there.</string>
     <string name="time_bank_not_enough">Not enough reclaimed time for that.</string>
     <string name="time_bank_available_total">%1$d min available</string>
     <string name="stat_bank_earned">Earned</string>

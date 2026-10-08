@@ -991,50 +991,42 @@ class MainActivity : AppCompatActivity() {
         card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(ui.note(getString(R.string.time_bank_explain)))
 
-        if (available > 0L) {
-            renderTimeBankUse(card, available)
-        }
+        renderTimeBankUse(card)
 
         timeBankAnchor = card
         statusContainer.addView(card)
     }
 
-    private fun renderTimeBankUse(block: LinearLayout, available: Long) {
+    /**
+     * Where the bank's minutes actually go.
+     *
+     * These two buttons used to call `spendMinutes()` from the card itself, which
+     * moved minutes out of the bank and extended nothing - the real path is
+     * `extendFocusWithTimeBank`, and it only exists on a running session. So the
+     * card now hands the person to that screen instead of offering a tap that can
+     * only cost them something they earned.
+     */
+    private fun renderTimeBankUse(block: LinearLayout) {
         block.addView(ui.vgap(ui.dimens.groupGap))
-        block.addView(ui.note(getString(R.string.time_bank_use_intro)))
+        block.addView(ui.rule())
         block.addView(ui.vgap(ui.dimens.lineGap))
 
-        val row = ui.row()
-        row.addView(
-            ui.secondary(getString(R.string.time_bank_use_10)).apply {
-                isEnabled = available >= 10
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                setOnClickListener {
-                    if (timeBankRepository.spendMinutes(10)) {
-                        toast(R.string.time_bank_spent_toast, 10)
-                        renderDashboard()
-                    } else {
-                        toast(R.string.time_bank_not_enough)
-                    }
+        val session = state.focusSession
+        if (session != null && session.isActive) {
+            block.addView(ui.note(getString(R.string.time_bank_use_running)))
+            block.addView(ui.vgap(ui.dimens.lineGap))
+            block.addView(
+                ui.secondary(getString(R.string.time_bank_use_cta)).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    setOnClickListener { openFocusSessionPanel() }
                 }
-            }
-        )
-        row.addView(ui.hgap(ui.dimens.m))
-        row.addView(
-            ui.secondary(getString(R.string.time_bank_use_15)).apply {
-                isEnabled = available >= 15
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                setOnClickListener {
-                    if (timeBankRepository.spendMinutes(15)) {
-                        toast(R.string.time_bank_spent_toast, 15)
-                        renderDashboard()
-                    } else {
-                        toast(R.string.time_bank_not_enough)
-                    }
-                }
-            }
-        )
-        block.addView(row)
+            )
+        } else {
+            block.addView(ui.note(getString(R.string.time_bank_use_none)))
+        }
     }
 
     // ------------------------------------------------------------------
