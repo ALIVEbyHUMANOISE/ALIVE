@@ -46,7 +46,11 @@
     <string name="time_closed">Entertainment time is closed for today.</string>
     <string name="time_closed_support">It opens again tomorrow. Nothing needs fixing tonight.</string>
     <string name="zero_day_heading">Today is a no-entertainment day.</string>
-    <string name="zero_day_support">By design, after yesterday. Productive things still work.</string>
+    <string name="zero_day_support">By design: no quest landed yesterday. Productive things still work.</string>
+    <!-- The rule, said on the day it still applies to. One quest is the whole
+         requirement, and the card says which side of it today is on. -->
+    <string name="today_kept">One quest has landed today — tomorrow\'s allowance is kept.</string>
+    <string name="today_not_kept">Nothing has landed today. Finish one quest and tomorrow\'s allowance stands.</string>
 
     <!-- ============ HOME: CURRENT ACTION ============ -->
     <string name="action_start_focus">Start focus</string>
@@ -187,7 +191,7 @@
     <string name="language_english">English</string>
     <string name="language_indonesian">Bahasa Indonesia</string>
     <string name="profile_how_title">How ALIVE decides</string>
-    <string name="profile_how_body">ALIVE knows which app was on screen and for how long. That is all. It does not open your apps, read their content, or judge what you did in them.</string>
+    <string name="profile_how_body">ALIVE knows which app was on screen and for how long. That is all. It does not open your apps, read their content, or judge what you did in them. A day is kept by finishing one quest — not by using as little screen as possible.</string>
 
     <!-- ============ LOCK ============ -->
     <string name="lock_title_over">Entertainment time is closed</string>
@@ -197,8 +201,8 @@
     <string name="lock_over_body">You\'re at the end of today\'s entertainment time.</string>
     <string name="lock_allowance_line">Allowance: %1$d min</string>
     <string name="lock_used_line">Used: %1$d min</string>
-    <string name="lock_zero_body">Today has no entertainment time by design — it follows yesterday.</string>
-    <string name="lock_zero_support">There is nothing to unlock, and nothing you did wrong.</string>
+    <string name="lock_zero_body">Today has no entertainment time because no quest landed yesterday.</string>
+    <string name="lock_zero_support">There is nothing to unlock, and nothing you did wrong. Finish one quest today and tomorrow is yours again.</string>
     <string name="lock_blocked_app">The app that came up: %1$s</string>
     <string name="lock_blocked_app_unknown">An entertainment app</string>
     <string name="lock_days_row">You\'re on a %1$d-day run.</string>
@@ -346,8 +350,8 @@
     <string name="dev_test_mode_on">[dev] test mode ON - 1 min allowance</string>
     <string name="dev_test_mode_off">[dev] test mode OFF - 120 min allowance</string>
     <string name="dev_start_test_focus">[dev] start 15-second test focus</string>
-    <string name="dev_rollover_kept">[dev] simulate rollover - day kept</string>
-    <string name="dev_rollover_exceeded">[dev] simulate rollover - day exceeded</string>
+    <string name="dev_rollover_quest_landed">[dev] rollover: quest landed yesterday</string>
+    <string name="dev_rollover_no_quest">[dev] rollover: no quest yesterday</string>
     <string name="dev_reward_locked">[dev] reward requires the verification pipeline</string>
     <string name="dev_test_focus_started">[dev] 15-second study focus started</string>
 </resources>

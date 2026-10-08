@@ -18,6 +18,12 @@ class QuestRepository(
     private val timeBankRepository: TimeBankRepository
 ) {
 
+    // Kept as given, not applicationContext: below API 33 AppCompat's per-app
+    // language lands on the Activity's configuration, so text resolved through an
+    // application context can stay in the wrong language. This repository lives and
+    // dies with the activity that owns it either way.
+    private val context: Context = context
+
     private val prefs: SharedPreferences =
         context.getSharedPreferences("project_ego_quests", Context.MODE_PRIVATE)
 
@@ -405,6 +411,11 @@ class QuestRepository(
         val completedIds = getCompletedIds().toMutableSet()
         completedIds.add(current.questId)
         prefs.edit().putStringSet(KEY_COMPLETED_QUEST_IDS, completedIds).apply()
+
+        // A kept day is decided by whether anything was earned on it, so this is
+        // the one moment that fact gets written. apply() is enough here: a lost
+        // marker can cost a day, it can never grant one.
+        LockStateManager.recordQuestCompleted(context)
 
         return quest.rewardMinutes
     }

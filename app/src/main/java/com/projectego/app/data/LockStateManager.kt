@@ -11,9 +11,11 @@ import java.util.Locale
 class LockStateManager(context: Context) {
 
     private val prefs: SharedPreferences =
-        context.getSharedPreferences("project_ego_state", Context.MODE_PRIVATE)
+        context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
 
     companion object {
+        private const val PREFS_FILE = "project_ego_state"
+
         private const val KEY_LAST_TRACKED_DATE = "key_last_tracked_date"
         private const val KEY_IS_LOCKED = "key_is_locked"
         private const val KEY_DEV_TEST_MODE = "key_dev_test_mode"
@@ -29,6 +31,17 @@ class LockStateManager(context: Context) {
         private const val KEY_GUARD_REPAIR_BASELINE = "key_guard_repair_baseline"
         private const val KEY_GUARD_REPAIRED = "key_guard_repaired"
 
+        // The last day a quest actually paid out. Keyed by day like the guard gap,
+        // so it scopes itself: what decides tomorrow is whether *that* day earned,
+        // not when the record happened to be written.
+        private const val KEY_QUEST_DONE_DAY = "key_quest_done_day"
+
+        // Whether tomorrow has ever been judged by the quest rule. The first
+        // rollover after the rule ships is deliberately not judged - yesterday was
+        // lived under the old one, and a rule nobody could have read is not a
+        // reason to take someone's day away.
+        private const val KEY_QUEST_RULE_ANNOUNCED = "key_quest_rule_announced"
+
         const val PRODUCTION_LIMIT_MINUTES = 120L
         const val DEV_TEST_LIMIT_MINUTES = 1L
 
@@ -42,17 +55,35 @@ class LockStateManager(context: Context) {
          */
         fun dayKeyOf(timeMillis: Long): String =
             SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(timeMillis))
+
+        /**
+         * Mark [dayKey] as a day on which a quest paid out.
+         *
+         * A companion called from `QuestRepository.claimReward()`, because that is
+         * the one place a reward exists and the repository that grants it should not
+         * have to build a second one just to record the fact.
+         */
+        @Synchronized
+        fun recordQuestCompleted(
+            context: Context,
+            dayKey: String = dayKeyOf(System.currentTimeMillis())
+        ) {
+            context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE).edit()
+                .putString(KEY_QUEST_DONE_DAY, dayKey)
+                .apply()
+        }
     }
 
     private fun getTodayDateString(): String = dayKeyOf(System.currentTimeMillis())
 
     /**
-     * Checks if a new day has arrived.
-     * Evaluates previous day's success/failure before resetting state.
-     * This logic is deterministic and safe even if the app was closed during midnight.
+     * Checks if a new day has arrived, and judges the one that just went.
+     *
+     * Deterministic and safe even if the app was closed across midnight: the only
+     * evidence consulted is what was written during the day itself.
      */
     @Synchronized
-    fun checkAndPerformDailyReset(evaluateUsageCallback: ((startDate: String) -> Boolean)? = null): Boolean {
+    fun checkAndPerformDailyReset(): Boolean {
         val today = getTodayDateString()
         val lastDate = prefs.getString(KEY_LAST_TRACKED_DATE, null)
 
@@ -71,32 +102,34 @@ class LockStateManager(context: Context) {
 
         if (lastDate != today) {
             // Date has changed! Evaluate previous day.
-            val wasLocked = prefs.getBoolean(KEY_IS_LOCKED, false)
             val currentStreak = prefs.getInt(KEY_CURRENT_STREAK, 0)
-            val previousDayType = getDayType()
 
-            // If the user reached the hard lock on the previous day, it's an immediate fail.
-            // If a callback is supplied, it can also verify usage from UsageStatsManager.
-            var dayFailed = wasLocked
-            if (!dayFailed && evaluateUsageCallback != null) {
-                dayFailed = evaluateUsageCallback(lastDate)
-            }
-            // A day that ended with the guard off and never repaired is not a kept
-            // day, even if nothing about its usage crossed the limit. A repaired
-            // gap is left alone: the price was already paid that day.
-            if (!dayFailed && isGuardGapOpenOn(lastDate)) {
-                dayFailed = true
-            }
+            // A day is kept by doing one watched thing, not by under-using the
+            // allowance. The rule before this one punished the day a person had,
+            // and rewarded the one where they simply never opened the app.
+            //
+            // An unrepaired guard gap disqualifies the quest rather than acting as
+            // a second sentence: time earned while nothing was watching is not time
+            // ALIVE can stand behind.
+            val landed = isQuestCompletedOn(lastDate) && !isGuardGapOpenOn(lastDate)
+
+            // The first rollover after this rule exists is not judged, because
+            // yesterday was lived under the old one. From the day after, the rule is
+            // one the person has already been told - and an unjudged day is a kept
+            // one, so nobody starts a run already in debt.
+            val judged = prefs.getBoolean(KEY_QUEST_RULE_ANNOUNCED, false)
+            val dayFailed = judged && !landed
 
             val newStreak: Int
             val newDayType: DayType
 
             if (dayFailed) {
-                // Streak resets to 0. Next day enters ZERO_ENTERTAINMENT_DAY.
+                // Not kept: the streak starts again from zero and tomorrow has no
+                // entertainment time to spend.
                 newStreak = 0
                 newDayType = DayType.ZERO_ENTERTAINMENT_DAY
             } else {
-                // Successful day! Streak increments by 1. Next day is NORMAL_DAY.
+                // Kept. Streak increments by 1 and tomorrow is an ordinary day.
                 newStreak = currentStreak + 1
                 newDayType = DayType.NORMAL_DAY
             }
@@ -108,6 +141,9 @@ class LockStateManager(context: Context) {
                 .putInt(KEY_CURRENT_STREAK, newStreak)
                 .putString(KEY_DAY_TYPE, newDayType.name)
                 .putBoolean(KEY_LAST_DAY_FAILED, dayFailed)
+                // Whatever happened, this rollover was lived under the quest rule -
+                // so from here on the next one is judged by it too.
+                .putBoolean(KEY_QUEST_RULE_ANNOUNCED, true)
                 .apply()
 
             return true
@@ -164,6 +200,15 @@ class LockStateManager(context: Context) {
     fun isGuardGapOpenOn(dayKey: String): Boolean =
         prefs.getString(KEY_UNGUARDED_DAY, null) == dayKey && !prefs.getBoolean(KEY_GUARD_REPAIRED, false)
 
+    /** The last day a quest paid out, or null if none ever has. */
+    @Synchronized
+    fun questCompletedDay(): String? = prefs.getString(KEY_QUEST_DONE_DAY, null)
+
+    /** Whether a quest paid out on [dayKey]. This is what keeps tomorrow. */
+    @Synchronized
+    fun isQuestCompletedOn(dayKey: String): Boolean =
+        prefs.getString(KEY_QUEST_DONE_DAY, null) == dayKey
+
     /**
      * Closes the repair once a quest reward has actually landed.
      *
@@ -214,10 +259,12 @@ class LockStateManager(context: Context) {
     /**
      * Testing aid for developer simulation of rollover.
      */
-    fun simulateRollover(simulatedLastDate: String, simulateLock: Boolean) {
+    fun simulateRollover(simulatedLastDate: String) {
+        // Only the clock is rewound. Whether yesterday was kept is decided by
+        // [checkAndPerformDailyReset] from what actually landed on it, so a
+        // simulator that also set the lock flag would be pretending to decide.
         prefs.edit()
             .putString(KEY_LAST_TRACKED_DATE, simulatedLastDate)
-            .putBoolean(KEY_IS_LOCKED, simulateLock)
             .apply()
         checkAndPerformDailyReset()
     }

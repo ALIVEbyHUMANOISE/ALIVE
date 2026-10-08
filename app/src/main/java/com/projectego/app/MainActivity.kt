@@ -345,6 +345,11 @@ class MainActivity : AppCompatActivity() {
         state.dailyLimitMinutes = report.limitMinutes
         state.usedMinutesToday = report.totalEntertainmentMinutes
         state.entertainmentAppDetails = report.entertainmentAppDetails
+        // A preference read with no side effects, done once per render like the
+        // guard state: it decides what the Today card says about tomorrow.
+        state.questDoneToday = lockStateManager.isQuestCompletedOn(
+            LockStateManager.dayKeyOf(System.currentTimeMillis())
+        )
         evaluateGuardState(report)
 
         // Read once per render and handed down: these reach AppOps and Settings,
@@ -725,6 +730,15 @@ class MainActivity : AppCompatActivity() {
         card.addView(
             ui.note(
                 getString(AliveStates.timeSupportLine(report.timeStatus, report.criticalZoneTier))
+            )
+        )
+
+        // The rule, said on the day it still applies to - not for the first time
+        // on the morning it bites.
+        card.addView(ui.vgap(ui.dimens.pairGap))
+        card.addView(
+            ui.note(
+                getString(if (state.questDoneToday) R.string.today_kept else R.string.today_not_kept)
             )
         )
 
@@ -2342,19 +2356,28 @@ class MainActivity : AppCompatActivity() {
             }
         )
 
+        // The two outcomes the new rule can produce, set up by writing the day a
+        // quest landed - which is the only evidence the rollover reads now.
         block.addView(
-            ui.quiet(getString(R.string.dev_rollover_kept)).apply {
+            ui.quiet(getString(R.string.dev_rollover_quest_landed)).apply {
                 setOnClickListener {
-                    lockStateManager.simulateRollover(yesterday(), simulateLock = false)
+                    LockStateManager.recordQuestCompleted(this@MainActivity, yesterday())
+                    lockStateManager.simulateRollover(yesterday())
                     renderDashboard()
                 }
             }
         )
 
         block.addView(
-            ui.quiet(getString(R.string.dev_rollover_exceeded)).apply {
+            ui.quiet(getString(R.string.dev_rollover_no_quest)).apply {
                 setOnClickListener {
-                    lockStateManager.simulateRollover(yesterday(), simulateLock = true)
+                    // Marking today is how yesterday becomes empty: the key holds
+                    // the last day anything landed, and nothing clears it.
+                    LockStateManager.recordQuestCompleted(
+                        this@MainActivity,
+                        LockStateManager.dayKeyOf(System.currentTimeMillis())
+                    )
+                    lockStateManager.simulateRollover(yesterday())
                     renderDashboard()
                 }
             }

@@ -15,7 +15,8 @@ import org.robolectric.annotation.Config
 import java.time.LocalDate
 
 /**
- * The guard gap: what happens to a day when the thing that closes apps is off.
+ * What a day has to earn to keep tomorrow, and what happens when the thing that
+ * closes apps is off.
  *
  * Android will not let an app stop the user from turning an accessibility service
  * off, so the response lives in ALIVE's own economy. These tests hold the two
@@ -85,10 +86,47 @@ class LockStateManagerGuardTest {
     }
 
     @Test
+    fun `the first rollover under the rule is not judged`() {
+        // Nothing landed yesterday and the day still stands: the first rollover
+        // after the rule exists is not judged, because yesterday was lived under
+        // some other rule, or none. An unjudged day is a kept one, which is why the
+        // run starts at one.
+        manager.simulateRollover(yesterday)
+
+        assertFalse(manager.wasLastDayFailed())
+        assertEquals(DayType.NORMAL_DAY, manager.getDayType())
+    }
+
+    @Test
+    fun `a day with no quest is not kept`() {
+        livingUnderTheRule()
+
+        manager.simulateRollover(yesterday)
+
+        assertTrue(manager.wasLastDayFailed())
+        assertEquals(0, manager.getCurrentStreak())
+        assertEquals(DayType.ZERO_ENTERTAINMENT_DAY, manager.getDayType())
+    }
+
+    @Test
+    fun `one quest is enough to keep the day`() {
+        livingUnderTheRule()
+        LockStateManager.recordQuestCompleted(context, yesterday)
+
+        manager.simulateRollover(yesterday)
+
+        assertFalse(manager.wasLastDayFailed())
+        assertEquals(2, manager.getCurrentStreak())
+        assertEquals(DayType.NORMAL_DAY, manager.getDayType())
+    }
+
+    @Test
     fun `an unrepaired gap makes the day it happened in not kept`() {
+        livingUnderTheRule()
+        LockStateManager.recordQuestCompleted(context, yesterday)
         manager.markGuardGap(yesterday, 0L)
 
-        manager.simulateRollover(yesterday, simulateLock = false)
+        manager.simulateRollover(yesterday)
 
         assertTrue(manager.wasLastDayFailed())
         assertEquals(0, manager.getCurrentStreak())
@@ -97,31 +135,39 @@ class LockStateManagerGuardTest {
 
     @Test
     fun `a repaired gap leaves the day kept`() {
+        livingUnderTheRule()
+        LockStateManager.recordQuestCompleted(context, yesterday)
         manager.markGuardGap(yesterday, 0L)
         assertTrue(manager.repairGuardGapIfEarned(20L))
 
-        manager.simulateRollover(yesterday, simulateLock = false)
+        manager.simulateRollover(yesterday)
 
         assertFalse(manager.wasLastDayFailed())
-        assertEquals(1, manager.getCurrentStreak())
+        // The grace day is not judged, and an unjudged day is a kept one - so the
+        // run starts at one rather than at nothing.
+        assertEquals(2, manager.getCurrentStreak())
         assertEquals(DayType.NORMAL_DAY, manager.getDayType())
     }
 
     @Test
     fun `a gap from an older day does not charge the day before today`() {
+        livingUnderTheRule()
+        LockStateManager.recordQuestCompleted(context, yesterday)
         manager.markGuardGap(LocalDate.now().minusDays(5).toString(), 0L)
 
-        manager.simulateRollover(yesterday, simulateLock = false)
+        manager.simulateRollover(yesterday)
 
         assertFalse(manager.wasLastDayFailed())
-        assertEquals(1, manager.getCurrentStreak())
+        assertEquals(2, manager.getCurrentStreak())
     }
 
-    @Test
-    fun `a locked day still fails on its own without any gap`() {
-        manager.simulateRollover(yesterday, simulateLock = true)
-
-        assertTrue(manager.wasLastDayFailed())
-        assertEquals(DayType.ZERO_ENTERTAINMENT_DAY, manager.getDayType())
+    /**
+     * Reach the state a person is in once the quest rule has been live for a day.
+     *
+     * The first rollover after the rule exists is deliberately not judged, so any
+     * test about what a day earns has to spend one getting there.
+     */
+    private fun livingUnderTheRule() {
+        manager.simulateRollover(yesterday)
     }
 }

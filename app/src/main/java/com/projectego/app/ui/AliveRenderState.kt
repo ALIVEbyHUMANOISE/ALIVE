@@ -80,6 +80,13 @@ class AliveRenderState {
     var guardGapRepairedToday: Boolean = false
 
     /**
+     * Whether a quest has actually paid out today - the one thing that keeps
+     * tomorrow's allowance. Read once per render like the guard state, from a
+     * preference that has no side effects at all.
+     */
+    var questDoneToday: Boolean = false
+
+    /**
      * The last attempt ALIVE has already celebrated, so the burst is one event
      * per quest instead of one per render. Memory only, like everything here:
      * nothing is owed a party after a restart.

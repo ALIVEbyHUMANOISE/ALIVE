@@ -45,7 +45,9 @@
     <string name="time_closed">Waktu hiburan hari ini sudah ditutup.</string>
     <string name="time_closed_support">Buka lagi besok. Tidak ada yang perlu diperbaiki malam ini.</string>
     <string name="zero_day_heading">Hari ini tanpa hiburan.</string>
-    <string name="zero_day_support">Sengaja, setelah kemarin. Hal-hal produktif tetap jalan.</string>
+    <string name="zero_day_support">Sengaja: kemarin tidak ada misi yang selesai. Hal-hal produktif tetap jalan.</string>
+    <string name="today_kept">Satu misi sudah selesai hari ini — jatah besok aman.</string>
+    <string name="today_not_kept">Belum ada yang selesai hari ini. Selesaikan satu misi, jatah besok tetap ada.</string>
 
     <!-- ============ BERANDA: TINDAKAN SAAT INI ============ -->
     <string name="action_start_focus">Mulai fokus</string>
@@ -176,7 +178,7 @@
     <string name="language_english">English</string>
     <string name="language_indonesian">Bahasa Indonesia</string>
     <string name="profile_how_title">Cara ALIVE memutuskan</string>
-    <string name="profile_how_body">ALIVE tahu aplikasi mana yang ada di layar dan berapa lama. Itu saja. Ia tidak membuka aplikasimu, tidak membaca isinya, dan tidak menilai apa yang kamu lakukan di dalamnya.</string>
+    <string name="profile_how_body">ALIVE tahu aplikasi mana yang ada di layar dan berapa lama. Itu saja. ALIVE tidak membuka aplikasimu, tidak membaca isinya, dan tidak menilai apa yang kamu lakukan di dalamnya. Satu hari dipertahankan dengan menyelesaikan satu misi — bukan dengan memakai layar sesedikit mungkin.</string>
 
     <!-- ============ LAYAR TERTUTUP ============ -->
     <string name="lock_title_over">Waktu hiburan ditutup</string>
@@ -186,8 +188,8 @@
     <string name="lock_over_body">Kamu sudah di ujung waktu hiburan hari ini.</string>
     <string name="lock_allowance_line">Jatah: %1$d menit</string>
     <string name="lock_used_line">Terpakai: %1$d menit</string>
-    <string name="lock_zero_body">Hari ini memang tidak punya waktu hiburan — ia melanjutkan kemarin.</string>
-    <string name="lock_zero_support">Tidak ada yang perlu dibuka, dan tidak ada yang salah kamu lakukan.</string>
+    <string name="lock_zero_body">Hari ini tidak ada waktu hiburan karena tidak ada misi yang selesai kemarin.</string>
+    <string name="lock_zero_support">Tidak ada yang perlu dibuka, dan tidak ada yang salah kamu lakukan. Selesaikan satu misi hari ini, besok milikmu lagi.</string>
     <string name="lock_blocked_app">Aplikasi yang muncul: %1$s</string>
     <string name="lock_blocked_app_unknown">Sebuah aplikasi hiburan</string>
     <string name="lock_days_row">Kamu sedang %1$d hari beruntun.</string>
