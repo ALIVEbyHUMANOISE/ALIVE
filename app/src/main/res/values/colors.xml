@@ -76,6 +76,11 @@
     <color name="alive_cat_work">#7FA8CB</color>
     <color name="alive_cat_other">#D8D2C7</color>
 
+    <!-- The critter itself: a flat rose body, Clawd-style, with no outline.
+         It has to do two jobs alone - hold ink eyes at 4.5:1 and stay visible
+         on the paper card it sits on. `AlivePaletteTest` measures both. -->
+    <color name="alive_pink_soft">#E58CA4</color>
+
     <!-- The colour of "do this". Brighter and flatter than reward gold on
          purpose: gold is what a quest paid out, amber is what a button offers,
          and the two are never on the same object. -->

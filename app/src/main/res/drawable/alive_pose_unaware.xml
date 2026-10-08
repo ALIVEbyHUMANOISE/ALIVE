@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ALIVE sprite, stage: Unaware. Eyes wide on the phone it is holding up. -->
+<!-- ALIVE sprite, stage: Unaware. Phone held up beside its face. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="48dp"
     android:height="48dp"
     android:viewportWidth="16"
     android:viewportHeight="16">
     <path
+        android:fillColor="@color/alive_pink_soft"
+        android:pathData="M4,3h6v1h-6zM3,4h8v1h-8zM3,5h8v1h-8zM3,6h8v1h-8zM3,7h8v1h-8zM1,8h2v1h-2zM3,8h8v1h-8zM1,9h2v1h-2zM3,9h8v1h-8zM11,9h2v1h-2zM3,10h8v1h-8zM11,10h2v1h-2zM3,11h8v1h-8zM4,12h6v1h-6zM4,13h2v1h-2zM8,13h2v1h-2z" />
+    <path
         android:fillColor="@color/alive_ink"
-        android:pathData="M4,3h6v1h-6zM3,4h1v1h-1zM10,4h1v1h-1zM11,4h4v1h-4zM3,5h1v1h-1zM10,5h1v1h-1zM11,5h1v1h-1zM14,5h1v1h-1zM3,6h1v1h-1zM5,6h2v1h-2zM8,6h2v1h-2zM10,6h1v1h-1zM11,6h1v1h-1zM14,6h1v1h-1zM3,7h1v1h-1zM5,7h2v1h-2zM8,7h2v1h-2zM10,7h1v1h-1zM11,7h1v1h-1zM14,7h1v1h-1zM1,8h2v1h-2zM3,8h1v1h-1zM10,8h1v1h-1zM11,8h4v1h-4zM1,9h2v1h-2zM3,9h1v1h-1zM6,9h2v1h-2zM10,9h1v1h-1zM11,9h2v1h-2zM3,10h1v1h-1zM10,10h1v1h-1zM3,11h1v1h-1zM10,11h1v1h-1zM4,12h6v1h-6zM5,13h2v1h-2zM8,13h2v1h-2z" />
+        android:pathData="M4,6h2v2h-2zM8,6h2v2h-2zM11,4h4v1h-4zM11,8h4v1h-4zM11,5h1v3h-1zM14,5h1v3h-1z" />
     <path
         android:fillColor="@color/alive_soft_forest"
-        android:pathData="M4,4h6v1h-6zM4,5h6v1h-6zM4,6h1v1h-1zM7,6h1v1h-1zM4,7h1v1h-1zM7,7h1v1h-1zM4,8h6v1h-6zM4,9h2v1h-2zM8,9h2v1h-2zM4,10h1v1h-1zM9,10h1v1h-1zM4,11h1v1h-1zM9,11h1v1h-1zM12,5h2v3h-2z" />
-    <path
-        android:fillColor="@color/alive_white"
-        android:pathData="M6,6h1v1h-1zM9,6h1v1h-1zM5,10h4v2h-4z" />
+        android:pathData="M12,5h2v3h-2z" />
 </vector>

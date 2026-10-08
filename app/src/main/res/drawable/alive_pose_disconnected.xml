@@ -1,20 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ALIVE sprite, stage: Disconnected. Curled into a ball, eyes shut, alone. -->
+<!-- ALIVE sprite, stage: Disconnected. Curled into a ball, eyes shut. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="48dp"
     android:height="48dp"
     android:viewportWidth="16"
     android:viewportHeight="16">
     <path
-        android:fillColor="@color/alive_ink"
-        android:pathData="M5,5h6v1h-6zM4,6h1v1h-1zM11,6h1v1h-1zM4,7h1v1h-1zM11,7h1v1h-1zM4,8h1v1h-1zM5,8h2v1h-2zM9,8h2v1h-2zM11,8h1v1h-1zM4,9h1v1h-1zM11,9h1v1h-1zM4,10h1v1h-1zM11,10h1v1h-1zM4,11h1v1h-1zM11,11h1v1h-1zM5,12h6v1h-6z" />
+        android:fillColor="@color/alive_pink_soft"
+        android:pathData="M5,5h6v1h-6zM4,6h8v1h-8zM4,7h8v1h-8zM4,8h8v1h-8zM4,9h8v1h-8zM4,10h8v1h-8zM4,11h8v1h-8zM5,12h6v1h-6z" />
     <path
-        android:fillColor="@color/alive_soft_forest"
-        android:pathData="M5,6h6v1h-6zM5,7h6v1h-6zM7,8h2v1h-2zM5,9h6v1h-6zM5,10h1v1h-1zM10,10h1v1h-1zM5,11h1v1h-1zM10,11h1v1h-1z" />
+        android:fillColor="@color/alive_ink"
+        android:pathData="M5,8h2v1h-2zM9,8h2v1h-2z" />
     <path
         android:fillColor="@color/alive_warm_gray"
         android:pathData="M2,3h1v1h-1zM13,3h1v1h-1zM2,4h1v1h-1zM13,4h1v1h-1zM2,5h1v1h-1zM13,5h1v1h-1z" />
-    <path
-        android:fillColor="@color/alive_white"
-        android:pathData="M6,10h4v2h-4z" />
 </vector>

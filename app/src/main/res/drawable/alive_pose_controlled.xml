@@ -10,12 +10,9 @@
         android:fillColor="@color/alive_white"
         android:pathData="M2,2h12v12h-12z" />
     <path
+        android:fillColor="@color/alive_pink_soft"
+        android:pathData="M6,8h4v1h-4zM5,9h6v1h-6zM5,10h6v1h-6zM5,11h6v1h-6zM5,12h6v1h-6zM6,13h4v1h-4z" />
+    <path
         android:fillColor="@color/alive_ink"
-        android:pathData="M1,1h14v1h-14zM1,14h14v1h-14zM1,2h1v12h-1zM14,2h1v12h-1zM5,8h6v1h-6zM5,9h1v1h-1zM6,9h2v1h-2zM8,9h2v1h-2zM10,9h1v1h-1zM5,10h1v1h-1zM6,10h2v1h-2zM8,10h2v1h-2zM10,10h1v1h-1zM5,11h1v1h-1zM10,11h1v1h-1zM5,12h1v1h-1zM10,12h1v1h-1zM5,13h6v1h-6z" />
-    <path
-        android:fillColor="@color/alive_soft_forest"
-        android:pathData="M6,11h4v2h-4z" />
-    <path
-        android:fillColor="@color/alive_white"
-        android:pathData="M6,9h1v1h-1zM8,9h1v1h-1z" />
+        android:pathData="M1,1h14v1h-14zM1,14h14v1h-14zM1,2h1v12h-1zM14,2h1v12h-1zM6,9h2v2h-2zM8,9h2v2h-2z" />
 </vector>

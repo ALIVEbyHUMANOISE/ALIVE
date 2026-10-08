@@ -139,6 +139,24 @@ class AlivePaletteTest {
     }
 
     @Test
+    fun `the character pink holds ink eyes and reads on its card`() {
+        // The critter is one flat pink fill with no outline, so the pink alone
+        // has to keep the ink eyes at 4.5:1 and stay visible on the card it
+        // sits on. The old soft-forest body failed the second half (1.1:1 on
+        // paper) and read as a grey smudge - this test would have caught it.
+        val pink = color(R.color.alive_pink_soft)
+        val ink = color(R.color.alive_ink)
+        assertTrue("ink on pink = ${contrast(ink, pink)}", contrast(ink, pink) >= 4.5)
+        listOf(
+            "paper" to color(R.color.alive_paper),
+            "white" to color(R.color.alive_white)
+        ).forEach { (name, ground) ->
+            val ratio = contrast(pink, ground)
+            assertTrue("pink on $name = $ratio", ratio >= 1.8)
+        }
+    }
+
+    @Test
     fun `the colour of an offer is not the colour of a reward`() {
         // Amber invites, gold pays out. Two yellows that measure the same are one
         // yellow with two names, which is how a palette starts lying.
