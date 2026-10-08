@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- ALIVE sprite, empty state: settled on the ground, at ease. Flat pink
-     body, Clawd-style: no outline, square ink eyes, no mouth. Arms float a
-     pixel off the body so they read as arms, not bumps. -->
+     body, Clawd-style: no outline, arms attached as stubby limbs, tall bold
+     ink eyes, no mouth. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="48dp"
     android:height="48dp"
@@ -9,8 +9,8 @@
     android:viewportHeight="16">
     <path
         android:fillColor="@color/alive_pink_soft"
-        android:pathData="M5,3h6v1h-6zM4,4h8v1h-8zM4,5h8v1h-8zM4,6h8v1h-8zM1,7h2v1h-2zM4,7h8v1h-8zM13,7h2v1h-2zM1,8h2v1h-2zM4,8h8v1h-8zM13,8h2v1h-2zM4,9h8v1h-8zM5,10h6v1h-6zM5,11h2v1h-2zM9,11h2v1h-2zM5,12h2v1h-2zM9,12h2v1h-2z" />
+        android:pathData="M5,3h6v1h-6zM4,4h8v1h-8zM4,5h8v1h-8zM4,6h8v1h-8zM2,7h2v1h-2zM4,7h8v1h-8zM12,7h2v1h-2zM2,8h2v1h-2zM4,8h8v1h-8zM12,8h2v1h-2zM4,9h8v1h-8zM5,10h6v1h-6zM5,11h2v1h-2zM9,11h2v1h-2zM5,12h2v1h-2zM9,12h2v1h-2z" />
     <path
         android:fillColor="@color/alive_ink"
-        android:pathData="M5,5h2v2h-2zM9,5h2v2h-2z" />
+        android:pathData="M5,5h2v3h-2zM9,5h2v3h-2z" />
 </vector>

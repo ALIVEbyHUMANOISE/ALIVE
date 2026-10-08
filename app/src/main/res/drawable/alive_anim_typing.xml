@@ -11,7 +11,7 @@
         android:pathData="M4,2h6v1h-6zM3,3h8v1h-8zM3,4h8v1h-8zM3,5h8v1h-8zM3,6h8v1h-8zM4,7h6v1h-6z" />
     <path
         android:fillColor="@color/alive_ink"
-        android:pathData="M4,4h2v2h-2zM8,4h2v2h-2zM2,7h10v1h-10zM2,11h10v1h-10zM2,8h1v3h-1zM11,8h1v3h-1zM1,12h12v2h-12z" />
+        android:pathData="M4,3h2v3h-2zM8,3h2v3h-2zM2,7h10v1h-10zM2,11h10v1h-10zM2,8h1v3h-1zM11,8h1v3h-1zM1,12h12v2h-12z" />
     <path
         android:fillColor="@color/alive_white"
         android:pathData="M3,8h8v3h-8z" />

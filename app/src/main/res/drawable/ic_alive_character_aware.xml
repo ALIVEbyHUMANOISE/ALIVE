@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ALIVE sprite, lock moment: moving toward an opening in the wall. -->
+<!-- ALIVE sprite, lock moment: moving toward an opening in the wall. Flat pink
+     body, Clawd-style: arms attached as stubby limbs, tall bold ink eyes. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="48dp"
     android:height="48dp"
@@ -7,10 +8,10 @@
     android:viewportHeight="16">
     <path
         android:fillColor="@color/alive_pink_soft"
-        android:pathData="M4,3h6v1h-6zM3,4h8v1h-8zM3,5h8v1h-8zM3,6h8v1h-8zM0,7h2v1h-2zM3,7h8v1h-8zM12,7h2v1h-2zM0,8h2v1h-2zM3,8h8v1h-8zM12,8h2v1h-2zM3,9h8v1h-8zM4,10h6v1h-6zM4,11h2v1h-2zM8,11h2v1h-2zM4,12h2v1h-2zM8,12h2v1h-2z" />
+        android:pathData="M4,3h6v1h-6zM3,4h8v1h-8zM3,5h8v1h-8zM3,6h8v1h-8zM1,7h2v1h-2zM3,7h8v1h-8zM11,7h2v1h-2zM1,8h2v1h-2zM3,8h8v1h-8zM11,8h2v1h-2zM3,9h8v1h-8zM4,10h6v1h-6zM4,11h2v1h-2zM8,11h2v1h-2zM4,12h2v1h-2zM8,12h2v1h-2z" />
     <path
         android:fillColor="@color/alive_ink"
-        android:pathData="M4,5h2v2h-2zM8,5h2v2h-2z" />
+        android:pathData="M4,5h2v3h-2zM8,5h2v3h-2z" />
     <path
         android:fillColor="@color/alive_forest"
         android:pathData="M14,1h1v14h-1z" />
