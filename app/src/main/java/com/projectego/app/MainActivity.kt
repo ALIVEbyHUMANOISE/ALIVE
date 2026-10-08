@@ -792,15 +792,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Two tiles side by side, half each.
+     * Two tiles side by side, half each, and the same height as each other.
      *
-     * WRAP_CONTENT on purpose: inside a panel - a ScrollView that fills its own
-     * viewport - a match-parent height means the whole screen, and the pair then
-     * pushes the description and the Start button off it. A streak tile carrying
-     * pips is legitimately taller than its neighbour, and that is information.
+     * [AliveComponents.EqualRow] rather than MATCH_PARENT children: inside a panel
+     * - a ScrollView that fills its own viewport - a match-parent height means the
+     * whole screen, and the pair then pushes the description and the Start button
+     * off it. A streak tile carrying pips is taller, and the row levels to that.
      */
-    private fun statRow(left: View, right: View): LinearLayout = ui.row().apply {
-        gravity = Gravity.TOP
+    private fun statRow(left: View, right: View): LinearLayout = ui.equalRow().apply {
         listOf(left, right).forEachIndexed { index, tile ->
             if (index > 0) addView(ui.hgap(ui.dimens.pairGap))
             addView(
@@ -1378,10 +1377,10 @@ class MainActivity : AppCompatActivity() {
     /** Two cards per row, with the same air between them as between the rows. */
     private fun questGrid(quests: List<Quest>): LinearLayout = ui.stack(ui.dimens.cardGap).apply {
         quests.chunked(QUEST_COLUMNS).forEach { pair ->
-            // TOP, not centred: two cards whose titles wrap differently are meant
-            // to start at the same line, and MATCH_PARENT here would ask a
-            // wrap_content row for the height of the scroll viewport instead.
-            val row = ui.row().apply { gravity = Gravity.TOP }
+            // Cells of one row end up the same height, so the shorter card's foot
+            // sits on the same line as its neighbour's instead of the row reading
+            // as two cards of different kinds.
+            val row = ui.equalRow()
             pair.forEachIndexed { index, quest ->
                 if (index > 0) row.addView(ui.hgap(ui.dimens.cardGap))
                 row.addView(
@@ -1421,9 +1420,12 @@ class MainActivity : AppCompatActivity() {
         wrapper.addView(ui.categoryTab(hue, widthPx = ui.dimens.xxxl * 2))
         wrapper.addView(
             ui.block(SurfaceWeight.MINOR).apply {
+                // The row decides how tall this card is; the card agrees with it and
+                // spends the difference above its name, so a neighbour with a longer
+                // title does not end its ink box somewhere else.
                 layoutParams = FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.WRAP_CONTENT
+                    FrameLayout.LayoutParams.MATCH_PARENT
                 ).apply { topMargin = ui.dimens.s }
 
                 addView(
@@ -1437,6 +1439,15 @@ class MainActivity : AppCompatActivity() {
                                     addView(ui.meta(getString(R.string.unit_minutes_gain, quest.rewardMinutes)))
                                 }
                             )
+                        )
+                    }
+                )
+                addView(
+                    View(context).apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            0,
+                            1f
                         )
                     }
                 )

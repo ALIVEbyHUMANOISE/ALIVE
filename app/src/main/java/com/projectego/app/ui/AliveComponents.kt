@@ -125,6 +125,12 @@ class AliveComponents(private val context: Context) {
     fun row(): LinearLayout = LinearLayout(context).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
+        // A row that hands its leftover width to a sentence must not align on the
+        // text baseline: while it still does not know that width, it asks the text
+        // how wide it would be on a single line, and the width left over afterwards
+        // is what the sentence then gets drawn into. That is how a long quest step
+        // arrived cut off - and a pixel tile has no baseline to share anyway.
+        isBaselineAligned = false
         layoutParams = LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
@@ -185,6 +191,56 @@ class AliveComponents(private val context: Context) {
 
     /** A column with a fixed gap. Use this for anything that holds more than one thing. */
     fun stack(gapPx: Int): Stack = Stack(context, gapPx)
+
+    /**
+     * A row whose cells end up the same height.
+     *
+     * `MATCH_PARENT` is how a grid usually does this, and inside a ScrollView it
+     * means "the height of the screen" - which is exactly how two stat tiles once
+     * ate a whole page and pushed its buttons off the bottom. So this row measures
+     * its children honestly first, then asks the short ones to be as tall as the
+     * tallest one it just saw.
+     */
+    class EqualRow(context: Context) : LinearLayout(context) {
+
+        init {
+            orientation = HORIZONTAL
+            isBaselineAligned = false
+            layoutParams = LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+            val cells = (0 until childCount).filter { index ->
+                val child = getChildAt(index)
+                // Only a cell that sizes itself to its content can be compared with
+                // its neighbours. A spacer is MATCH_PARENT by design - and inside a
+                // ScrollView that measures to the viewport, which is how two stat
+                // tiles once ate a whole page.
+                child.visibility != View.GONE &&
+                    (child.layoutParams as? LayoutParams)?.height == LayoutParams.WRAP_CONTENT
+            }
+            val tallest = cells.maxOfOrNull { getChildAt(it).measuredHeight } ?: 0
+            if (tallest == 0) return
+
+            var shortFound = false
+            for (index in cells) {
+                val child = getChildAt(index)
+                if (child.measuredHeight < tallest) {
+                    child.minimumHeight = tallest
+                    shortFound = true
+                }
+            }
+            // One correction pass, then the numbers agree.
+            if (shortFound) super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        }
+    }
+
+    /** A row of cells that are the same height as each other. */
+    fun equalRow(): EqualRow = EqualRow(context)
 
     /** The thinnest ink rule, for between the rows of one list. */
     fun rowRule(): View = View(context).apply {
