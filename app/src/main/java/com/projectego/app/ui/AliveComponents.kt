@@ -719,13 +719,19 @@ class AliveComponents(private val context: Context) {
      * only ever used here, on the pips above, and on the sprites that mark a
      * finished quest - which is what lets it mean "earned" without a legend.
      */
-    fun rewardChip(value: CharSequence): TextView = tag(value).apply {
+    /**
+     * The earned amount: a gold pill with the number in it.
+     *
+     * The pill is the badge, so the text inside it is allowed to be readable -
+     * it used to be pixel caps, and "+20 MENIT" came out looking like "+20 HEMIT",
+     * which is an amount the design is asking him to believe.
+     */
+    fun rewardChip(value: CharSequence): TextView = meta(value).apply {
         setTextColor(palette.rewardDark)
         background = framed(palette.rewardPale, dimens.borderButton, dimens.shadowMinor, dimens.radiusPill.toFloat())
         val inset = dimens.s
         // The shadow is inside these bounds, so the right and bottom carry its
-        // width as padding or the gold sits on the glyph. Vertically the chip
-        // only needs the edge, because a 10sp line already carries its own air.
+        // width as padding or the gold sits on the glyph.
         setPadding(
             dimens.borderButton + inset,
             dimens.borderButton + dimens.xs,

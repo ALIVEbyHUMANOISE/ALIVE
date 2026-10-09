@@ -485,7 +485,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 )
                 addView(ui.vgap(ui.dimens.lineGap))
-                addView(ui.annotation(getString(AliveStates.annotationFor(signals))))
+                addView(ui.note(getString(AliveStates.annotationFor(signals))))
             }
         )
         header.addView(line)
@@ -1139,7 +1139,7 @@ class MainActivity : AppCompatActivity() {
                     val bankLine = ui.row().apply { gravity = Gravity.BOTTOM }
                     bankLine.addView(ui.timer(getString(R.string.stat_minutes, available)))
                     bankLine.addView(
-                        ui.tag(getString(R.string.stat_reclaimed)).apply {
+                        ui.meta(getString(R.string.stat_reclaimed)).apply {
                             setPadding(ui.dimens.m, 0, 0, ui.dimens.m)
                         }
                     )
@@ -2280,7 +2280,7 @@ class MainActivity : AppCompatActivity() {
                 )
             )
             row.addView(ui.hgap(ui.dimens.m))
-            row.addView(ui.tag(getString(R.string.unit_minutes, slice.minutes)))
+            row.addView(ui.meta(getString(R.string.unit_minutes, slice.minutes)))
             card.addView(row)
         }
 
