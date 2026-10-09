@@ -386,7 +386,8 @@
     <string name="chart_apps_folded">%1$d lainnya lebih kecil</string>
     <string name="chart_apps_none">Belum ada menit aplikasi untuk hari ini.</string>
     <string name="chart_apps_none_support">ALIVE mencatat hanya yang dilihatnya, jadi hari yang tidak terlihat apa pun tetap hari tanpa catatan.</string>
-    <string name="chart_apps_unblocked">%1$s di app yang ALIVE nggak blokir. Waktu itu nggak motong jatah.</string>
+    <string name="chart_apps_unblocked">%1$s di app yang ALIVE nggak blokir.</string>
+    <string name="chart_unblocked_eyebrow">Nggak motong jatah</string>
     <string name="chart_total_minutes">%1$s di hari-hari yang ALIVE lihat</string>
     <string name="chart_none">ALIVE belum mencatat satu hari pun.</string>
     <string name="chart_just_started">Ini hari pertama yang ALIVE catat.</string>

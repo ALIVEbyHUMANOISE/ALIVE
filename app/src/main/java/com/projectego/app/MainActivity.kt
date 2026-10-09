@@ -2227,15 +2227,36 @@ class MainActivity : AppCompatActivity() {
     /**
      * What was seen in apps ALIVE never blocks, or null on a day there was none.
      *
-     * Said out loud rather than dropped: the chart answers "where did today go",
-     * and a day with two hours of chatting in it is a bigger day than the ring
-     * can show. It is also the line that explains why that time cost nothing.
+     * A tinted block with a shield, not a grey line: this is the one number on
+     * the card that is good news, and buried in the same grey as the note under
+     * it, "43 menit ... nggak motong jatah" read like a footnote about the
+     * numbers rather than an answer about his allowance.
      */
     private fun unblockedNote(): View? {
         if (state.unblockedMinutes <= 0L) return null
-        return ui.note(
-            getString(R.string.chart_apps_unblocked, Durations.of(this, state.unblockedMinutes))
+
+        val block = ui.tintedBlock(ui.palette.softForest)
+        val line = ui.row()
+        line.addView(ui.iconTile(ui.palette.white, R.drawable.ic_pixel_shield, ui.dimens.character))
+        line.addView(ui.hgap(ui.dimens.m))
+        line.addView(
+            ui.weighted(
+                ui.column().apply {
+                    addView(ui.sectionHeader(getString(R.string.chart_unblocked_eyebrow)))
+                    addView(ui.vgap(ui.dimens.pairGap))
+                    addView(
+                        ui.body(
+                            getString(
+                                R.string.chart_apps_unblocked,
+                                Durations.of(this@MainActivity, state.unblockedMinutes)
+                            )
+                        )
+                    )
+                }
+            )
         )
+        block.addView(line)
+        return block
     }
 
     /** The days card: bars, what the marks mean, and how much of the range is real. */

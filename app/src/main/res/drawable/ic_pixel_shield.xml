@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ALIVE mark: a shield, on the same 16x16 grid as every sprite.
+
+     It stands for one sentence - "this time did not spend your allowance" - and
+     it is drawn in forest, the app's own "earned and safe" colour, with the ink
+     contour every other mark wears. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="16dp"
+    android:height="16dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="@color/alive_forest"
+        android:pathData="M4,2h8v5h-8zM5,7h6v2h-6zM6,9h4v2h-4zM7,11h2v2h-2z" />
+    <path
+        android:fillColor="@color/alive_ink"
+        android:pathData="M3,1h10v1h-10zM3,2h1v5h-1zM12,2h1v5h-1zM4,7h1v2h-1zM11,7h1v2h-1zM5,9h1v2h-1zM10,9h1v2h-1zM6,11h1v2h-1zM9,11h1v2h-1zM7,13h2v1h-2z" />
+</vector>
