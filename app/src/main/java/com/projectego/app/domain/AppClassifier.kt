@@ -51,8 +51,8 @@ object AppClassifier {
         "com.roblox.client"
     )
 
-    // Counted, never locked - see AppCategory.TRACKED. Same manifest rule as
-    // the entertainment set above.
+    // Seen, never locked and never charged - see AppCategory.TRACKED. Same
+    // manifest rule as the entertainment set above.
     private val TRACKED_PACKAGES = setOf(
         "com.whatsapp",
         "com.whatsapp.w4b"

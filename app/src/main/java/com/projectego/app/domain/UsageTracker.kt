@@ -16,6 +16,8 @@ import java.util.Calendar
 data class UsageReport(
     val totalEntertainmentMinutes: Long,
     val totalEntertainmentMillis: Long,
+    /** Time ALIVE sees in apps it never blocks. Reported, never charged. */
+    val unblockedMinutes: Long,
     val limitMinutes: Long,
     val isLimitExceeded: Boolean,
     val remainingMinutes: Long,
@@ -55,6 +57,7 @@ class UsageTracker(private val context: Context) {
         val endTime = System.currentTimeMillis()
 
         var totalMillis = 0L
+        var unblockedMillis = 0L
         val details = mutableListOf<Pair<String, Long>>()
 
         if (usageStatsManager != null) {
@@ -69,14 +72,25 @@ class UsageTracker(private val context: Context) {
                     if (stat.totalTimeInForeground <= 0) continue
 
                     val category = AppClassifier.categorize(context, stat.packageName)
-                    // TRACKED apps (messaging) count toward the day and appear in
-                    // the chart, but the lock path never touches them.
-                    if (category == AppCategory.ENTERTAINMENT || category == AppCategory.TRACKED) {
-                        totalMillis += stat.totalTimeInForeground
-                        val appMinutes = stat.totalTimeInForeground / 1000 / 60
-                        if (appMinutes > 0) {
-                            details.add(Pair(stat.packageName, appMinutes))
+                    val appMinutes = stat.totalTimeInForeground / 1000 / 60
+
+                    when (category) {
+                        // Only what ALIVE actually closes spends the allowance.
+                        AppCategory.ENTERTAINMENT -> {
+                            totalMillis += stat.totalTimeInForeground
+                            if (appMinutes > 0) {
+                                details.add(Pair(stat.packageName, appMinutes))
+                            }
                         }
+
+                        // Messaging and anything else ALIVE never blocks is
+                        // reported, counted separately, and charged for nothing.
+                        // It used to be added to the day, which meant two hours
+                        // of chatting spent the entertainment allowance and then
+                        // locked the apps that were only ever entertainment.
+                        AppCategory.TRACKED -> unblockedMillis += stat.totalTimeInForeground
+
+                        else -> Unit
                     }
                 }
             }
@@ -148,6 +162,7 @@ class UsageTracker(private val context: Context) {
         return UsageReport(
             totalEntertainmentMinutes = totalMinutes,
             totalEntertainmentMillis = totalMillis,
+            unblockedMinutes = unblockedMillis / 1000 / 60,
             limitMinutes = limitMinutes,
             isLimitExceeded = isExceeded || lockStateManager.isLocked(),
             remainingMinutes = remainingMinutes,
@@ -161,13 +176,16 @@ class UsageTracker(private val context: Context) {
     }
 
     /**
-     * Today, hour by hour, for the apps that count toward the day.
+     * Today, hour by hour, for the apps the allowance is spent on.
      *
      * Read from the event stream rather than as twenty-four one-hour queries: a
      * daily query clipped to a single hour comes back on several devices holding
      * the whole day, which would paint twenty-four identical bars and call it
      * data. The event log has no such opinion - it is a list of what came to the
      * front and when, and the hours fall out of it.
+     *
+     * The same set the daily figure charges for, so the two charts can never
+     * disagree about the same day.
      */
     fun hourlyUsedMillisToday(): LongArray {
         val usageStatsManager =
@@ -193,14 +211,13 @@ class UsageTracker(private val context: Context) {
             }
 
             // The screen going dark ends every session, whoever the event names.
-            // Everything else is kept only if the app is one the day counts:
-            // TRACKED (messaging) counts toward the day without being closed by
-            // the lock, exactly as in the report above.
+            // Everything else is kept only if the app is one the allowance is
+            // spent on - the same rule the daily figure above uses, so the hours
+            // and the total cannot tell two different stories about one day.
             if (kind != HourlyUsage.Kind.SCREEN_OFF) {
                 val packageName = event.packageName ?: continue
                 val isCounted = counted.getOrPut(packageName) {
-                    val category = AppClassifier.categorize(context, packageName)
-                    category == AppCategory.ENTERTAINMENT || category == AppCategory.TRACKED
+                    AppClassifier.categorize(context, packageName) == AppCategory.ENTERTAINMENT
                 }
                 if (!isCounted) continue
             }

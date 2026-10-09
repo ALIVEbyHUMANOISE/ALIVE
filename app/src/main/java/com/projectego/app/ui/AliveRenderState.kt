@@ -66,6 +66,13 @@ class AliveRenderState {
      */
     var entertainmentAppDetails: List<Pair<String, Long>> = emptyList()
 
+    /**
+     * Time today in apps ALIVE never blocks, in minutes. Reported to the person
+     * and charged to nobody: the allowance is entertainment time, and a chat is
+     * not entertainment just because it happened on a screen.
+     */
+    var unblockedMinutes: Long = 0L
+
     /** Which stretch of days the chart is showing. */
     var chartRangeIndex: Int = 0
 

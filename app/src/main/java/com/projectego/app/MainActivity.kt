@@ -395,6 +395,7 @@ class MainActivity : AppCompatActivity() {
         state.dailyLimitMinutes = report.limitMinutes
         state.usedMinutesToday = report.totalEntertainmentMinutes
         state.entertainmentAppDetails = report.entertainmentAppDetails
+        state.unblockedMinutes = report.unblockedMinutes
         // A preference read with no side effects, done once per render like the
         // guard state: it decides what the Today card says about tomorrow.
         state.questDoneToday = lockStateManager.isQuestCompletedOn(
@@ -2216,7 +2217,25 @@ class MainActivity : AppCompatActivity() {
         card.addView(ui.body(getString(R.string.chart_apps_none)))
         card.addView(ui.vgap(ui.dimens.lineGap))
         card.addView(ui.note(getString(R.string.chart_apps_none_support)))
+        unblockedNote()?.let {
+            card.addView(ui.vgap(ui.dimens.lineGap))
+            card.addView(it)
+        }
         return card
+    }
+
+    /**
+     * What was seen in apps ALIVE never blocks, or null on a day there was none.
+     *
+     * Said out loud rather than dropped: the chart answers "where did today go",
+     * and a day with two hours of chatting in it is a bigger day than the ring
+     * can show. It is also the line that explains why that time cost nothing.
+     */
+    private fun unblockedNote(): View? {
+        if (state.unblockedMinutes <= 0L) return null
+        return ui.note(
+            getString(R.string.chart_apps_unblocked, Durations.of(this, state.unblockedMinutes))
+        )
     }
 
     /** The days card: bars, what the marks mean, and how much of the range is real. */
@@ -2493,6 +2512,11 @@ class MainActivity : AppCompatActivity() {
             row.addView(ui.hgap(ui.dimens.m))
             row.addView(ui.meta(Durations.of(this, slice.minutes)))
             card.addView(row)
+        }
+
+        unblockedNote()?.let {
+            card.addView(ui.vgap(ui.dimens.lineGap))
+            card.addView(it)
         }
 
         card.addView(ui.vgap(ui.dimens.lineGap))
