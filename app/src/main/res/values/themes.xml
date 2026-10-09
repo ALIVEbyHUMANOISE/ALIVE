@@ -31,6 +31,11 @@
         <item name="android:textColorSecondary">@color/alive_ink_secondary</item>
         <item name="android:textColorHint">@color/alive_ink_muted</item>
 
+        <!-- The safety net: any widget that somehow escapes an ALIVE text
+             appearance lands in the terminal voice, not the platform one. -->
+        <item name="fontFamily">@font/vt323</item>
+        <item name="android:fontFamily">@font/vt323</item>
+
         <!-- Ink strokes instead of the Material defaults. The unselected ring is
              a hairline of ink so an empty radio matches every other hairline on
              the screen; the selected one is forest, which is the same colour the
