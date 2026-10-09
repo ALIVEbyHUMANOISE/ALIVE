@@ -1,16 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ALIVE's canvas: cream ground with a faint, wide-spaced grid, so the screen
-     reads as a working surface rather than an empty white page. -->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item>
-        <shape android:shape="rectangle">
-            <solid android:color="@color/alive_canvas" />
-        </shape>
-    </item>
-    <item>
-        <bitmap
-            android:src="@drawable/grid_canvas"
-            android:tileMode="repeat"
-            android:gravity="top|left" />
-    </item>
-</layer-list>
+<!-- ALIVE's canvas: flat cream, no pattern.
+     The cards, their hard ink shadows and the sprites are the texture; the
+     grid underneath was a third one, and it was the only one that competed
+     with the other two. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/alive_canvas" />
+</shape>
