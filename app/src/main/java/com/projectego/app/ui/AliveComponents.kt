@@ -24,6 +24,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StyleRes
 import androidx.appcompat.widget.AppCompatButton
 import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat
 import com.projectego.app.R
 
 /**
@@ -828,6 +829,11 @@ class AliveComponents(private val context: Context) {
     ): AppCompatButton = AppCompatButton(context).apply {
         text = value
         setTextAppearance(R.style.TextAppearance_ALIVE_Button)
+        // Pinned in code, not inherited from the appearance: AppCompatButton
+        // resolves its font through the theme as well, and a theme-level family
+        // can silently outrank the text appearance - which is how the buttons
+        // dropped out of the arcade voice while every plain TextView kept it.
+        typeface = ResourcesCompat.getFont(context, R.font.press_start_2p)
         setTextColor(ContextCompat.getColorStateList(context, textColor))
         setBackgroundResource(background)
         stateListAnimator = null
