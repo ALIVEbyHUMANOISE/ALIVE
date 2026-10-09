@@ -68,7 +68,7 @@ class BrutalistBarChart(context: Context) : View(context) {
         color = palette.ink
     }
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        typeface = resources.getFont(R.font.dm_sans_medium)
+        typeface = resources.getFont(R.font.manrope_medium)
         // Ten is the floor: below it a label stops being a word and becomes a
         // texture, which is what eight sp made the month's labels.
         textSize = sp(10f)

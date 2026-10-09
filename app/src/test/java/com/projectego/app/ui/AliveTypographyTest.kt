@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.TypedValue
 import androidx.test.core.app.ApplicationProvider
 import com.projectego.app.R
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -16,8 +17,8 @@ import org.robolectric.annotation.Config
  * The typography is ALIVE's own faces, full stop.
  *
  * One regression is all it takes for a style to fall back to the platform
- * face, and a single Roboto line among the Silkscreen, Space Grotesk and DM
- * Sans ones is exactly the "some of it is still normal" this design keeps
+ * face, and a single Roboto line among the Silkscreen, Space Grotesk and
+ * Manrope ones is exactly the "some of it is still normal" this design keeps
  * catching. This test locks every ALIVE text style to the faces the design
  * owns - the same way [AlivePaletteTest] locks the colours - and to a killed
  * font padding, which is what keeps mixed rows from sitting on different
@@ -39,8 +40,9 @@ class AliveTypographyTest {
         R.font.silkscreen_bold,
         R.font.space_grotesk_semibold,
         R.font.space_grotesk_bold,
-        R.font.dm_sans_regular,
-        R.font.dm_sans_medium,
+        R.font.manrope_regular,
+        R.font.manrope_medium,
+        R.font.manrope_bold,
         R.font.press_start_2p
     )
 
@@ -73,8 +75,42 @@ class AliveTypographyTest {
             val font = resolveFontFamily(style)
             assertTrue(
                 "$name resolves to a face outside the design ($font); it must be " +
-                    "Silkscreen, Inter, or Press Start 2P for badges",
+                    "Silkscreen, Space Grotesk, Manrope, or Press Start 2P for badges",
                 font in faces
+            )
+        }
+    }
+
+    /**
+     * The reading voice is Manrope, and each role sits on the weight it was
+     * given: prose at 400, anything tapped or glanced at at 500, the one line
+     * that says something went wrong at 700.
+     *
+     * Membership in [faces] alone would not catch a body style quietly moving
+     * to medium, which is how a screen ends up with no weight contrast at all.
+     */
+    @Test
+    fun `the reading styles are manrope at the weight their role asks for`() {
+        listOf(
+            Triple("Body", R.style.TextAppearance_ALIVE_Body, R.font.manrope_regular),
+            Triple("Note", R.style.TextAppearance_ALIVE_Note, R.font.manrope_regular),
+            Triple("Option", R.style.TextAppearance_ALIVE_Option, R.font.manrope_regular),
+            Triple("Input", R.style.TextAppearance_ALIVE_Input, R.font.manrope_regular),
+            Triple("Meta", R.style.TextAppearance_ALIVE_Meta, R.font.manrope_medium),
+            Triple("Button", R.style.TextAppearance_ALIVE_Button, R.font.manrope_medium),
+            Triple("NavLabel", R.style.TextAppearance_ALIVE_NavLabel, R.font.manrope_medium),
+            Triple(
+                "Widget.ALIVE.Button.Primary",
+                R.style.Widget_ALIVE_Button_Primary,
+                R.font.manrope_medium
+            ),
+            Triple("Error", R.style.TextAppearance_ALIVE_Error, R.font.manrope_bold)
+        ).forEach { (name, style, face) ->
+            assertEquals(
+                "$name must resolve to the Manrope weight its role is given; those " +
+                    "weights are what tell prose, offers and failures apart",
+                face,
+                resolveFontFamily(style)
             )
         }
     }
