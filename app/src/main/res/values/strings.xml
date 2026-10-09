@@ -415,6 +415,13 @@
     <string name="chart_apps_none_support">ALIVE writes down only what it sees, so a day it saw nothing in stays a day with nothing in it.</string>
     <string name="chart_apps_unblocked">%1$s in apps ALIVE never blocks.</string>
     <string name="chart_unblocked_eyebrow">Doesn\'t spend the allowance</string>
+
+    <string name="widget_stats_label">Statistics</string>
+    <string name="widget_stats_description">Today\'s entertainment time, and where it went.</string>
+    <string name="widget_stats_eyebrow">Today</string>
+    <string name="widget_stats_of_allowance">%1$d%% of today\'s allowance</string>
+    <string name="widget_stats_no_allowance">No allowance today</string>
+    <string name="widget_stats_empty">Open ALIVE once and this fills itself in.</string>
     <string name="chart_total_minutes">%1$s across the days ALIVE saw</string>
     <string name="chart_none">ALIVE hasn\'t recorded a day yet.</string>
     <string name="chart_just_started">This is the first day ALIVE has recorded.</string>

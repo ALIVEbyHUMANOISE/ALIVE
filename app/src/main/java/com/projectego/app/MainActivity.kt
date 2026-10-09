@@ -78,6 +78,7 @@ import com.projectego.app.ui.PixelMarks
 import com.projectego.app.ui.QuestHues
 import com.projectego.app.ui.RewardBurst
 import com.projectego.app.ui.StatusTone
+import com.projectego.app.ui.widget.AliveStatsWidgetProvider
 import com.projectego.app.ui.SurfaceWeight
 import com.projectego.app.ui.UsageChartStates
 import com.projectego.app.ui.VerificationReasonClass
@@ -276,6 +277,21 @@ class MainActivity : AppCompatActivity() {
         renderQuestSection()
         // Profile draws from the cache those two renders just refreshed.
         if (currentTabIndex == 2) renderProfile()
+
+        // The home-screen widget opens the app on the panel its number came
+        // from. Consumed once, so leaving and returning does not re-open it.
+        if (intent?.getBooleanExtra(AliveStatsWidgetProvider.EXTRA_OPEN_STATS, false) == true) {
+            intent?.removeExtra(AliveStatsWidgetProvider.EXTRA_OPEN_STATS)
+            showTab(2)
+            openUsageChartPanel()
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // getIntent() keeps returning the launch intent otherwise, and the
+        // widget's own intent would be read exactly never.
+        setIntent(intent)
     }
 
     private fun hasUsageAccess(): Boolean = PermissionChecks.hasUsageAccess(this)
@@ -437,6 +453,11 @@ class MainActivity : AppCompatActivity() {
         if (BuildConfig.DEBUG && showDevPanel) {
             renderDevPanel()
         }
+
+        // The home-screen widget shows the same day this screen does, so it is
+        // redrawn by the render that just wrote the day down. It skips itself
+        // when nothing is placed on the home screen.
+        AliveStatsWidgetProvider.refresh(this)
     }
 
     /**

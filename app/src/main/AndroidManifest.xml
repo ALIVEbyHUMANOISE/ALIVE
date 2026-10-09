@@ -111,5 +111,20 @@
                 android:resource="@xml/accessibility_service_config" />
         </service>
 
+        <!-- The home-screen widget. Exported is false on purpose: the platform
+             delivers the update broadcast through the provider metadata, and
+             nothing else has any business waking this receiver. -->
+        <receiver
+            android:name=".ui.widget.AliveStatsWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_stats_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/alive_stats_widget_info" />
+        </receiver>
+
     </application>
 </manifest>

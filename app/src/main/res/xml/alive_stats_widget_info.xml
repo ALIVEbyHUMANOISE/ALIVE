@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The statistics widget: four cells wide and two tall by default, resizable
+     in both directions, and redrawn at most every half hour on its own - the
+     app pushes an update whenever it renders, so the widget is never more stale
+     than the last time the person looked at ALIVE. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_stats_description"
+    android:initialLayout="@layout/widget_alive_stats"
+    android:minHeight="110dp"
+    android:minWidth="250dp"
+    android:previewImage="@drawable/ic_splash_hourglass"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellHeight="2"
+    android:targetCellWidth="4"
+    android:updatePeriodMillis="1800000"
+    android:widgetCategory="home_screen" />

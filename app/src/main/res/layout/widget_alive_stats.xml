@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ALIVE statistics widget: the same card language as the app, at home-screen
+     size.
+
+     RemoteViews cannot draw and cannot change a layout weight at runtime, so
+     the composition is carried by the app colours on the rows and by one
+     ProgressBar for the day's share of the allowance - the only bar a widget is
+     allowed to resize while the person is looking at it. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_widget"
+    android:padding="14dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/widget_mark"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_alive_hourglass" />
+
+            <TextView
+                android:id="@+id/widget_eyebrow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="@string/widget_stats_eyebrow"
+                android:textAppearance="@style/TextAppearance.ALIVE.Meta" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/widget_total"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textAppearance="@style/TextAppearance.ALIVE.Number" />
+
+        <TextView
+            android:id="@+id/widget_allowance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textAppearance="@style/TextAppearance.ALIVE.Meta" />
+
+        <ProgressBar
+            android:id="@+id/widget_bar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="14dp"
+            android:layout_marginTop="10dp"
+            android:indeterminate="false"
+            android:max="100"
+            android:progressDrawable="@drawable/widget_progress" />
+
+        <LinearLayout android:id="@+id/widget_row_1" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:gravity="center_vertical" android:orientation="horizontal">
+            <View android:id="@+id/widget_swatch_1" android:layout_width="10dp" android:layout_height="10dp" />
+            <TextView android:id="@+id/widget_name_1" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textAppearance="@style/TextAppearance.ALIVE.Meta" />
+            <TextView android:id="@+id/widget_minutes_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textAppearance="@style/TextAppearance.ALIVE.Meta" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/widget_row_2" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:gravity="center_vertical" android:orientation="horizontal">
+            <View android:id="@+id/widget_swatch_2" android:layout_width="10dp" android:layout_height="10dp" />
+            <TextView android:id="@+id/widget_name_2" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textAppearance="@style/TextAppearance.ALIVE.Meta" />
+            <TextView android:id="@+id/widget_minutes_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textAppearance="@style/TextAppearance.ALIVE.Meta" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/widget_row_3" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:gravity="center_vertical" android:orientation="horizontal">
+            <View android:id="@+id/widget_swatch_3" android:layout_width="10dp" android:layout_height="10dp" />
+            <TextView android:id="@+id/widget_name_3" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textAppearance="@style/TextAppearance.ALIVE.Meta" />
+            <TextView android:id="@+id/widget_minutes_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textAppearance="@style/TextAppearance.ALIVE.Meta" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/widget_empty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/widget_stats_empty"
+            android:textAppearance="@style/TextAppearance.ALIVE.Note"
+            android:visibility="gone" />
+    </LinearLayout>
+</FrameLayout>

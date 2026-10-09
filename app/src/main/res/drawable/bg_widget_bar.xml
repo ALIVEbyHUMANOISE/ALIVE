@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The widget's composition bar: a track with the app's own ink edge, filled
+     by coloured segments the provider hands in. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/alive_paper" />
+    <stroke
+        android:width="2dp"
+        android:color="@color/alive_ink" />
+    <corners android:radius="4dp" />
+</shape>
