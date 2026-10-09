@@ -23,9 +23,12 @@
          faces get. letterSpacing stays 0 everywhere - pixel grids are drawn,
          not tracked.
 
-         The ladder steps 34 / 26 / 20 / 16 / 14 / 13 / 10 stay, and sentence
-         case stays for the reading voice: arcade caps are already a stamp on
-         every short label. -->
+         The reading ladder steps 34 / 28 / 22 / 18 / 14 / 10, numbers run
+         56 / 28, and every step sits at least 2sp from its neighbour. The
+         reading voice sits ABOVE the old sans-serif ladder on purpose: vt323
+         is narrow, so a size set in it reads one step smaller than the same
+         number in sans-serif. Sentence case stays for the reading voice -
+         arcade caps are already a stamp on every short label. -->
 
     <!-- ============ THE ARCANE VOICE (short) ============ -->
 
@@ -54,7 +57,7 @@
     <style name="TextAppearance.ALIVE.Headline" parent="TextAppearance.MaterialComponents.Headline5">
         <item name="android:fontFamily">@font/vt323</item>
         <item name="android:textColor">@color/alive_ink</item>
-        <item name="android:textSize">26sp</item>
+        <item name="android:textSize">28sp</item>
         <item name="android:letterSpacing">0</item>
         <item name="android:lineSpacingExtra">2sp</item>
         <item name="android:includeFontPadding">false</item>
@@ -65,7 +68,7 @@
     <style name="TextAppearance.ALIVE.Lead" parent="TextAppearance.MaterialComponents.Headline6">
         <item name="android:fontFamily">@font/vt323</item>
         <item name="android:textColor">@color/alive_ink</item>
-        <item name="android:textSize">20sp</item>
+        <item name="android:textSize">22sp</item>
         <item name="android:letterSpacing">0</item>
         <item name="android:lineSpacingExtra">2sp</item>
         <item name="android:includeFontPadding">false</item>
@@ -74,7 +77,7 @@
     <style name="TextAppearance.ALIVE.Body" parent="TextAppearance.MaterialComponents.Body1">
         <item name="android:fontFamily">@font/vt323</item>
         <item name="android:textColor">@color/alive_ink</item>
-        <item name="android:textSize">16sp</item>
+        <item name="android:textSize">18sp</item>
         <item name="android:letterSpacing">0</item>
         <item name="android:lineSpacingExtra">4sp</item>
         <item name="android:includeFontPadding">false</item>
@@ -89,24 +92,24 @@
     </style>
 
     <!-- The small grey line beside a tile: "24 quests", "2 routes". It is not a
-         note (16sp prose) and not a tag (10sp arcade caps), and a two-column grid
+         note (18sp prose) and not a tag (10sp arcade caps), and a two-column grid
          has no room for either of those next to an icon. -->
     <style name="TextAppearance.ALIVE.Meta" parent="TextAppearance.MaterialComponents.Body2">
         <item name="android:fontFamily">@font/vt323</item>
         <item name="android:textColor">@color/alive_ink_secondary</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textSize">14sp</item>
         <item name="android:letterSpacing">0</item>
         <item name="android:lineSpacingExtra">2sp</item>
         <item name="android:includeFontPadding">false</item>
     </style>
 
     <!-- A note, not a paragraph. Sized at the Lead step so the reading ladder
-         stays six sizes; it looks smaller than 20sp because vt323 is narrow,
+         stays six sizes; it looks smaller than 22sp because vt323 is narrow,
          which is why a terminal line reads as an aside and not a shout. -->
     <style name="TextAppearance.ALIVE.Annotation" parent="TextAppearance.MaterialComponents.Body2">
         <item name="android:fontFamily">@font/vt323</item>
         <item name="android:textColor">@color/alive_ink_secondary</item>
-        <item name="android:textSize">20sp</item>
+        <item name="android:textSize">22sp</item>
         <item name="android:letterSpacing">0</item>
         <item name="android:lineSpacingExtra">2sp</item>
         <item name="android:includeFontPadding">false</item>
@@ -141,7 +144,7 @@
 
     <!-- ============ FORM ============ -->
 
-    <!-- 16sp, the Body size, in the reading voice. -->
+    <!-- The Body size, in the reading voice. -->
     <style name="TextAppearance.ALIVE.Option" parent="TextAppearance.ALIVE.Body">
         <item name="android:textColor">@color/alive_ink</item>
     </style>
@@ -191,7 +194,7 @@
          terminal voice keeps it pixel while keeping it readable. -->
     <style name="TextAppearance.ALIVE.NavLabel" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:fontFamily">@font/vt323</item>
-        <item name="android:textSize">15sp</item>
+        <item name="android:textSize">16sp</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:letterSpacing">0</item>
         <item name="android:lineSpacingExtra">2sp</item>
