@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ALIVE launcher foreground: the sprite, arms up, inside the safe zone. -->
+<!-- ALIVE launcher foreground: the wordmark, pixel letters in ink with the
+     pink block caret from the header, centred inside the adaptive safe zone. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="16"
-    android:viewportHeight="16">
+    android:viewportWidth="32"
+    android:viewportHeight="32">
     <path
         android:fillColor="@color/alive_ink"
-        android:pathData="M4,5h8v1h-8zM1,6h1v1h-1zM3,6h1v1h-1zM12,6h1v1h-1zM14,6h1v1h-1zM2,7h2v1h-2zM12,7h2v1h-2zM3,8h1v1h-1zM6,8h2v1h-2zM9,8h2v1h-2zM12,8h1v1h-1zM3,9h1v1h-1zM12,9h1v1h-1zM4,10h8v1h-8zM5,12h2v1h-2zM9,12h2v1h-2z" />
+        android:pathData="M7,14h1v1h-1zM6,15h1v3h-1zM8,15h1v3h-1zM6,16h3v1h-3zM10,14h1v4h-1zM10,18h3v1h-3zM14,14h1v5h-1zM16,14h1v4h-1zM18,14h1v4h-1zM17,18h1v1h-1zM20,14h3v1h-3zM20,15h1v1h-1zM20,16h2v1h-2zM20,17h1v1h-1zM20,18h3v1h-3z" />
     <path
-        android:fillColor="@color/alive_soft_forest"
-        android:pathData="M4,6h8v1h-8zM4,7h8v1h-8zM4,8h2v1h-2zM8,8h1v1h-1zM11,8h1v1h-1zM4,9h8v1h-8z" />
+        android:fillColor="@color/alive_pink_soft"
+        android:pathData="M24,14h1v5h-1z" />
 </vector>
