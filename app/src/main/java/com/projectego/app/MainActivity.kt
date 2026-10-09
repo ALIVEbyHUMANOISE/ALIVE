@@ -622,7 +622,7 @@ class MainActivity : AppCompatActivity() {
             ui.body(getString(if (repaired) R.string.guard_repair_done else R.string.guard_repair_needed))
         )
         card.addView(ui.vgap(ui.dimens.lineGap))
-        card.addView(ui.annotation(getString(R.string.guard_who_turned_it_off)))
+        card.addView(ui.note(getString(R.string.guard_who_turned_it_off)))
 
         if (!repaired) {
             card.addView(ui.vgap(ui.dimens.groupGap))
@@ -1020,10 +1020,16 @@ class MainActivity : AppCompatActivity() {
 
         if (attempt.state == QuestAttemptState.FAILED) {
             // A raw engine reason is never shown; only its honest family is.
+            // And the family is ruled off from the sentence above it, in the
+            // heavier voice: what happened and why it happened are two things,
+            // and letting them read as one paragraph of comfort is how a
+            // failure stops teaching anything.
             val reason = AliveStates.classifyFailure(attempt.verificationResult?.reason)
             if (reason != VerificationReasonClass.UNKNOWN) {
+                block.addView(ui.vgap(ui.dimens.groupGap))
+                block.addView(ui.rowRule())
                 block.addView(ui.vgap(ui.dimens.lineGap))
-                block.addView(ui.note(getString(AliveStates.failureSupport(reason))))
+                block.addView(ui.error(getString(AliveStates.failureSupport(reason))))
             }
         }
 
@@ -1426,7 +1432,7 @@ class MainActivity : AppCompatActivity() {
             }
         )
         anchor.addView(ui.vgap(ui.dimens.lineGap))
-        anchor.addView(ui.annotation(getString(R.string.focus_setup_hint)))
+        anchor.addView(ui.note(getString(R.string.focus_setup_hint)))
 
         block.addView(anchor)
     }
@@ -1728,7 +1734,7 @@ class MainActivity : AppCompatActivity() {
                 blocked.isEnabled = false
                 column.addView(blocked)
                 column.addView(ui.vgap(ui.dimens.lineGap))
-                column.addView(ui.annotation(getString(R.string.quest_cannot_start)))
+                column.addView(ui.note(getString(R.string.quest_cannot_start)))
             }
 
             else -> {
@@ -1760,7 +1766,7 @@ class MainActivity : AppCompatActivity() {
                     // own signals.
                     column.addView(ui.vgap(ui.dimens.lineGap))
                     column.addView(
-                        ui.annotation(
+                        ui.note(
                             getString(
                                 AliveStates.physicalQuestHowLine(requirement, stepsMeasurable),
                                 quest.estimatedDurationMinutes
@@ -1769,7 +1775,7 @@ class MainActivity : AppCompatActivity() {
                     )
                     if (requirement.needsSteps && activityRecognitionDenied) {
                         column.addView(ui.vgap(ui.dimens.pairGap))
-                        column.addView(ui.annotation(getString(R.string.quest_how_steps_permission)))
+                        column.addView(ui.note(getString(R.string.quest_how_steps_permission)))
                     }
                 }
             }
@@ -1914,7 +1920,7 @@ class MainActivity : AppCompatActivity() {
         // ALIVE watches which app is foregrounded. That is the whole claim.
         column.addView(ui.note(getString(R.string.focus_monitors)))
         column.addView(ui.vgap(ui.dimens.lineGap))
-        column.addView(ui.annotation(getString(R.string.focus_next)))
+        column.addView(ui.note(getString(R.string.focus_next)))
 
         val bank = state.signals?.reclaimedAvailableMinutes ?: 0L
         column.addView(ui.vgap(ui.dimens.groupGap))
@@ -2281,7 +2287,7 @@ class MainActivity : AppCompatActivity() {
         card.addView(ui.vgap(ui.dimens.lineGap))
         // A fallback label is still printed as a label, so this says where the
         // names come from instead of pretending every one of them resolved.
-        card.addView(ui.annotation(getString(R.string.chart_labels_note)))
+        card.addView(ui.note(getString(R.string.chart_labels_note)))
         return card
     }
 

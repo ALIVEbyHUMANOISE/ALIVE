@@ -142,7 +142,7 @@ class WelcomeActivity : AppCompatActivity() {
                 }
             }
         )
-        content.addView(ui.annotation(getString(R.string.welcome_loop_note)))
+        content.addView(ui.note(getString(R.string.welcome_loop_note)))
         content.addView(stepButton(R.string.welcome_next))
         content.addView(progressRow())
     }

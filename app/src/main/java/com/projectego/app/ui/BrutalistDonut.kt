@@ -70,8 +70,8 @@ class BrutalistDonut(context: Context) : View(context) {
         color = palette.ink
     }
     private val captionPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        typeface = resources.getFont(R.font.inter_regular)
-        textSize = sp(9f)
+        typeface = resources.getFont(R.font.dm_sans_medium)
+        textSize = sp(10f)
         textAlign = Paint.Align.CENTER
         color = palette.inkSecondary
     }

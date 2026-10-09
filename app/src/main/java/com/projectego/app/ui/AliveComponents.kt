@@ -113,6 +113,13 @@ class AliveComponents(private val context: Context) {
     fun annotation(value: CharSequence): TextView =
         text(R.style.TextAppearance_ALIVE_Annotation, value)
 
+    /**
+     * What actually went wrong, said once. Heavier and darker than the note it
+     * sits under, and never a second paragraph of comfort.
+     */
+    fun error(value: CharSequence): TextView =
+        text(R.style.TextAppearance_ALIVE_Error, value)
+
     // ---------- STRUCTURE ----------
 
     fun column(): LinearLayout = LinearLayout(context).apply {
@@ -833,7 +840,7 @@ class AliveComponents(private val context: Context) {
         // resolves its font through the theme as well, and a theme-level family
         // can silently outrank the text appearance - which is how the buttons
         // dropped out of their face while every plain TextView kept it.
-        typeface = ResourcesCompat.getFont(context, R.font.inter_semibold)
+        typeface = ResourcesCompat.getFont(context, R.font.dm_sans_medium)
         setTextColor(ContextCompat.getColorStateList(context, textColor))
         setBackgroundResource(background)
         stateListAnimator = null

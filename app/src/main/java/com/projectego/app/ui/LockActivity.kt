@@ -91,7 +91,7 @@ class LockActivity : AppCompatActivity() {
             )
         )
         notice.addView(ui.vgap(ui.dimens.lineGap))
-        notice.addView(ui.annotation(getString(R.string.lock_intent)))
+        notice.addView(ui.note(getString(R.string.lock_intent)))
         notice.addView(ui.vgap(ui.dimens.groupGap))
         notice.addView(ui.accents(seed = 5))
         notice.addView(ui.vgap(ui.dimens.groupGap))

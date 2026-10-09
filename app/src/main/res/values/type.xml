@@ -1,35 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- ALIVE typography: two working faces and one accent.
+    <!-- ALIVE typography: three voices, and only three things they each say.
 
-           silkscreen (regular + bold) -> the voice of titles and figures: the
-              wordmark, card titles, headlines, the character's one-line note,
-              and every prominent number. It is a pixel face with real
-              lowercase, so it carries the game identity without turning a
-              sentence into a wall of capitals.
+           silkscreen (regular + bold) -> the pixel voice, and now a deliberate
+              minority: the wordmark and page mastheads, the big figures
+              (Timer, Number), and the character's one-line note. It is the
+              game identity, so it stays where the design is being looked at
+              rather than read. Long sentences in it were the old mistake.
 
-           inter (regular + semibold) -> the voice of the interface: body
-              text, descriptions, buttons, navigation, settings, form fields,
-              and the small grey lines. Its tall x-height keeps 18sp readable
-              at arm's length, which is what text you have to read - not just
-              look at - is for.
+           space_grotesk (semibold + bold) -> what a screen is called:
+              mission titles, card titles, section names, and the sentence a
+              card leads with. It holds a heading's authority at small sizes
+              without becoming a stamp.
 
-           press_start_2p -> badges only. Ten glyphs, one line, never a
-              sentence: it is the loudest face here, and it stays in the
-              corner of the design where loud is the point.
+           dm_sans (regular + medium) -> everything that has to be read:
+              body, descriptions, buttons, navigation, settings, form fields,
+              the small grey lines, and the reason a session failed. Its tall
+              x-height is what keeps 18sp comfortable on a phone at arm's
+              length.
+
+           press_start_2p -> badges only: ten glyphs, two lines at most.
 
          Every style kills the platform font padding and sets its own line
-         spacing, because a pixel face and a UI face disagree about metrics:
-         includeFontPadding=false is what keeps a mixed row (a 28sp figure
-         beside a 14sp unit) on one baseline, and lineSpacingExtra is the only
-         leading they get. letterSpacing stays 0 everywhere - the pixel face
-         is drawn, not tracked, and the pairing carries the contrast already.
+         spacing, because a pixel face, a grotesque and a sans disagree about
+         metrics: includeFontPadding=false is what keeps a mixed row (a 28sp
+         figure beside a 14sp unit) on one baseline, and lineSpacingExtra is
+         the only leading they get. letterSpacing stays 0 everywhere.
 
-         The ladder steps 34 / 26 / 22 / 18 / 14 / 10, figures run 56 / 28,
-         and nothing sits two steps apart by less than 2sp. -->
+         The ladder steps 34 / 24 / 20 / 18 / 16 / 14 / 10, figures run 56 /
+         28, and nothing sits two steps apart by less than 2sp. -->
 
-    <!-- ============ TITLES AND FIGURES: SILKSCREEN ============ -->
+    <!-- ============ THE PIXEL VOICE: ACCENT AND FIGURES ============ -->
 
     <style name="TextAppearance.ALIVE.Display" parent="TextAppearance.MaterialComponents.Headline3">
         <item name="android:fontFamily">@font/silkscreen_bold</item>
@@ -40,50 +42,16 @@
         <item name="android:includeFontPadding">false</item>
     </style>
 
-    <!-- The one sentence a card leads with. -->
-    <style name="TextAppearance.ALIVE.Headline" parent="TextAppearance.MaterialComponents.Headline5">
-        <item name="android:fontFamily">@font/silkscreen_bold</item>
-        <item name="android:textColor">@color/alive_ink</item>
-        <item name="android:textSize">26sp</item>
-        <item name="android:letterSpacing">0</item>
-        <item name="android:lineSpacingExtra">2sp</item>
-        <item name="android:includeFontPadding">false</item>
-    </style>
-
-    <!-- Row titles and in-flight statements: what Statement and QuestRowTitle used
-         to be, at one size instead of two that were indistinguishable. -->
-    <style name="TextAppearance.ALIVE.Lead" parent="TextAppearance.MaterialComponents.Headline6">
-        <item name="android:fontFamily">@font/silkscreen_regular</item>
-        <item name="android:textColor">@color/alive_ink</item>
-        <item name="android:textSize">22sp</item>
-        <item name="android:letterSpacing">0</item>
-        <item name="android:lineSpacingExtra">2sp</item>
-        <item name="android:includeFontPadding">false</item>
-    </style>
-
-    <!-- Card titles and section names: short enough for the title face, and
-         sentence case is a stamp's job, not this one's. -->
-    <style name="TextAppearance.ALIVE.SectionHeader" parent="TextAppearance.MaterialComponents.Subtitle1">
-        <item name="android:fontFamily">@font/silkscreen_bold</item>
-        <item name="android:textColor">@color/alive_ink</item>
-        <item name="android:textSize">14sp</item>
-        <item name="android:letterSpacing">0</item>
-        <item name="android:lineSpacingExtra">2sp</item>
-        <item name="android:includeFontPadding">false</item>
-    </style>
-
-    <!-- A note, not a paragraph: the character's own line, in the title face
-         one step down from the Lead. -->
+    <!-- A note, not a paragraph: the character's own line, in the pixel voice,
+         one step down from the Lead. This is the accent the mascot speaks with. -->
     <style name="TextAppearance.ALIVE.Annotation" parent="TextAppearance.MaterialComponents.Body2">
         <item name="android:fontFamily">@font/silkscreen_regular</item>
         <item name="android:textColor">@color/alive_ink_secondary</item>
-        <item name="android:textSize">22sp</item>
+        <item name="android:textSize">20sp</item>
         <item name="android:letterSpacing">0</item>
         <item name="android:lineSpacingExtra">2sp</item>
         <item name="android:includeFontPadding">false</item>
     </style>
-
-    <!-- ============ FIGURES: THE SAME FACE, BIG ============ -->
 
     <style name="TextAppearance.ALIVE.Timer" parent="TextAppearance.MaterialComponents.Headline2">
         <item name="android:fontFamily">@font/silkscreen_bold</item>
@@ -98,14 +66,48 @@
         <item name="android:textSize">28sp</item>
     </style>
 
-    <!-- ============ THE INTERFACE: INTER ============ -->
+    <!-- ============ WHAT A SCREEN IS CALLED: SPACE GROTESK ============ -->
+
+    <!-- The one sentence a card leads with. -->
+    <style name="TextAppearance.ALIVE.Headline" parent="TextAppearance.MaterialComponents.Headline5">
+        <item name="android:fontFamily">@font/space_grotesk_bold</item>
+        <item name="android:textColor">@color/alive_ink</item>
+        <item name="android:textSize">24sp</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:lineSpacingExtra">2sp</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <!-- Mission titles and in-flight statements: what Statement and QuestRowTitle
+         used to be, at one size instead of two that were indistinguishable. -->
+    <style name="TextAppearance.ALIVE.Lead" parent="TextAppearance.MaterialComponents.Headline6">
+        <item name="android:fontFamily">@font/space_grotesk_semibold</item>
+        <item name="android:textColor">@color/alive_ink</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:lineSpacingExtra">2sp</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <!-- Card titles and section names: 16sp semibold, so a card's name is
+         louder than the prose under it without competing with a Lead. -->
+    <style name="TextAppearance.ALIVE.SectionHeader" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:fontFamily">@font/space_grotesk_semibold</item>
+        <item name="android:textColor">@color/alive_ink</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:lineSpacingExtra">2sp</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <!-- ============ EVERYTHING THAT IS READ: DM SANS ============ -->
 
     <style name="TextAppearance.ALIVE.Body" parent="TextAppearance.MaterialComponents.Body1">
-        <item name="android:fontFamily">@font/inter_regular</item>
+        <item name="android:fontFamily">@font/dm_sans_regular</item>
         <item name="android:textColor">@color/alive_ink</item>
         <item name="android:textSize">18sp</item>
         <item name="android:letterSpacing">0</item>
-        <item name="android:lineSpacingExtra">4sp</item>
+        <item name="android:lineSpacingExtra">3sp</item>
         <item name="android:includeFontPadding">false</item>
     </style>
 
@@ -120,7 +122,7 @@
     <!-- The small grey line beside a tile: "24 quests", "2 routes", and the
          unit that rides the baseline of a figure. -->
     <style name="TextAppearance.ALIVE.Meta" parent="TextAppearance.MaterialComponents.Body2">
-        <item name="android:fontFamily">@font/inter_regular</item>
+        <item name="android:fontFamily">@font/dm_sans_medium</item>
         <item name="android:textColor">@color/alive_ink_secondary</item>
         <item name="android:textSize">14sp</item>
         <item name="android:letterSpacing">0</item>
@@ -128,8 +130,23 @@
         <item name="android:includeFontPadding">false</item>
     </style>
 
+    <!-- What actually went wrong, said once. It is the same family as the
+         description above it and the same size class, and it is separated from
+         that description by weight, colour and a rule rather than by a new
+         voice: a failure has one reason, and the reason must not read like
+         another paragraph of comfort. -->
+    <style name="TextAppearance.ALIVE.Error" parent="TextAppearance.ALIVE.Body">
+        <item name="android:fontFamily">@font/dm_sans_medium</item>
+        <item name="android:textColor">@color/alive_ink</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:lineSpacingExtra">2sp</item>
+    </style>
+
     <!-- ============ BADGES: THE ACCENT, AND ITS LIMIT ============ -->
 
+    <!-- Two lines, not one: the minute badge beside the hero figure is
+         "min\nleft", and a single-line cap here silently cut the word that
+         made it mean anything. -->
     <style name="TextAppearance.ALIVE.Label" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:fontFamily">@font/press_start_2p</item>
         <item name="android:textColor">@color/alive_ink_secondary</item>
@@ -137,12 +154,12 @@
         <item name="android:textAllCaps">true</item>
         <item name="android:letterSpacing">0</item>
         <item name="android:includeFontPadding">false</item>
-        <item name="android:maxLines">1</item>
+        <item name="android:maxLines">2</item>
     </style>
 
     <!-- ============ FORM ============ -->
 
-    <!-- The Body size, in the interface voice. -->
+    <!-- The Body size, in the reading voice. -->
     <style name="TextAppearance.ALIVE.Option" parent="TextAppearance.ALIVE.Body">
         <item name="android:textColor">@color/alive_ink</item>
     </style>
@@ -154,11 +171,10 @@
 
     <!-- ============ ACTIONS ============ -->
 
-    <!-- 16sp semibold: the weight a label needs to read as an offer rather
-         than a caption. Inter is compact enough that the longest action
-         labels still fit one line of a full-width button. -->
+    <!-- 16sp medium: heavy enough to read as an offer rather than a caption,
+         and the lightest thing a button may be. -->
     <style name="TextAppearance.ALIVE.Button" parent="TextAppearance.MaterialComponents.Button">
-        <item name="android:fontFamily">@font/inter_semibold</item>
+        <item name="android:fontFamily">@font/dm_sans_medium</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:letterSpacing">0</item>
@@ -173,7 +189,7 @@
         <item name="backgroundTint">@color/alive_amber_action</item>
         <item name="android:textColor">@color/alive_ink</item>
         <item name="android:textSize">16sp</item>
-        <item name="android:fontFamily">@font/inter_semibold</item>
+        <item name="android:fontFamily">@font/dm_sans_medium</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:letterSpacing">0</item>
         <item name="cornerRadius">@dimen/radius_tile</item>
@@ -188,11 +204,10 @@
 
     <!-- ============ NAVIGATION ============ -->
 
-    <!-- The bottom bar's key labels, in the interface voice: permanent
-         navigation is read at arm's length and it cannot be skipped by
-         scrolling past, so it gets the most legible face in the file. -->
+    <!-- Permanent navigation: it cannot be skipped by scrolling past, so it
+         gets the reading voice at a weight that survives a glance. -->
     <style name="TextAppearance.ALIVE.NavLabel" parent="TextAppearance.MaterialComponents.Caption">
-        <item name="android:fontFamily">@font/inter_semibold</item>
+        <item name="android:fontFamily">@font/dm_sans_medium</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:letterSpacing">0</item>

@@ -16,11 +16,12 @@ import org.robolectric.annotation.Config
  * The typography is ALIVE's own faces, full stop.
  *
  * One regression is all it takes for a style to fall back to the platform
- * face, and a single Roboto line next to forty Silkscreen and Inter ones
- * is exactly the "some of it is still normal" this design keeps catching.
- * This test locks every ALIVE text style to the faces the design owns - the
- * same way [AlivePaletteTest] locks the colours - and to a killed font
- * padding, which is what keeps mixed rows from sitting on different baselines.
+ * face, and a single Roboto line among the Silkscreen, Space Grotesk and DM
+ * Sans ones is exactly the "some of it is still normal" this design keeps
+ * catching. This test locks every ALIVE text style to the faces the design
+ * owns - the same way [AlivePaletteTest] locks the colours - and to a killed
+ * font padding, which is what keeps mixed rows from sitting on different
+ * baselines.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
@@ -36,8 +37,10 @@ class AliveTypographyTest {
     private val faces = setOf(
         R.font.silkscreen_regular,
         R.font.silkscreen_bold,
-        R.font.inter_regular,
-        R.font.inter_semibold,
+        R.font.space_grotesk_semibold,
+        R.font.space_grotesk_bold,
+        R.font.dm_sans_regular,
+        R.font.dm_sans_medium,
         R.font.press_start_2p
     )
 
@@ -49,6 +52,7 @@ class AliveTypographyTest {
         R.style.TextAppearance_ALIVE_Note to "Note",
         R.style.TextAppearance_ALIVE_SectionHeader to "SectionHeader",
         R.style.TextAppearance_ALIVE_Meta to "Meta",
+        R.style.TextAppearance_ALIVE_Error to "Error",
         R.style.TextAppearance_ALIVE_Label to "Label",
         R.style.TextAppearance_ALIVE_Timer to "Timer",
         R.style.TextAppearance_ALIVE_Number to "Number",
