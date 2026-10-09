@@ -982,6 +982,11 @@ class MainActivity : AppCompatActivity() {
             rewardLine.addView(ui.rewardChip(getString(R.string.unit_minutes_gain, attempt.rewardMinutes ?: quest.rewardMinutes)))
             block.addView(rewardLine)
             celebrateReward(block, attempt)
+        } else if (attempt.state == QuestAttemptState.FAILED) {
+            // The verdict takes the heaviest voice, not the heading face: the
+            // mission's own title is already a Lead, and two headings stacked on
+            // one card read as one wall of bold with no order in it.
+            block.addView(ui.error(getString(AliveStates.attemptHeadline(attempt.state))))
         } else {
             block.addView(ui.lead(getString(AliveStates.attemptHeadline(attempt.state))))
         }
@@ -1020,16 +1025,15 @@ class MainActivity : AppCompatActivity() {
 
         if (attempt.state == QuestAttemptState.FAILED) {
             // A raw engine reason is never shown; only its honest family is.
-            // And the family is ruled off from the sentence above it, in the
-            // heavier voice: what happened and why it happened are two things,
-            // and letting them read as one paragraph of comfort is how a
-            // failure stops teaching anything.
+            // And the family is ruled off from the sentence above it in the
+            // quieter ink voice: what happened and why it happened are two
+            // things, and only one of them may be the loud one.
             val reason = AliveStates.classifyFailure(attempt.verificationResult?.reason)
             if (reason != VerificationReasonClass.UNKNOWN) {
                 block.addView(ui.vgap(ui.dimens.groupGap))
                 block.addView(ui.rowRule())
                 block.addView(ui.vgap(ui.dimens.lineGap))
-                block.addView(ui.error(getString(AliveStates.failureSupport(reason))))
+                block.addView(ui.reason(getString(AliveStates.failureSupport(reason))))
             }
         }
 

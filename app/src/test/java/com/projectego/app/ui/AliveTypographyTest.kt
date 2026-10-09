@@ -55,6 +55,7 @@ class AliveTypographyTest {
         R.style.TextAppearance_ALIVE_SectionHeader to "SectionHeader",
         R.style.TextAppearance_ALIVE_Meta to "Meta",
         R.style.TextAppearance_ALIVE_Error to "Error",
+        R.style.TextAppearance_ALIVE_Reason to "Reason",
         R.style.TextAppearance_ALIVE_Label to "Label",
         R.style.TextAppearance_ALIVE_Timer to "Timer",
         R.style.TextAppearance_ALIVE_Number to "Number",
@@ -104,7 +105,8 @@ class AliveTypographyTest {
                 R.style.Widget_ALIVE_Button_Primary,
                 R.font.manrope_medium
             ),
-            Triple("Error", R.style.TextAppearance_ALIVE_Error, R.font.manrope_bold)
+            Triple("Error", R.style.TextAppearance_ALIVE_Error, R.font.manrope_bold),
+            Triple("Reason", R.style.TextAppearance_ALIVE_Reason, R.font.manrope_medium)
         ).forEach { (name, style, face) ->
             assertEquals(
                 "$name must resolve to the Manrope weight its role is given; those " +

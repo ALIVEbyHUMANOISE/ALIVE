@@ -122,11 +122,17 @@ class AliveComponents(private val context: Context) {
         text(R.style.TextAppearance_ALIVE_Annotation, value)
 
     /**
-     * What actually went wrong, said once. Heavier and darker than the note it
-     * sits under, and never a second paragraph of comfort.
+     * What actually went wrong, said once. The heaviest line a card may carry.
      */
     fun error(value: CharSequence): TextView =
         text(R.style.TextAppearance_ALIVE_Error, value)
+
+    /**
+     * The cause under the verdict: ink, because it is a fact, one step quieter
+     * than the line above it because a card with two loud lines has no order.
+     */
+    fun reason(value: CharSequence): TextView =
+        text(R.style.TextAppearance_ALIVE_Reason, value)
 
     // ---------- STRUCTURE ----------
 

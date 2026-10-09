@@ -131,13 +131,21 @@
         <item name="android:includeFontPadding">false</item>
     </style>
 
-    <!-- What actually went wrong, said once. It is the same family as the
-         description above it and the same size class, and it is separated from
-         that description by weight, colour and a rule rather than by a new
-         voice: a failure has one reason, and the reason must not read like
-         another paragraph of comfort. -->
+    <!-- The verdict of a failed session, said once, in the heaviest voice the app
+         owns. One 700 per card is the rule: it is what lets the sentence under it
+         stay quiet instead of shouting back. -->
     <style name="TextAppearance.ALIVE.Error" parent="TextAppearance.ALIVE.Body">
         <item name="android:fontFamily">@font/manrope_bold</item>
+        <item name="android:textColor">@color/alive_ink</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:lineSpacingExtra">2sp</item>
+    </style>
+
+    <!-- Why it failed. Ink, because it is a fact and not comfort, but one step
+         under the verdict it sits below: two lines of the same weight on one
+         card is a card with no hierarchy at all. -->
+    <style name="TextAppearance.ALIVE.Reason" parent="TextAppearance.ALIVE.Body">
+        <item name="android:fontFamily">@font/manrope_medium</item>
         <item name="android:textColor">@color/alive_ink</item>
         <item name="android:textSize">16sp</item>
         <item name="android:lineSpacingExtra">2sp</item>
