@@ -37,8 +37,8 @@
     <string name="stat_allowance">Jatah</string>
     <string name="stat_used">Terpakai</string>
     <string name="stat_bank">Bank</string>
-    <string name="stat_unit_note">Semua angka di sini dalam menit.</string>
     <string name="unit_minutes">%1$d menit</string>
+    <string name="unit_minutes_suffix">menit</string>
     <string name="unit_minutes_gain">+%1$d menit</string>
     <string name="time_hero_line">Menit hiburan tersisa sebelum ALIVE menutupnya.</string>
     <string name="time_of_allowance">dari %1$d</string>

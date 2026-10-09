@@ -156,11 +156,13 @@
 
     <!-- ============ ACTIONS ============ -->
 
-    <!-- 13sp, not 15: the arcade face is a square, and the longest action
-         labels must fit one line of a full-width button on a small screen. -->
+    <!-- 15sp: the arcade face at 13 read as fine print next to the 18sp body.
+         The longest action labels wrap to a second centred line on narrow
+         screens, which the button shape wears fine; too-small text on the
+         thing you are being asked to press was the worse trade. -->
     <style name="TextAppearance.ALIVE.Button" parent="TextAppearance.MaterialComponents.Button">
         <item name="android:fontFamily">@font/press_start_2p</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textSize">15sp</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:letterSpacing">0</item>
         <item name="android:lineSpacingExtra">2sp</item>
@@ -173,7 +175,7 @@
     <style name="Widget.ALIVE.Button.Primary" parent="Widget.MaterialComponents.Button">
         <item name="backgroundTint">@color/alive_amber_action</item>
         <item name="android:textColor">@color/alive_ink</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textSize">15sp</item>
         <item name="android:fontFamily">@font/press_start_2p</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:letterSpacing">0</item>

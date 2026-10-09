@@ -580,10 +580,18 @@ class AliveComponents(private val context: Context) {
      * budget, forest for the day's own figure. A tile that is only colourful is
      * a tile nobody learns anything from.
      */
+    /**
+     * A ledger tile: one word, one number, one face.
+     *
+     * [unit] rides the baseline of the number instead of a note under the whole
+     * grid, so each figure says what it is by itself - a 160 with no unit is a
+     * number, 160 min is a fact.
+     */
     fun statTile(
         name: CharSequence,
         value: CharSequence,
-        @ColorInt face: Int = palette.white
+        @ColorInt face: Int = palette.white,
+        unit: CharSequence? = null
     ): LinearLayout = column().apply {
         background = framed(face, dimens.borderButton, dimens.shadowMinor, dimens.radiusTile.toFloat())
         val inset = dimens.ledgerInset
@@ -596,7 +604,22 @@ class AliveComponents(private val context: Context) {
         )
         addView(sectionHeader(name))
         addView(vgap(dimens.pairGap))
-        addView(number(value))
+        if (unit == null) {
+            addView(number(value))
+        } else {
+            addView(
+                row().apply {
+                    gravity = Gravity.BOTTOM
+                    addView(number(value))
+                    addView(hgap(dimens.xs))
+                    addView(
+                        meta(unit).apply {
+                            setPadding(0, 0, 0, dimens.xs)
+                        }
+                    )
+                }
+            )
+        }
     }
 
     /** A thick ink rule between the parts of one card. */

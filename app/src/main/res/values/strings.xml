@@ -32,14 +32,15 @@
     <string name="today_card_title">Today</string>
     <!-- Ledger labels. Deliberately one word: a tile is about 88dp wide on a
          320dp screen, and "Allowance · min" wrapped while its neighbour did not,
-         which made a ruled table of numbers come out uneven. The unit is stated
-         once per card by stat_unit_note instead of once per label. -->
+         which made a ruled table of numbers come out uneven. The unit rides
+         beside each number instead (unit_minutes_suffix), so no label carries
+         it and no note under the grid has to. -->
     <string name="stat_streak">Streak</string>
     <string name="stat_allowance">Allowance</string>
     <string name="stat_used">Used</string>
     <string name="stat_bank">Bank</string>
-    <string name="stat_unit_note">Every number here is minutes.</string>
     <string name="unit_minutes">%1$d min</string>
+    <string name="unit_minutes_suffix">min</string>
     <string name="unit_minutes_gain">+%1$d min</string>
     <string name="time_hero_line">Entertainment minutes left before ALIVE closes them.</string>
     <string name="time_of_allowance">of %1$d</string>

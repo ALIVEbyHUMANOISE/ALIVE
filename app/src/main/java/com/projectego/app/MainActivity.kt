@@ -698,8 +698,6 @@ class MainActivity : AppCompatActivity() {
         )
 
         card.addView(statGrid(signals))
-        card.addView(ui.vgap(ui.dimens.pairGap))
-        card.addView(ui.note(getString(R.string.stat_unit_note)))
         card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(ui.rule())
         card.addView(ui.vgap(ui.dimens.groupGap))
@@ -806,7 +804,8 @@ class MainActivity : AppCompatActivity() {
                 ui.statTile(
                     getString(R.string.stat_allowance),
                     getString(R.string.stat_minutes, state.dailyLimitMinutes),
-                    ui.palette.workPale
+                    ui.palette.workPale,
+                    unit = getString(R.string.unit_minutes_suffix)
                 )
             )
         )
@@ -815,12 +814,14 @@ class MainActivity : AppCompatActivity() {
                 ui.statTile(
                     getString(R.string.stat_used),
                     getString(R.string.stat_minutes, state.usedMinutesToday),
-                    ui.palette.softForest
+                    ui.palette.softForest,
+                    unit = getString(R.string.unit_minutes_suffix)
                 ),
                 ui.statTile(
                     getString(R.string.stat_bank),
                     getString(R.string.stat_minutes, signals.reclaimedAvailableMinutes),
-                    ui.palette.rewardPale
+                    ui.palette.rewardPale,
+                    unit = getString(R.string.unit_minutes_suffix)
                 )
             )
         )
@@ -1678,7 +1679,8 @@ class MainActivity : AppCompatActivity() {
                 ui.statTile(
                     getString(R.string.quest_detail_duration_title),
                     getString(R.string.stat_minutes, quest.estimatedDurationMinutes),
-                    ui.palette.workPale
+                    ui.palette.workPale,
+                    unit = getString(R.string.unit_minutes_suffix)
                 ),
                 ui.statTile(
                     getString(R.string.quest_detail_reward_title),
@@ -2387,12 +2389,14 @@ class MainActivity : AppCompatActivity() {
                 ui.statTile(
                     getString(R.string.stat_allowance),
                     getString(R.string.stat_minutes, state.dailyLimitMinutes),
-                    ui.palette.workPale
+                    ui.palette.workPale,
+                    unit = getString(R.string.unit_minutes_suffix)
                 ),
                 ui.statTile(
                     getString(R.string.stat_used),
                     getString(R.string.stat_minutes, state.usedMinutesToday),
-                    ui.palette.softForest
+                    ui.palette.softForest,
+                    unit = getString(R.string.unit_minutes_suffix)
                 )
             )
         )
@@ -2407,12 +2411,14 @@ class MainActivity : AppCompatActivity() {
                 ui.statTile(
                     getString(R.string.stat_bank_earned),
                     getString(R.string.stat_minutes, state.earnedMinutes),
-                    ui.palette.softForest
+                    ui.palette.softForest,
+                    unit = getString(R.string.unit_minutes_suffix)
                 ),
                 ui.statTile(
                     getString(R.string.stat_bank_spent),
                     getString(R.string.stat_minutes, state.spentMinutes),
-                    ui.palette.pinkSoft
+                    ui.palette.pinkSoft,
+                    unit = getString(R.string.unit_minutes_suffix)
                 )
             )
         )
