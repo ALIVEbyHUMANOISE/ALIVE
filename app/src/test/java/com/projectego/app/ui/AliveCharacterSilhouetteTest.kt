@@ -19,10 +19,9 @@ import java.util.ArrayDeque
  * flush against the body read as "no arms", and arms lifted a pixel off the body
  * read as "no arms" again, because a floating square is decoration, not a limb.
  * The rule that survives both is that every pink cell touches the torso, so the
- * silhouette is one connected shape and the limbs are bumps on it.
- *
- * The laptop frames are exempt: there the keyboard is what separates the hands
- * from the torso, and that is the point of the frame.
+ * silhouette is one connected shape and the limbs are bumps on it. The laptop
+ * pose obeys it too: the arms ride the sides of the screen down to the deck,
+ * and only the keyboard is in front of the torso.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
@@ -51,7 +50,8 @@ class AliveCharacterSilhouetteTest {
         "ic_alive_pose_book" to R.drawable.ic_alive_pose_book,
         "ic_alive_pose_camera" to R.drawable.ic_alive_pose_camera,
         "ic_alive_pose_pencil" to R.drawable.ic_alive_pose_pencil,
-        "ic_alive_pose_wave" to R.drawable.ic_alive_pose_wave
+        "ic_alive_pose_wave" to R.drawable.ic_alive_pose_wave,
+        "alive_anim_laptop" to R.drawable.alive_anim_laptop
     )
 
     @Test

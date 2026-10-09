@@ -31,7 +31,8 @@ class AliveStatesTest {
         streak: Int = 0,
         reclaimed: Long = 0L,
         attempt: QuestAttemptState? = null,
-        focusActive: Boolean = false
+        focusActive: Boolean = false,
+        focusType: FocusActivityType? = null
     ) = AliveSignals(
         timeStatus = timeStatus,
         dayType = dayType,
@@ -40,7 +41,8 @@ class AliveStatesTest {
         currentStreak = streak,
         reclaimedAvailableMinutes = reclaimed,
         attemptState = attempt,
-        focusActive = focusActive
+        focusActive = focusActive,
+        focusActivityType = focusType
     )
 
     @Test
@@ -159,6 +161,15 @@ class AliveStatesTest {
             AliveFace.LAPTOP,
             AliveStates.faceFor(signals(timeStatus = TimeStatus.LOCKED, tier = 5, remaining = 0, focusActive = true))
         )
+
+        // A running focus session wears its own activity's pose, not a generic
+        // laptop: studying reads as studying.
+        assertEquals(AliveFace.BOOK, AliveStates.faceFor(signals(focusActive = true, focusType = FocusActivityType.STUDY)))
+        assertEquals(AliveFace.PENCIL, AliveStates.faceFor(signals(focusActive = true, focusType = FocusActivityType.WRITING)))
+        assertEquals(AliveFace.CAMERA, AliveStates.faceFor(signals(focusActive = true, focusType = FocusActivityType.CREATIVE)))
+        assertEquals(AliveFace.LAPTOP, AliveStates.faceFor(signals(focusActive = true, focusType = FocusActivityType.WORK)))
+        assertEquals(AliveFace.LAPTOP, AliveStates.faceFor(signals(focusActive = true, focusType = FocusActivityType.CODING)))
+
         assertEquals(AliveFace.NORMAL, AliveStates.faceFor(signals(attempt = QuestAttemptState.COMMITTED)))
         assertEquals(AliveFace.NORMAL, AliveStates.faceFor(signals(attempt = QuestAttemptState.IN_PROGRESS)))
 
@@ -190,23 +201,30 @@ class AliveStatesTest {
     }
 
     @Test
-    fun `sheet poses cover the quest heroes and focus previews that have them`() {
+    fun `every mission and focus activity gets a sheet pose`() {
+        // Prop poses where the sheet has one.
         assertEquals(AliveFace.BOOK, AliveStates.questHeroSpriteFor(QuestCategory.STUDY))
         assertEquals(AliveFace.BOOK, AliveStates.questHeroSpriteFor(QuestCategory.READING))
         assertEquals(AliveFace.LAPTOP, AliveStates.questHeroSpriteFor(QuestCategory.CODING))
         assertEquals(AliveFace.PENCIL, AliveStates.questHeroSpriteFor(QuestCategory.WRITING))
         assertEquals(AliveFace.CAMERA, AliveStates.questHeroSpriteFor(QuestCategory.CREATIVE))
 
-        listOf(
-            QuestCategory.EXERCISE, QuestCategory.WALKING, QuestCategory.CLEANING,
-            QuestCategory.MINDFULNESS, QuestCategory.SOCIAL, QuestCategory.OTHER
-        ).forEach { assertEquals(it.name, null, AliveStates.questHeroSpriteFor(it)) }
+        // And a borrowed face everywhere the sheet has no prop: movement is
+        // happy or excited, chores are tired, stillness is sleepy, people are
+        // happy. Only OTHER keeps its category mark.
+        assertEquals(AliveFace.HAPPY, AliveStates.questHeroSpriteFor(QuestCategory.WALKING))
+        assertEquals(AliveFace.EXCITED, AliveStates.questHeroSpriteFor(QuestCategory.EXERCISE))
+        assertEquals(AliveFace.TIRED, AliveStates.questHeroSpriteFor(QuestCategory.CLEANING))
+        assertEquals(AliveFace.SLEEPY, AliveStates.questHeroSpriteFor(QuestCategory.MINDFULNESS))
+        assertEquals(AliveFace.HAPPY, AliveStates.questHeroSpriteFor(QuestCategory.SOCIAL))
+        assertEquals(null, AliveStates.questHeroSpriteFor(QuestCategory.OTHER))
 
+        // Every focus activity has a preview pose; work reads at the laptop.
         assertEquals(AliveFace.BOOK, AliveStates.focusPreviewSpriteFor(FocusActivityType.STUDY))
         assertEquals(AliveFace.LAPTOP, AliveStates.focusPreviewSpriteFor(FocusActivityType.CODING))
         assertEquals(AliveFace.PENCIL, AliveStates.focusPreviewSpriteFor(FocusActivityType.WRITING))
         assertEquals(AliveFace.CAMERA, AliveStates.focusPreviewSpriteFor(FocusActivityType.CREATIVE))
-        assertEquals(null, AliveStates.focusPreviewSpriteFor(FocusActivityType.WORK))
+        assertEquals(AliveFace.LAPTOP, AliveStates.focusPreviewSpriteFor(FocusActivityType.WORK))
     }
 
     @Test

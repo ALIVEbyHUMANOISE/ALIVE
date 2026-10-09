@@ -91,7 +91,8 @@ data class AliveSignals(
     val currentStreak: Int,
     val reclaimedAvailableMinutes: Long,
     val attemptState: QuestAttemptState?,
-    val focusActive: Boolean
+    val focusActive: Boolean,
+    val focusActivityType: FocusActivityType? = null
 )
 
 object AliveStates {
@@ -143,7 +144,10 @@ object AliveStates {
         val attempt = signals.attemptState
 
         return when {
-            signals.focusActive -> AliveFace.LAPTOP
+            // A running focus session wears the pose of its own activity, so
+            // studying reads as studying instead of a generic laptop.
+            signals.focusActive ->
+                signals.focusActivityType?.let { focusPreviewSpriteFor(it) } ?: AliveFace.LAPTOP
 
             attempt == QuestAttemptState.COMMITTED ||
                 attempt == QuestAttemptState.IN_PROGRESS -> AliveFace.NORMAL
@@ -218,25 +222,33 @@ object AliveStates {
     /**
      * The hero face for a quest detail page, or null when the sheet has no
      * pose for that category and the category's pixel mark should stay.
+     *
+     * Categories without a prop pose borrow the closest face: movement reads
+     * happy or excited, chores read tired, stillness reads sleepy, people
+     * read happy. Only OTHER keeps its mark.
      */
     fun questHeroSpriteFor(category: QuestCategory): AliveFace? = when (category) {
         QuestCategory.STUDY, QuestCategory.READING -> AliveFace.BOOK
         QuestCategory.CODING -> AliveFace.LAPTOP
         QuestCategory.WRITING -> AliveFace.PENCIL
         QuestCategory.CREATIVE -> AliveFace.CAMERA
+        QuestCategory.WALKING, QuestCategory.SOCIAL -> AliveFace.HAPPY
+        QuestCategory.EXERCISE -> AliveFace.EXCITED
+        QuestCategory.CLEANING -> AliveFace.TIRED
+        QuestCategory.MINDFULNESS -> AliveFace.SLEEPY
         else -> null
     }
 
     /**
-     * The preview face on the focus setup page, or null when the sheet has no
-     * pose for that activity and the pixel mark should stay.
+     * The preview face on the focus setup page, and the face a running focus
+     * session wears. Every activity has one now; work reads at the laptop.
      */
-    fun focusPreviewSpriteFor(type: FocusActivityType): AliveFace? = when (type) {
+    fun focusPreviewSpriteFor(type: FocusActivityType): AliveFace = when (type) {
         FocusActivityType.STUDY -> AliveFace.BOOK
         FocusActivityType.CODING -> AliveFace.LAPTOP
         FocusActivityType.WRITING -> AliveFace.PENCIL
         FocusActivityType.CREATIVE -> AliveFace.CAMERA
-        else -> null
+        FocusActivityType.WORK -> AliveFace.LAPTOP
     }
 
     @StringRes

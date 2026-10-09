@@ -390,7 +390,6 @@
     <string name="cd_mark_mindfulness">Pixel lotus: a mindfulness quest.</string>
     <string name="cd_mark_social">Two pixel figures: a quest with people.</string>
     <string name="cd_mark_other">Pixel star: an uncategorised quest.</string>
-    <string name="cd_focus_mark">Pixel mark: %1$s focus.</string>
     <string name="chart_apps_heading">Today, by app</string>
     <string name="chart_labels_note">ALIVE only gets the names the device is willing to give it. Some show as part of their package name.</string>
     <string name="chart_apps_folded">%1$d smaller ones</string>

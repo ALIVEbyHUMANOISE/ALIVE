@@ -364,7 +364,6 @@
     <string name="cd_mark_mindfulness">Teratai pixel: misi menenangkan diri.</string>
     <string name="cd_mark_social">Dua sosok pixel: misi bersama orang.</string>
     <string name="cd_mark_other">Bintang pixel: misi tanpa kategori.</string>
-    <string name="cd_focus_mark">Penanda pixel: fokus %1$s.</string>
     <string name="chart_apps_heading">Hari ini, per aplikasi</string>
     <string name="chart_labels_note">ALIVE hanya mendapat nama yang perangkat mau berikan. Sebagian tampil sebagai bagian dari nama paketnya.</string>
     <string name="chart_apps_folded">%1$d lainnya lebih kecil</string>

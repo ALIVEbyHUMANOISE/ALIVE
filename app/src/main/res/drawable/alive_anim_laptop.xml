@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ALIVE pose: Laptop. The critter sits behind an open laptop, hands on
-     the keyboard. Shown while a focus session is really running. -->
+<!-- ALIVE pose: Laptop, per the sheet. The critter sits behind an open
+     laptop: head and shoulders above the screen, arms down the sides with
+     hands on the deck, a green plus lit on the screen, and the white coffee
+     cup in front. Shown while a focus session is really running. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="48dp"
     android:height="48dp"
@@ -8,20 +10,23 @@
     android:viewportHeight="16">
     <path
         android:fillColor="@color/alive_pink_soft"
-        android:pathData="M4,2h6v1h-6zM3,3h8v1h-8zM3,4h8v1h-8zM3,5h8v1h-8zM3,6h8v1h-8zM4,7h6v1h-6z" />
+        android:pathData="M5,3h6v1h-6zM4,4h8v3h-8zM3,7h10v1h-10zM1,7h2v4h-2zM13,7h2v4h-2z" />
     <path
         android:fillColor="@color/alive_ink"
-        android:pathData="M4,3h2v3h-2zM8,3h2v3h-2zM2,7h10v1h-10zM2,11h10v1h-10zM2,8h1v3h-1zM11,8h1v3h-1zM1,12h12v2h-12z" />
+        android:pathData="M5,5h2v3h-2zM9,5h2v3h-2z" />
+    <path
+        android:fillColor="@color/alive_ink"
+        android:pathData="M3,8h9v1h-9zM3,9h1v2h-1zM11,9h1v2h-1zM1,11h14v1h-14z" />
     <path
         android:fillColor="@color/alive_white"
-        android:pathData="M3,8h8v3h-8z" />
-    <path
-        android:fillColor="@color/alive_pink_soft"
-        android:pathData="M3,13h2v2h-2zM9,13h2v2h-2z" />
+        android:pathData="M4,9h7v2h-7z" />
     <path
         android:fillColor="@color/alive_forest"
-        android:pathData="M14,1h1v14h-1z" />
+        android:pathData="M7,9h1v2h-1zM6,9h3v1h-3z" />
     <path
-        android:fillColor="@color/alive_soft_forest"
-        android:pathData="M15,6h1v3h-1z" />
+        android:fillColor="@color/alive_white"
+        android:pathData="M0,12h2v2h-2z" />
+    <path
+        android:fillColor="@color/alive_ink"
+        android:pathData="M0,12h2v1h-2z" />
 </vector>

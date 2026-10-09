@@ -362,7 +362,8 @@ class MainActivity : AppCompatActivity() {
             currentStreak = report.currentStreak,
             reclaimedAvailableMinutes = report.timeBank.availableMinutes,
             attemptState = attempt?.state,
-            focusActive = focusSession != null && focusSession.isActive
+            focusActive = focusSession != null && focusSession.isActive,
+            focusActivityType = focusSession?.activityType
         )
 
         state.signals = signals
@@ -931,9 +932,16 @@ class MainActivity : AppCompatActivity() {
             block.addView(ui.vgap(ui.dimens.lineGap))
         }
 
-        // The face follows the attempt - one is always in flight in this block -
-        // inside the tile that keeps the category hue.
-        val face = state.signals?.let { AliveStates.faceFor(it) } ?: AliveFace.NORMAL
+        // The face follows the attempt: while the mission is in flight the tile
+        // wears the mission's own pose from the sheet, and every terminal state
+        // is the character's reaction to the verdict - one is always in flight
+        // in this block, inside the tile that keeps the category hue.
+        val hero = AliveStates.questHeroSpriteFor(quest.category)
+        val face = when (attempt.state) {
+            QuestAttemptState.COMMITTED, QuestAttemptState.IN_PROGRESS ->
+                hero ?: AliveFace.NORMAL
+            else -> state.signals?.let { AliveStates.faceFor(it) } ?: AliveFace.NORMAL
+        }
         block.addView(
             ui.iconTile(
                 ContextCompat.getColor(this, QuestHues.quest(quest.category)),
@@ -1233,12 +1241,13 @@ class MainActivity : AppCompatActivity() {
         val card = ui.bentoCard(getString(R.string.focus_heading))
 
         if (session != null && session.isActive) {
+            val focusFace = AliveStates.focusPreviewSpriteFor(session.activityType)
             card.addView(
                 ui.iconTile(
                     ContextCompat.getColor(this, QuestHues.focus(session.activityType)),
-                    PixelMarks.focus(session.activityType),
+                    AliveStates.faceSpriteFor(focusFace),
                     ui.dimens.character
-                ).apply { contentDescription = getString(R.string.cd_focus_mark, activityLabel(session.activityType)) }
+                ).apply { contentDescription = getString(AliveStates.faceDescription(focusFace)) }
             )
             card.addView(ui.vgap(ui.dimens.lineGap))
             card.addView(ui.lead(getString(R.string.focus_active_heading, activityLabel(session.activityType))))
@@ -1273,18 +1282,16 @@ class MainActivity : AppCompatActivity() {
         val durations = listOf(30L, 60L, 90L, 120L)
 
         // The tile above the list is the answer to "what am I about to pick":
-        // its mark and its colour both change the moment another activity is
-        // chosen. Sheet poses replace the mark where one exists; WORK keeps its
-        // briefcase because the sheet has no work pose.
+        // its pose and its colour both change the moment another activity is
+        // chosen. Every activity has a sheet pose now, so no mark fallback.
         val markType = activities.getOrNull(state.selectedActivityIndex) ?: FocusActivityType.STUDY
         val previewFace = AliveStates.focusPreviewSpriteFor(markType)
         val mark = ui.iconTile(
             ContextCompat.getColor(this, QuestHues.focus(markType)),
-            previewFace?.let { AliveStates.faceSpriteFor(it) } ?: PixelMarks.focus(markType),
+            AliveStates.faceSpriteFor(previewFace),
             ui.dimens.character
         ).apply {
-            contentDescription = previewFace?.let { getString(AliveStates.faceDescription(it)) }
-                ?: getString(R.string.cd_focus_mark, activityLabel(markType))
+            contentDescription = getString(AliveStates.faceDescription(previewFace))
         }
         anchor.addView(mark)
         anchor.addView(ui.vgap(ui.dimens.groupGap))
@@ -1321,9 +1328,13 @@ class MainActivity : AppCompatActivity() {
             state.selectedActivityIndex = (checkedId - 100).coerceAtLeast(0)
             val type = activities.getOrNull(state.selectedActivityIndex)
             if (type != null) {
-                mark.setImageResource(PixelMarks.focus(type))
+                // The tile follows the pick like the colour does; showing the
+                // activity mark here would undo the pose the moment anything
+                // is chosen.
+                val face = AliveStates.focusPreviewSpriteFor(type)
+                mark.setImageResource(AliveStates.faceSpriteFor(face))
                 ui.tintTile(mark, ContextCompat.getColor(this@MainActivity, QuestHues.focus(type)))
-                mark.contentDescription = getString(R.string.cd_focus_mark, activityLabel(type))
+                mark.contentDescription = getString(AliveStates.faceDescription(face))
             }
         }
         anchor.addView(actGroup)
@@ -1849,12 +1860,13 @@ class MainActivity : AppCompatActivity() {
      * open, what happens when time runs out. No celebration, no counter to beat.
      */
     private fun buildFocusSessionInto(column: LinearLayout, session: FocusSession) {
+        val focusFace = AliveStates.focusPreviewSpriteFor(session.activityType)
         column.addView(
             ui.iconTile(
                 ContextCompat.getColor(this, QuestHues.focus(session.activityType)),
-                PixelMarks.focus(session.activityType),
+                AliveStates.faceSpriteFor(focusFace),
                 ui.dimens.characterLarge
-            ).apply { contentDescription = getString(R.string.cd_focus_mark, activityLabel(session.activityType)) }
+            ).apply { contentDescription = getString(AliveStates.faceDescription(focusFace)) }
         )
         column.addView(ui.vgap(ui.dimens.groupGap))
         column.addView(ui.headline(getString(R.string.focus_active_heading, activityLabel(session.activityType))))
