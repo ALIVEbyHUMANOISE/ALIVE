@@ -72,6 +72,13 @@
             </intent-filter>
         </activity>
 
+        <!-- The first-run welcome. Not exported and never in recents: it is not
+             a place, it is a door that opens once. -->
+        <activity
+            android:name=".ui.WelcomeActivity"
+            android:exported="false"
+            android:excludeFromRecents="true" />
+
         <activity
             android:name=".ui.LockActivity"
             android:exported="false"

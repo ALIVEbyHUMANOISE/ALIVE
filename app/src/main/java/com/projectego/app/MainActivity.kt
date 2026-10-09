@@ -1,7 +1,6 @@
 package com.projectego.app
 
 import android.Manifest
-import android.app.AppOpsManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -9,9 +8,7 @@ import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.Build
 import android.os.Bundle
-import android.os.Process
 import android.provider.Settings
-import android.text.TextUtils
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -38,6 +35,7 @@ import com.projectego.app.data.QuestEvidenceRepository
 import com.projectego.app.data.QuestRepository
 import com.projectego.app.data.TimeBankRepository
 import com.projectego.app.data.UsageHistoryRepository
+import com.projectego.app.data.WelcomeGate
 import com.projectego.app.domain.AndroidPhysicalQuestEvidenceProvider
 import com.projectego.app.domain.CriticalAlertPolicy
 import com.projectego.app.domain.EntertainmentClaimCoordinator
@@ -60,7 +58,6 @@ import com.projectego.app.model.QuestStatus
 import com.projectego.app.model.TimeStatus
 import com.projectego.app.model.UsageDay
 import com.projectego.app.model.VerificationMethod
-import com.projectego.app.service.EgoAccessibilityService
 import com.projectego.app.ui.AliveComponents
 import com.projectego.app.ui.AliveFace
 import com.projectego.app.ui.AlivePanel
@@ -75,6 +72,7 @@ import com.projectego.app.ui.ChartRange
 import com.projectego.app.ui.DayBar
 import com.projectego.app.ui.DayBarKind
 import com.projectego.app.ui.HomeAction
+import com.projectego.app.ui.PermissionChecks
 import com.projectego.app.ui.PixelMarks
 import com.projectego.app.ui.QuestHues
 import com.projectego.app.ui.RewardBurst
@@ -82,6 +80,7 @@ import com.projectego.app.ui.StatusTone
 import com.projectego.app.ui.SurfaceWeight
 import com.projectego.app.ui.UsageChartStates
 import com.projectego.app.ui.VerificationReasonClass
+import com.projectego.app.ui.WelcomeActivity
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.TextStyle
@@ -152,6 +151,10 @@ class MainActivity : AppCompatActivity() {
     private var devTapCount = 0
     private var lastDevTapTime = 0L
     private var showDevPanel = false
+
+    // True between launching the welcome and the first resume that follows it.
+    // The app is built hidden the whole time; the return trip flips it visible.
+    private var welcomeStarted = false
 
     // The physical quest whose start is waiting on the ACTIVITY_RECOGNITION
     // dialog. Only one quest can start at a time, so one slot is enough.
@@ -232,10 +235,32 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         })
+
+        // The first cold start is the only moment that can open the welcome.
+        // Deliberately here and not in onResume: onResume also fires when the
+        // welcome itself closes, and relaunching from there would trap anyone
+        // who backs out of its first screen. What waits behind the welcome is
+        // built hidden - INVISIBLE, not unrendered - so the app never flashes
+        // a half-configured Home between the splash and the welcome, and the
+        // return trip costs one visibility flip.
+        if (savedInstanceState == null && !WelcomeGate.isDone(this)) {
+            welcomeStarted = true
+            findViewById<View>(R.id.main).visibility = View.INVISIBLE
+            startActivity(Intent(this, WelcomeActivity::class.java))
+        }
     }
 
     override fun onResume() {
         super.onResume()
+        // The first resume after launching the welcome is not the return trip -
+        // the welcome is still about to cover this screen. Every other resume
+        // is the app being visible for real, including the one right after the
+        // welcome closes, however it closed.
+        if (welcomeStarted) {
+            welcomeStarted = false
+        } else {
+            findViewById<View>(R.id.main).visibility = View.VISIBLE
+        }
         questVerificationCoordinator.evaluateAttemptOnResume(this)
         renderDashboard()
         renderQuestSection()
@@ -243,42 +268,10 @@ class MainActivity : AppCompatActivity() {
         if (bottomNav.selectedItemId == R.id.nav_profile) renderProfile()
     }
 
-    private fun hasUsageAccess(): Boolean {
-        val appOps = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            appOps.unsafeCheckOpNoThrow(
-                AppOpsManager.OPSTR_GET_USAGE_STATS,
-                Process.myUid(),
-                packageName
-            )
-        } else {
-            @Suppress("DEPRECATION")
-            appOps.checkOpNoThrow(
-                AppOpsManager.OPSTR_GET_USAGE_STATS,
-                Process.myUid(),
-                packageName
-            )
-        }
-        return mode == AppOpsManager.MODE_ALLOWED
-    }
+    private fun hasUsageAccess(): Boolean = PermissionChecks.hasUsageAccess(this)
 
-    private fun isAccessibilityServiceEnabled(): Boolean {
-        val expectedServiceName = "${packageName}/${EgoAccessibilityService::class.java.canonicalName}"
-        val enabledServices = Settings.Secure.getString(
-            contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        ) ?: return false
-
-        val colonSplitter = TextUtils.SimpleStringSplitter(':')
-        colonSplitter.setString(enabledServices)
-        while (colonSplitter.hasNext()) {
-            val componentName = colonSplitter.next()
-            if (componentName.equals(expectedServiceName, ignoreCase = true)) {
-                return true
-            }
-        }
-        return false
-    }
+    private fun isAccessibilityServiceEnabled(): Boolean =
+        PermissionChecks.isAccessibilityServiceEnabled(this)
 
     // ------------------------------------------------------------------
     // SHELL
@@ -2615,6 +2608,16 @@ class MainActivity : AppCompatActivity() {
         val inert = ui.quiet(getString(R.string.dev_reward_locked))
         inert.isEnabled = false
         block.addView(inert)
+
+        // The welcome once per install is also once per review. Replaying it
+        // here beats clearing app data on a phone that is full of real days.
+        block.addView(
+            ui.quiet(getString(R.string.dev_replay_welcome)).apply {
+                setOnClickListener {
+                    startActivity(Intent(this@MainActivity, WelcomeActivity::class.java))
+                }
+            }
+        )
 
         statusContainer.addView(block)
     }

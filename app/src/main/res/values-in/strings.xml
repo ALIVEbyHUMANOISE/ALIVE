@@ -71,6 +71,28 @@
     <string name="permissions_granted">Aktif</string>
     <string name="permissions_not_granted">Belum aktif</string>
 
+    <!-- ============ WELCOME PERTAMA ============
+         Muncul sekali, sebelum app yang sebenarnya. Layar satu satu-satunya
+         tempat ALIVE boleh berpuisi; layar dua dan tiga tetap mekanik dan
+         saklar, polos - puisi onboarding yang menyembunyikan aturannya cuma
+         versi lebih cantik dari kebingungan yang mau diperbaiki. -->
+    <string name="welcome_lead">Kamu terus memulai ulang. Itu bukan kelemahan — itu satu-satunya jalan keluar.</string>
+    <string name="welcome_body">Kambuh tidak pernah mengumumkan diri. Satu klip lagi, satu ronde lagi — dan malamnya habis, lagi. Niat yang lebih keras tidak pernah bertahan. Jadi ALIVE berhenti meminta kamu memutuskan: ALIVE menutup pintu yang sudah kamu pilih untuk ditutup, dan mengembalikan waktunya hanya untuk sesuatu yang nyata.</string>
+    <string name="welcome_note">Sebuah pintu, bukan papan skor.</string>
+    <string name="welcome_loop_heading">Cara kerjanya</string>
+    <string name="welcome_loop_1">Setiap hari mulai dengan 120 menit hiburan.</string>
+    <string name="welcome_loop_2">Saat menitnya habis, aplikasi hiburannya ditutup. Chat dan kerja tetap terbuka.</string>
+    <string name="welcome_loop_3">Satu misi offline menebus harinya — menitnya masuk ke Bank Waktu, dan sampai 20 menit bisa kembali untuk hari ini.</string>
+    <string name="welcome_loop_4">Hari saat satu misi selesai adalah hari yang terjaga. Hari terjaga menumpuk.</string>
+    <string name="welcome_loop_note">Layanan aksesibilitas bisa dimatikan. ALIVE akan bilang apa adanya — dan hari itu ditandai tanpa penjaga.</string>
+    <string name="welcome_permissions_heading">Dua saklar sebelum semuanya bekerja</string>
+    <string name="welcome_usage_label">Akses pemakaian</string>
+    <string name="welcome_accessibility_label">Aksesibilitas</string>
+    <string name="welcome_usage_why">Akses pemakaian adalah cara ALIVE menghitung menit di aplikasi hiburan — hanya totalnya, bukan isinya.</string>
+    <string name="welcome_next">Lanjut</string>
+    <string name="welcome_start">Mulai</string>
+    <string name="welcome_skip">Lewati dulu</string>
+
     <!-- ============ BANK WAKTU ============ -->
     <string name="time_bank_heading">Bank Waktu</string>
     <string name="time_bank_empty">Belum ada waktu yang kembali. Sesi yang terverifikasi mengembalikan waktumu.</string>

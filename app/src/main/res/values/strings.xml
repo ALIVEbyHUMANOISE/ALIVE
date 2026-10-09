@@ -74,6 +74,28 @@
     <string name="permissions_granted">On</string>
     <string name="permissions_not_granted">Not on</string>
 
+    <!-- ============ FIRST-RUN WELCOME ============
+         Shown once, before the app proper. Screen one is the only place ALIVE
+         lets itself poetry; screens two and three are mechanics and switches,
+         kept plain - an onboarding poem that leaves the rules unstated is just
+         a nicer-looking version of the confusion it was meant to fix. -->
+    <string name="welcome_lead">You keep starting over. That is not weakness — it is the only way out.</string>
+    <string name="welcome_body">Relapse does not announce itself. One clip, one more round — and the night is gone, again. Deciding harder has never held. So ALIVE stops asking you to decide: it closes the door you already chose to close, and hands the time back only for something real.</string>
+    <string name="welcome_note">A door, not a scoreboard.</string>
+    <string name="welcome_loop_heading">How it works</string>
+    <string name="welcome_loop_1">Every day starts with 120 minutes of entertainment.</string>
+    <string name="welcome_loop_2">When the minutes run out, your entertainment apps close. Chat and work stay open.</string>
+    <string name="welcome_loop_3">One offline quest buys the day back — its minutes go to the Time Bank, and up to 20 can return to today.</string>
+    <string name="welcome_loop_4">The day a quest is finished is a kept day. Kept days add up.</string>
+    <string name="welcome_loop_note">The accessibility service can be switched off. ALIVE will say so — and the day is marked unguarded.</string>
+    <string name="welcome_permissions_heading">Two switches before anything works</string>
+    <string name="welcome_usage_label">Usage access</string>
+    <string name="welcome_accessibility_label">Accessibility</string>
+    <string name="welcome_usage_why">Usage access is how ALIVE counts minutes in entertainment apps — totals, never content.</string>
+    <string name="welcome_next">Next</string>
+    <string name="welcome_start">Start</string>
+    <string name="welcome_skip">Skip for now</string>
+
     <!-- ============ TIME BANK ============ -->
     <string name="time_bank_heading">Time Bank</string>
     <string name="time_bank_empty">Nothing reclaimed yet. A verified session gives you time back.</string>
@@ -418,4 +440,5 @@
     <string name="dev_rollover_no_quest">[dev] rollover: no quest yesterday</string>
     <string name="dev_reward_locked">[dev] reward requires the verification pipeline</string>
     <string name="dev_test_focus_started">[dev] 15-second study focus started</string>
+    <string name="dev_replay_welcome">[dev] replay the first-run welcome</string>
 </resources>
