@@ -1051,9 +1051,9 @@ class MainActivity : AppCompatActivity() {
 
         val head = ui.row()
         head.addView(
-            // The same gold tile as the shortcut at the top of Home, so the two
-            // read as one thing pointing at the other.
-            ui.iconTile(ui.palette.rewardPale, R.drawable.ic_time_indicator, ui.dimens.character).apply {
+            // Blue is the Focus hue - the shortcut that jumps here is gold, but
+            // these minutes are earned by focusing and only spent there.
+            ui.iconTile(ui.palette.workPale, R.drawable.ic_time_indicator, ui.dimens.character).apply {
                 contentDescription = getString(R.string.cd_time_bank)
             }
         )
@@ -1100,8 +1100,9 @@ class MainActivity : AppCompatActivity() {
      * These two buttons used to call `spendMinutes()` from the card itself, which
      * moved minutes out of the bank and extended nothing - the real path is
      * `extendFocusWithTimeBank`, and it only exists on a running session. So the
-     * card now hands the person to that screen instead of offering a tap that can
-     * only cost them something they earned.
+     * card hands the person to that screen when one is running, and to the setup
+     * form when none is - a sentence telling someone to start a session is not a
+     * way for them to start one.
      */
     private fun renderTimeBankUse(block: LinearLayout) {
         block.addView(ui.vgap(ui.dimens.groupGap))
@@ -1123,6 +1124,16 @@ class MainActivity : AppCompatActivity() {
             )
         } else {
             block.addView(ui.note(getString(R.string.time_bank_use_none)))
+            block.addView(ui.vgap(ui.dimens.lineGap))
+            block.addView(
+                ui.secondary(getString(R.string.action_start_focus)).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    setOnClickListener { revealFocusSetup() }
+                }
+            )
         }
     }
 
