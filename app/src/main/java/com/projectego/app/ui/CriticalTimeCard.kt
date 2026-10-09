@@ -47,8 +47,8 @@ object CriticalTimeCard {
         val figure = ui.row().apply { gravity = Gravity.BOTTOM }
         figure.addView(ui.timer(context.getString(R.string.stat_minutes, remainingMinutes)))
         figure.addView(
-            ui.tag(context.getString(R.string.stat_min_left)).apply {
-                setPadding(ui.dimens.m, 0, 0, ui.dimens.l)
+            ui.meta(context.getString(R.string.stat_min_left)).apply {
+                setPadding(ui.dimens.s, 0, 0, ui.dimens.xs)
             }
         )
         block.addView(figure)

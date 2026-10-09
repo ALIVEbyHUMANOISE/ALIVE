@@ -485,7 +485,9 @@ class MainActivity : AppCompatActivity() {
                     }
                 )
                 addView(ui.vgap(ui.dimens.lineGap))
-                addView(ui.note(getString(AliveStates.annotationFor(signals))))
+                // What the character says about right now is content, not brand
+                // copy, so it is ink: the tagline under it is the quieter line.
+                addView(ui.body(getString(AliveStates.annotationFor(signals))))
             }
         )
         header.addView(line)
@@ -729,20 +731,20 @@ class MainActivity : AppCompatActivity() {
             card.addView(ui.note(getString(R.string.time_hero_line)))
             card.addView(ui.vgap(ui.dimens.lineGap))
 
+            // The figure and its total are one sentence: "21 of 140". This row used
+            // to be a number, a badge repeating what the line above it just said,
+            // and a total pushed to the far edge of the row - three pieces of one
+            // fact that had to be reassembled by eye.
             val timeLine = ui.row().apply { gravity = Gravity.BOTTOM }
             timeLine.addView(ui.timer(getString(R.string.stat_minutes, report.remainingMinutes)))
+            timeLine.addView(ui.hgap(ui.dimens.s))
             timeLine.addView(
-                ui.tag(getString(R.string.stat_min_left)).apply {
-                    setPadding(ui.dimens.m, 0, 0, ui.dimens.l)
+                ui.meta(getString(R.string.time_of_allowance, report.limitMinutes)).apply {
+                    setPadding(0, 0, 0, ui.dimens.xs)
                 }
             )
-            timeLine.addView(
-                ui.weighted(
-                    ui.note(getString(R.string.time_of_allowance, report.limitMinutes))
-                ).apply { gravity = Gravity.BOTTOM or Gravity.END }
-            )
             card.addView(timeLine)
-            card.addView(ui.vgap(ui.dimens.lineGap))
+            card.addView(ui.vgap(ui.dimens.pairGap))
             // The same fact the number states, in a second channel: red appears
             // exactly where the critical note would, because it is the same
             // threshold - not a new one invented for the picture.
@@ -772,7 +774,10 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        card.addView(ui.vgap(ui.dimens.lineGap))
+        // The figure and its bar are one group; these two lines are the next one,
+        // so the air above them is group air. Equal gaps everywhere is a screen
+        // where nothing groups.
+        card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(
             ui.note(
                 getString(AliveStates.timeSupportLine(report.timeStatus, report.criticalZoneTier))
@@ -781,7 +786,7 @@ class MainActivity : AppCompatActivity() {
 
         // The rule, said on the day it still applies to - not for the first time
         // on the morning it bites.
-        card.addView(ui.vgap(ui.dimens.pairGap))
+        card.addView(ui.vgap(ui.dimens.lineGap))
         card.addView(
             ui.note(
                 getString(if (state.questDoneToday) R.string.today_kept else R.string.today_not_kept)
