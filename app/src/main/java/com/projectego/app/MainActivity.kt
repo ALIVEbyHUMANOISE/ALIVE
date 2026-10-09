@@ -83,6 +83,7 @@ import com.projectego.app.ui.VerificationReasonClass
 import com.projectego.app.ui.WelcomeActivity
 import java.text.SimpleDateFormat
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.TextStyle
 import java.util.Calendar
 import java.util.Locale
@@ -1966,6 +1967,10 @@ class MainActivity : AppCompatActivity() {
      */
     private fun openUsageChartPanel() {
         state.panel = AlivePanel.USAGE_CHART
+        // The hours are read here and only here. The panel is opened rather than
+        // kept open, so this is one read per visit: the daily total cannot be cut
+        // into hours after the fact, and "when today went" is wrong an hour later.
+        state.hourlyUsedMillis = usageTracker.hourlyUsedMillisToday()
         // The chart is the bar's third key; opening it from anywhere moves the
         // circle there, so the bar never disagrees with what is on screen.
         navBar.select(AliveNavBar.Index.STATS)
@@ -2017,18 +2022,33 @@ class MainActivity : AppCompatActivity() {
         val range = ChartRange.values().getOrNull(state.chartRangeIndex) ?: ChartRange.TODAY
         val today = LocalDate.now()
         val todayKey = today.toString()
-        val bars = chartBars(UsageChartStates.dateKeys(range, today), todayKey)
-        val (_, recordedCount) = UsageChartStates.totals(bars)
+        val currentHour = LocalTime.now().hour
+
+        // Today is its own chart: twenty-four hours instead of one bar. A single
+        // bar for a day still being lived says "somewhere between nothing and
+        // everything", which is the one thing a chart must never say. A day with
+        // no allowance at all has nothing to divide into hours, so it keeps the
+        // day card it has always had.
+        val byHour = range == ChartRange.TODAY && state.dailyLimitMinutes > 0L
 
         body.addView(ui.vgap(ui.dimens.groupGap))
-        body.addView(coverageBanner(bars, recordedCount))
 
-        // One card holds the chart and its key. Side by side looked right in the
-        // reference and wrong on a phone: the legend's longest label, "No
-        // allowance", hyphenated across three lines in a sixty-dp column, and a
-        // chart whose key is broken is not worth reading.
-        body.addView(ui.vgap(ui.dimens.cardGap))
-        body.addView(buildDayCard(range, todayKey, bars))
+        if (byHour) {
+            body.addView(hourCoverageBanner(currentHour))
+            body.addView(ui.vgap(ui.dimens.cardGap))
+            body.addView(buildHourCard(currentHour))
+        } else {
+            val bars = chartBars(UsageChartStates.dateKeys(range, today), todayKey)
+            val (_, recordedCount) = UsageChartStates.totals(bars)
+            body.addView(coverageBanner(bars, recordedCount))
+
+            // One card holds the chart and its key. Side by side looked right in the
+            // reference and wrong on a phone: the legend's longest label, "No
+            // allowance", hyphenated across three lines in a sixty-dp column, and a
+            // chart whose key is broken is not worth reading.
+            body.addView(ui.vgap(ui.dimens.cardGap))
+            body.addView(buildDayCard(range, todayKey, bars))
+        }
 
         // Per-app time is only ever stated for today. It is stored for other
         // days, but a month of package names reads as surveillance, which is
@@ -2039,6 +2059,39 @@ class MainActivity : AppCompatActivity() {
             // left people wondering whether the feature had broken.
             body.addView(buildAppCard() ?: emptyAppCard())
         }
+    }
+
+    /**
+     * The coverage line, for a day measured in hours.
+     *
+     * The chart cannot be read without this: hollow stubs on the right of it are
+     * hours that have not happened, and "not yet" has to be said out loud or it
+     * reads as "nothing was used".
+     */
+    private fun hourCoverageBanner(currentHour: Int): View {
+        val banner = ui.tintedBlock(ui.palette.softForest)
+        val line = ui.row()
+        line.addView(ui.iconTile(ui.palette.white, R.drawable.ic_pixel_chart, ui.dimens.character))
+        line.addView(ui.hgap(ui.dimens.m))
+        line.addView(
+            ui.weighted(
+                ui.column().apply {
+                    addView(ui.sectionHeader(getString(R.string.chart_coverage_eyebrow)))
+                    addView(ui.vgap(ui.dimens.pairGap))
+                    addView(
+                        ui.note(
+                            getString(
+                                R.string.chart_hours_coverage,
+                                currentHour + 1,
+                                UsageChartStates.HOURS_PER_DAY
+                            )
+                        )
+                    )
+                }
+            )
+        )
+        banner.addView(line)
+        return banner
     }
 
     /**
@@ -2070,40 +2123,41 @@ class MainActivity : AppCompatActivity() {
      * What each bar means, counted, and tappable.
      *
      * Choosing a kind dims every bar that is not one, which is the only way to
-     * answer "how many of these days did ALIVE never see" without asking somebody
-     * to count stubs by eye. The count is printed in the row and repeated in the
+     * answer "how many of these did ALIVE never see" without asking somebody to
+     * count stubs by eye. The count is printed in the row and repeated in the
      * line under it, so the answer is a number and a word - not a colour.
+     *
+     * The entries arrive already built. Days and hours wear the same shapes to
+     * say different things - a hollow stub is "not seen" on one chart and "not
+     * yet" on the other - and only the caller knows which chart is on screen.
      */
-    private fun kindLegend(bars: List<DayBar>, chart: BrutalistBarChart): LinearLayout {
-        val options = listOf(
-            KindOption(null, R.string.chart_legend_all, ui.palette.white),
-            KindOption(DayBarKind.SPENT, R.string.chart_kind_spent, ui.palette.softForest),
-            KindOption(DayBarKind.FULL, R.string.chart_kind_full, ui.palette.shortMid),
-            KindOption(DayBarKind.ZERO, R.string.chart_kind_zero, ui.palette.ink),
-            KindOption(DayBarKind.RECOVERY, R.string.chart_kind_recovery, ui.palette.warmGray),
-            KindOption(DayBarKind.MISSING, R.string.chart_kind_missing, ui.palette.paper)
-        )
+    private fun kindLegend(
+        entries: List<LegendEntry>,
+        allCopy: String,
+        @StringRes showingCopy: Int,
+        onPick: (DayBarKind?) -> Unit
+    ): LinearLayout {
         val group = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
-        val note = ui.note(getString(R.string.chart_legend_showing_all))
+        val note = ui.note(allCopy)
 
-        options.forEachIndexed { index, option ->
+        entries.forEachIndexed { index, entry ->
             group.addView(
                 ui.legendOption(
-                    getString(R.string.chart_legend_row, getString(option.label), countOf(bars, option.kind)),
-                    option.hue
+                    getString(R.string.chart_legend_row, getString(entry.label), entry.count),
+                    entry.hue
                 ).apply {
                     id = KIND_FILTER_ID_BASE + index
-                    // "All days" is checked on open: the chart starts showing the
-                    // whole range it was asked about, not a slice of it.
+                    // "All" is checked on open: the chart starts showing the whole
+                    // range it was asked about, not a slice of it.
                     isChecked = index == 0
                 }
             )
         }
         group.setOnCheckedChangeListener { _, checkedId ->
-            val option = options.getOrNull(checkedId - KIND_FILTER_ID_BASE) ?: return@setOnCheckedChangeListener
-            chart.highlightedKind = option.kind
-            note.text = if (option.kind == null) getString(R.string.chart_legend_showing_all)
-            else getString(R.string.chart_legend_showing, getString(option.label), countOf(bars, option.kind))
+            val entry = entries.getOrNull(checkedId - KIND_FILTER_ID_BASE) ?: return@setOnCheckedChangeListener
+            onPick(entry.kind)
+            note.text = if (entry.kind == null) allCopy
+            else getString(showingCopy, getString(entry.label), entry.count)
         }
 
         return ui.column().apply {
@@ -2113,15 +2167,34 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /** Every day in the range when nothing is chosen, and the kind's own count when it is. */
-    private fun countOf(bars: List<DayBar>, kind: DayBarKind?): Int =
-        if (kind == null) bars.size else bars.count { it.kind == kind }
-
-    private data class KindOption(
+    private data class LegendEntry(
         val kind: DayBarKind?,
         @StringRes val label: Int,
-        @ColorInt val hue: Int
+        @ColorInt val hue: Int,
+        val count: Int
     )
+
+    private fun dayLegendEntries(bars: List<DayBar>): List<LegendEntry> = listOf(
+        LegendEntry(null, R.string.chart_legend_all, ui.palette.white, bars.size),
+        LegendEntry(DayBarKind.SPENT, R.string.chart_kind_spent, ui.palette.softForest, countOf(bars, DayBarKind.SPENT) { it.kind }),
+        LegendEntry(DayBarKind.FULL, R.string.chart_kind_full, ui.palette.shortMid, countOf(bars, DayBarKind.FULL) { it.kind }),
+        LegendEntry(DayBarKind.ZERO, R.string.chart_kind_zero, ui.palette.ink, countOf(bars, DayBarKind.ZERO) { it.kind }),
+        LegendEntry(DayBarKind.RECOVERY, R.string.chart_kind_recovery, ui.palette.warmGray, countOf(bars, DayBarKind.RECOVERY) { it.kind }),
+        LegendEntry(DayBarKind.MISSING, R.string.chart_kind_missing, ui.palette.paper, countOf(bars, DayBarKind.MISSING) { it.kind })
+    )
+
+    /** The same shapes, counted in hours: "not seen" here is "not yet". */
+    private fun hourLegendEntries(bars: List<UsageChartStates.HourBar>): List<LegendEntry> = listOf(
+        LegendEntry(null, R.string.chart_legend_all_hours, ui.palette.white, bars.size),
+        LegendEntry(DayBarKind.SPENT, R.string.chart_kind_spent, ui.palette.softForest, countOf(bars, DayBarKind.SPENT) { it.kind }),
+        LegendEntry(DayBarKind.FULL, R.string.chart_kind_full, ui.palette.shortMid, countOf(bars, DayBarKind.FULL) { it.kind }),
+        LegendEntry(DayBarKind.ZERO, R.string.chart_kind_zero, ui.palette.ink, countOf(bars, DayBarKind.ZERO) { it.kind }),
+        LegendEntry(DayBarKind.MISSING, R.string.chart_kind_future, ui.palette.paper, countOf(bars, DayBarKind.MISSING) { it.kind })
+    )
+
+    /** The range when nothing is chosen, or the kind's own count when something is. */
+    private fun <T> countOf(bars: List<T>, kind: DayBarKind?, kindOf: (T) -> DayBarKind): Int =
+        if (kind == null) bars.size else bars.count { kindOf(it) == kind }
 
     /** The app card with nothing in it - which is still a thing worth saying. */
     private fun emptyAppCard(): LinearLayout {
@@ -2175,7 +2248,14 @@ class MainActivity : AppCompatActivity() {
         card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(ui.rule())
         card.addView(ui.vgap(ui.dimens.lineGap))
-        card.addView(kindLegend(bars, chart))
+        card.addView(
+            kindLegend(
+                entries = dayLegendEntries(bars),
+                allCopy = getString(R.string.chart_legend_showing_all),
+                showingCopy = R.string.chart_legend_showing,
+                onPick = { chart.highlightedKind = it }
+            )
+        )
 
         val (totalMinutes, _) = UsageChartStates.totals(bars)
         card.addView(ui.vgap(ui.dimens.groupGap))
@@ -2192,6 +2272,107 @@ class MainActivity : AppCompatActivity() {
             card.addView(ui.note(getString(R.string.chart_month_axis)))
         }
         return card
+    }
+
+    /**
+     * Today as twenty-four hours.
+     *
+     * Every bar is measured against the day's own allowance, so a full bar here
+     * means what a full bar means everywhere else in this app: the day is used
+     * up. Scaling the bars to the busiest hour instead would make a quiet day and
+     * a heavy day look identical, which is the opposite of the point.
+     *
+     * The hours still ahead are drawn hollow and never as zeroes. A zero is a
+     * fact about the past; 21:00 on a Tuesday afternoon is not a fact.
+     */
+    private fun buildHourCard(currentHour: Int): LinearLayout {
+        val card = ui.bentoCard(
+            getString(R.string.chart_hours_heading),
+            weight = SurfaceWeight.MAJOR
+        )
+        val bars = UsageChartStates.hourBars(
+            state.hourlyUsedMillis,
+            state.dailyLimitMinutes,
+            currentHour
+        )
+        val detail = ui.note(getString(R.string.chart_hours_tap_hint))
+
+        val chart = BrutalistBarChart(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            contentDescription = getString(R.string.cd_usage_chart)
+            setData(
+                bars.map { bar ->
+                    BrutalistBarChart.Column(
+                        label = hourAxisLabel(bar.hour, currentHour),
+                        minutes = bar.minutes,
+                        fraction = bar.fraction,
+                        kind = bar.kind
+                    )
+                }
+            )
+            onColumnTapped = { index ->
+                detail.text = if (index < 0) {
+                    getString(R.string.chart_hours_tap_hint)
+                } else {
+                    hourDetail(bars[index])
+                }
+            }
+        }
+        card.addView(chart)
+        card.addView(ui.vgap(ui.dimens.lineGap))
+        card.addView(detail)
+
+        card.addView(ui.vgap(ui.dimens.groupGap))
+        card.addView(ui.rule())
+        card.addView(ui.vgap(ui.dimens.lineGap))
+        card.addView(
+            kindLegend(
+                entries = hourLegendEntries(bars),
+                allCopy = getString(R.string.chart_legend_showing_all_hours),
+                showingCopy = R.string.chart_legend_showing_hours,
+                onPick = { chart.highlightedKind = it }
+            )
+        )
+
+        // A share, not a count of minutes: this is the one chart that answers
+        // "how much of the day did that hour cost me".
+        card.addView(ui.vgap(ui.dimens.groupGap))
+        card.addView(
+            ui.note(
+                getString(
+                    R.string.chart_hours_total,
+                    UsageChartStates.percentOf(bars.sumOf { it.minutes }, state.dailyLimitMinutes)
+                )
+            )
+        )
+
+        card.addView(ui.vgap(ui.dimens.groupGap))
+        card.addView(ui.note(getString(R.string.chart_hours_axis_note)))
+        return card
+    }
+
+    /** Under the hours: "00", "03", ... - and always the one being lived in. */
+    private fun hourAxisLabel(hour: Int, currentHour: Int): String = when {
+        hour == currentHour -> getString(R.string.chart_label_today)
+        hour % 3 == 0 -> UsageChartStates.hourLabel(hour)
+        else -> ""
+    }
+
+    /** Under an hour bar: which hour it was, and its share of the day. */
+    private fun hourDetail(bar: UsageChartStates.HourBar): String {
+        val name = getString(R.string.chart_hour_name, UsageChartStates.hourLabel(bar.hour))
+        return when (bar.kind) {
+            DayBarKind.MISSING -> getString(R.string.chart_hour_future_detail, name)
+            DayBarKind.ZERO -> getString(R.string.chart_hour_zero_detail, name)
+            else -> getString(
+                R.string.chart_hour_detail,
+                name,
+                UsageChartStates.percentOf(bar.minutes, state.dailyLimitMinutes)
+            )
+        }
     }
 
     /**

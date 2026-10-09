@@ -79,6 +79,48 @@ object UsageChartStates {
     )
 
     /**
+     * One hour of today: what that hour took out of the day's allowance.
+     *
+     * [fraction] is deliberately measured against the *daily* allowance and not
+     * against the busiest hour, so a full bar keeps meaning what it means on
+     * every other chart in the app: you used your day up. Scaling to the busiest
+     * hour would make every quiet day look identical to a heavy one.
+     */
+    data class HourBar(
+        val hour: Int,
+        val minutes: Long,
+        val fraction: Float,
+        val kind: DayBarKind
+    )
+
+    fun hourBars(
+        millisPerHour: LongArray,
+        limitMinutes: Long,
+        currentHour: Int
+    ): List<HourBar> = (0 until HOURS_PER_DAY).map { hour ->
+        val minutes = millisPerHour.getOrElse(hour) { 0L } / 60_000L
+        val kind = when {
+            // The hour has not happened yet. Not a zero: a zero is a fact.
+            hour > currentHour -> DayBarKind.MISSING
+            minutes <= 0L -> DayBarKind.ZERO
+            limitMinutes > 0L && minutes >= limitMinutes -> DayBarKind.FULL
+            else -> DayBarKind.SPENT
+        }
+        HourBar(hour, minutes, fractionOf(minutes, limitMinutes), kind)
+    }
+
+    /** Whole percent, for a screen that states shares rather than minutes. */
+    fun percentOf(minutes: Long, limitMinutes: Long): Int = when {
+        limitMinutes <= 0L -> 0
+        else -> Math.round(minutes * 100.0 / limitMinutes).toInt()
+    }
+
+    /** "09" - the axis label an hour carries, and only some of them do. */
+    fun hourLabel(hour: Int): String = "%02d".format(hour)
+
+    const val HOURS_PER_DAY = 24
+
+    /**
      * One entry per requested date, in order. Dates ALIVE never saw come back
      * as [DayBarKind.MISSING] rather than being dropped, so the chart cannot
      * quietly present a short history as a complete one.

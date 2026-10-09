@@ -1,153 +1,63 @@
 package com.projectego.app.ui
 
-import com.projectego.app.R
-import com.projectego.app.model.UsageDay
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.time.LocalDate
 
 /**
- * The chart's arithmetic, with no clock and no Android runtime.
+ * The hour chart's arithmetic.
  *
- * What these hold is the promise that a chart cannot quietly lie: a day ALIVE
- * never saw is not the same as a day with nothing spent, a full bar always means
- * that day's allowance was used up, days that went over are still counted at
- * their real minutes, and a short history is stated as short.
+ * The rule worth testing is the one that keeps the chart honest: an hour that has
+ * not happened yet must never come out looking like an hour that was watched and
+ * found empty, because those two are different facts and only one of them is
+ * about the person reading it.
  */
 class UsageChartStatesTest {
 
-    private val delta = 0.0001f
+    private val limit = 120L
 
-    private fun day(
-        date: String,
-        minutes: Long,
-        limit: Long = 120L,
-        apps: Map<String, Long> = emptyMap()
-    ) = UsageDay(date, minutes, limit, apps)
-
-    private fun bars(vararg entries: Pair<String, UsageDay?>): List<DayBar> =
-        entries.map { (date, recorded) -> UsageChartStates.barFor(date, recorded) }
+    /** 24 hours of millis, built from minutes-per-hour. */
+    private fun millis(vararg perHour: Long): LongArray =
+        LongArray(UsageChartStates.HOURS_PER_DAY) { (perHour.getOrElse(it) { 0L }) * 60_000L }
 
     @Test
-    fun `a day never recorded is not a zero`() {
-        val missing = UsageChartStates.barFor("2026-10-01", null)
-        val zero = UsageChartStates.barFor("2026-10-01", day("2026-10-01", 0L))
-
-        assertEquals(DayBarKind.MISSING, missing.kind)
-        assertEquals(DayBarKind.ZERO, zero.kind)
-        assertEquals(0f, missing.fraction, delta)
-        assertEquals(0f, zero.fraction, delta)
+    fun `an hour ahead of now is not yet, never a zero`() {
+        val bars = UsageChartStates.hourBars(millis(), limit, currentHour = 9)
+        assertEquals(DayBarKind.MISSING, bars[10].kind)
+        assertEquals(DayBarKind.ZERO, bars[9].kind)
+        assertEquals(DayBarKind.ZERO, bars[0].kind)
     }
 
     @Test
-    fun `a stored zero limit is a recovery day rather than an empty one`() {
-        val recovery = UsageChartStates.barFor("2026-10-02", day("2026-10-02", 0L, limit = 0L))
-        assertEquals(DayBarKind.RECOVERY, recovery.kind)
-        assertEquals(0f, recovery.fraction, delta)
+    fun `a bar is a share of the day's allowance, not of the busiest hour`() {
+        val bars = UsageChartStates.hourBars(millis(0, 30), limit, currentHour = 5)
+        assertEquals(0.25f, bars[1].fraction, 0.0001f)
     }
 
     @Test
-    fun `a day at exactly its allowance is exactly full`() {
-        val full = UsageChartStates.barFor("2026-10-03", day("2026-10-03", 120L, limit = 120L))
-        assertEquals(DayBarKind.FULL, full.kind)
-        assertEquals(1f, full.fraction, delta)
+    fun `an hour that spent the whole allowance is full`() {
+        val bars = UsageChartStates.hourBars(millis(120), limit, currentHour = 5)
+        assertEquals(DayBarKind.FULL, bars[0].kind)
+        assertEquals(1f, bars[0].fraction, 0.0001f)
     }
 
     @Test
-    fun `a day over its allowance clamps its bar but keeps its minutes`() {
-        val over = UsageChartStates.barFor("2026-10-04", day("2026-10-04", 300L, limit = 120L))
-        assertEquals(1f, over.fraction, delta)
-        assertEquals(300L, over.minutes)
-        // An over-allowance day can only be FULL: clamping is disclosure, not
-        // a silent truncation of the number beside it.
-        assertEquals(DayBarKind.FULL, over.kind)
+    fun `an hour in the past with nothing in it stays a spent zero, not a missing one`() {
+        val bars = UsageChartStates.hourBars(millis(0, 0, 0, 5), limit, currentHour = 3)
+        assertEquals(DayBarKind.ZERO, bars[2].kind)
+        assertEquals(DayBarKind.SPENT, bars[3].kind)
     }
 
     @Test
-    fun `a spent day is never drawn as untouched`() {
-        // One minute of a two hour allowance is a hairline, but it is not zero,
-        // and a chart that rounded it away would say the day was clean.
-        assertTrue(UsageChartStates.fractionOf(1L, 120L) > 0f)
-        assertEquals(0f, UsageChartStates.fractionOf(0L, 120L), delta)
+    fun `shares are whole percents of the allowance`() {
+        assertEquals(25, UsageChartStates.percentOf(30, 120))
+        assertEquals(0, UsageChartStates.percentOf(0, 120))
+        assertEquals(125, UsageChartStates.percentOf(150, 120))
+        assertEquals(0, UsageChartStates.percentOf(30, 0))
     }
 
     @Test
-    fun `the bar is scaled to that day's own allowance, not to the largest day`() {
-        // Two days, same 60 minutes, different allowances: the 60-of-60 day is
-        // full and the 60-of-120 day is half. One shared axis could not say both.
-        assertEquals(0.5f, UsageChartStates.fractionOf(60L, 120L), delta)
-        assertEquals(1f, UsageChartStates.fractionOf(60L, 60L), delta)
-    }
-
-    @Test
-    fun `a recovery day has no share to draw`() {
-        assertEquals(0f, UsageChartStates.fractionOf(0L, 0L), delta)
-        assertEquals(0f, UsageChartStates.fractionOf(40L, 0L), delta)
-    }
-
-    @Test
-    fun `totals never count a day that was never recorded`() {
-        val recorded = bars(
-            "2026-10-01" to day("2026-10-01", 40L),
-            "2026-10-02" to null,
-            "2026-10-03" to day("2026-10-03", 130L, limit = 120L),
-            "2026-10-04" to day("2026-10-04", 0L)
-        )
-        val (minutes, count) = UsageChartStates.totals(recorded)
-
-        assertEquals(170L, minutes)
-        assertEquals(3, count)
-        assertEquals(4, recorded.size)
-    }
-
-    @Test
-    fun `a month to date list starts on the first and ends today`() {
-        val today = LocalDate.of(2026, 10, 21)
-        val keys = UsageChartStates.dateKeys(ChartRange.THIS_MONTH, today)
-
-        assertEquals(21, keys.size)
-        assertEquals("2026-10-01", keys.first())
-        assertEquals("2026-10-21", keys.last())
-    }
-
-    @Test
-    fun `the week range is the last seven days, oldest first`() {
-        val today = LocalDate.of(2026, 10, 5)
-        val keys = UsageChartStates.dateKeys(ChartRange.LAST_7_DAYS, today)
-
-        assertEquals(7, keys.size)
-        assertEquals("2026-09-29", keys.first())
-        assertEquals("2026-10-05", keys.last())
-    }
-
-    @Test
-    fun `today is one day and is never implied to be a history`() {
-        val today = LocalDate.of(2026, 10, 5)
-        val keys = UsageChartStates.dateKeys(ChartRange.TODAY, today)
-
-        assertEquals(listOf("2026-10-05"), keys)
-    }
-
-    @Test
-    fun `an empty store degrades by disclosure`() {
-        assertEquals(R.string.chart_just_started, UsageChartStates.coverageCopy(recorded = 1, expected = 7))
-        assertEquals(R.string.chart_partial, UsageChartStates.coverageCopy(recorded = 5, expected = 7))
-        assertEquals(R.string.chart_complete, UsageChartStates.coverageCopy(recorded = 7, expected = 7))
-        assertEquals(R.string.chart_none, UsageChartStates.coverageCopy(recorded = 0, expected = 7))
-    }
-
-    @Test
-    fun `missing days keep their column instead of being dropped`() {
-        val keys = listOf("2026-10-01", "2026-10-02", "2026-10-03")
-        val recorded = mapOf("2026-10-02" to day("2026-10-02", 15L))
-        val result = UsageChartStates.bars(keys, recorded)
-
-        assertEquals(3, result.size)
-        assertEquals(DayBarKind.MISSING, result[0].kind)
-        assertEquals(DayBarKind.SPENT, result[1].kind)
-        assertTrue(result.all { it.date in keys })
-        assertFalse(result.any { it.fraction > 1f })
+    fun `the hour label is the clock, zero padded`() {
+        assertEquals("09", UsageChartStates.hourLabel(9))
+        assertEquals("23", UsageChartStates.hourLabel(23))
     }
 }

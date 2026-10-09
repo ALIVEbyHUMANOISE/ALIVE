@@ -70,6 +70,15 @@ class AliveRenderState {
     var chartRangeIndex: Int = 0
 
     /**
+     * Today's counted usage, hour by hour - a fresh read taken when the chart is
+     * opened, not a copy of the daily total. The daily number cannot be cut into
+     * hours after the fact, and a chart of "when today went" is stale the moment
+     * it is an hour old, so this one field is the single place the panel reads
+     * the engine instead of the report.
+     */
+    var hourlyUsedMillis: LongArray = LongArray(24)
+
+    /**
      * Today's guard state, read from `LockStateManager` during the render that
      * already happens. [guardGapOpen] is true while the accessibility service is
      * off and the repair has not landed yet; [guardGapRepairedToday] is the same

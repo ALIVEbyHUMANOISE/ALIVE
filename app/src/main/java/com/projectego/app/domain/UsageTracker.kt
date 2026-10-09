@@ -1,5 +1,6 @@
 ﻿package com.projectego.app.domain
 
+import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
@@ -157,5 +158,62 @@ class UsageTracker(private val context: Context) {
             timeBank = timeBank,
             entertainmentAppDetails = details.sortedByDescending { it.second }
         )
+    }
+
+    /**
+     * Today, hour by hour, for the apps that count toward the day.
+     *
+     * Read from the event stream rather than as twenty-four one-hour queries: a
+     * daily query clipped to a single hour comes back on several devices holding
+     * the whole day, which would paint twenty-four identical bars and call it
+     * data. The event log has no such opinion - it is a list of what came to the
+     * front and when, and the hours fall out of it.
+     */
+    fun hourlyUsedMillisToday(): LongArray {
+        val usageStatsManager =
+            context.getSystemService(AppCompatActivity.USAGE_STATS_SERVICE) as? UsageStatsManager
+                ?: return LongArray(HourlyUsage.HOURS)
+
+        val dayStart = getTodayStartTimestamp()
+        val now = System.currentTimeMillis()
+        val stream = usageStatsManager.queryEvents(dayStart, now) ?: return LongArray(HourlyUsage.HOURS)
+
+        val events = mutableListOf<HourlyUsage.Event>()
+        val counted = HashMap<String, Boolean>()
+        val event = UsageEvents.Event()
+
+        while (stream.hasNextEvent()) {
+            stream.getNextEvent(event)
+            val kind = when (event.eventType) {
+                UsageEvents.Event.MOVE_TO_FOREGROUND, EVENT_RESUMED -> HourlyUsage.Kind.RESUMED
+                UsageEvents.Event.MOVE_TO_BACKGROUND, EVENT_PAUSED -> HourlyUsage.Kind.PAUSED
+                UsageEvents.Event.SCREEN_NON_INTERACTIVE,
+                UsageEvents.Event.KEYGUARD_SHOWN -> HourlyUsage.Kind.SCREEN_OFF
+                else -> continue
+            }
+
+            // The screen going dark ends every session, whoever the event names.
+            // Everything else is kept only if the app is one the day counts:
+            // TRACKED (messaging) counts toward the day without being closed by
+            // the lock, exactly as in the report above.
+            if (kind != HourlyUsage.Kind.SCREEN_OFF) {
+                val packageName = event.packageName ?: continue
+                val isCounted = counted.getOrPut(packageName) {
+                    val category = AppClassifier.categorize(context, packageName)
+                    category == AppCategory.ENTERTAINMENT || category == AppCategory.TRACKED
+                }
+                if (!isCounted) continue
+            }
+
+            events.add(HourlyUsage.Event(event.timeStamp, kind, event.packageName ?: ""))
+        }
+
+        return HourlyUsage.bucket(dayStart, events, now)
+    }
+
+    private companion object {
+        /** ACTIVITY_RESUMED and ACTIVITY_PAUSED: the same two events, renamed in API 29. */
+        const val EVENT_RESUMED = 23
+        const val EVENT_PAUSED = 24
     }
 }
