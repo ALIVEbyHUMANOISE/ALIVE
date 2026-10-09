@@ -206,6 +206,10 @@ class BrutalistDonut(context: Context) : View(context) {
         val caption = slice?.label ?: totalCaption
         val maxWidth = inner * 1.5f
 
+        // Sized to the hole rather than fixed at one size. "3j32" is four glyphs
+        // and a long day reaches five, and a figure that crosses the inner edge
+        // stops being a figure and becomes a defect.
+        numberPaint.textSize = fittedNumberSize(number, maxWidth)
         val numberMetrics = numberPaint.fontMetrics
         val captionMetrics = captionPaint.fontMetrics
         val numberHeight = numberMetrics.descent - numberMetrics.ascent
@@ -278,6 +282,18 @@ class BrutalistDonut(context: Context) : View(context) {
         return true
     }
 
+    /**
+     * The biggest the centre figure may be drawn without crossing the hole.
+     * Measured at its full size first, then scaled down - a share keeps the
+     * shape of the number instead of re-deciding it per string.
+     */
+    private fun fittedNumberSize(text: String, maxWidth: Float): Float {
+        val full = sp(NUMBER_TEXT_SP)
+        numberPaint.textSize = full
+        val width = numberPaint.measureText(text)
+        return if (width <= maxWidth || width <= 0f) full else full * (maxWidth / width)
+    }
+
     private fun dp(value: Float): Float =
         TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, resources.displayMetrics)
 
@@ -286,7 +302,11 @@ class BrutalistDonut(context: Context) : View(context) {
 
     private companion object {
         /** The hole as a share of the outer radius. */
-        const val HOLE_RATIO = 0.56f
+        const val HOLE_RATIO = 0.68f
+
+        /** The centre figure at full size; it shrinks only when it has to. */
+        const val NUMBER_TEXT_SP = 40f
+
         const val FULL_ALPHA = 255
         const val DIMMED_ALPHA = 96
     }
