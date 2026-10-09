@@ -68,16 +68,16 @@ class BrutalistBarChart(context: Context) : View(context) {
         color = palette.ink
     }
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        typeface = resources.getFont(R.font.press_start_2p)
-        // Eight is the floor. Below it this face stops being text and becomes a
-        // texture, which is exactly what seven sp made the month's labels.
-        textSize = sp(8f)
+        typeface = resources.getFont(R.font.ibm_plex_mono_regular)
+        // Ten is the floor for a monospace face at this size: below it the
+        // day labels stop being words and become a texture.
+        textSize = sp(10f)
         textAlign = Paint.Align.CENTER
         color = palette.inkSecondary
     }
     private val valuePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        typeface = resources.getFont(R.font.press_start_2p)
-        textSize = sp(8f)
+        typeface = resources.getFont(R.font.silkscreen_bold)
+        textSize = sp(10f)
         textAlign = Paint.Align.CENTER
         color = palette.paper
     }

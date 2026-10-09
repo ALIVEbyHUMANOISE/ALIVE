@@ -1,39 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- ALIVE typography: two pixel voices, zero system faces.
+    <!-- ALIVE typography: two working faces and one accent.
 
-           press_start_2p  -> the arcade voice. Words only: the wordmark, card
-                              titles, buttons, tags, big numbers. It has no
-                              lowercase and every glyph is a square, so a
-                              sentence set in it becomes a wall of capitals -
-                              which is exactly what happened when it carried
-                              32-to-96-character sentences and the bottom
-                              navigation, and the hardest text on the screen got
-                              harder. It keeps the short jobs, forever.
+           silkscreen (regular + bold) -> the voice of titles and figures: the
+              wordmark, card titles, headlines, the character's one-line note,
+              and every prominent number. It is a pixel face with real
+              lowercase, so it carries the game identity without turning a
+              sentence into a wall of capitals.
 
-           vt323 (terminal) -> the reading voice. Sentences, paragraphs, notes,
-                              nav labels. Narrow and lowercase-capable, so long
-                              text stays legible while still reading as pixels.
+           ibm_plex_mono (regular + bold) -> the voice of the interface: body
+              text, descriptions, buttons, navigation, settings, form fields,
+              and the small grey lines. Monospaced and open, it is the most
+              legible thing on the screen at phone size, which is what text
+              you have to read - not just look at - is for.
+
+           press_start_2p -> badges only. Ten glyphs, one line, never a
+              sentence: it is the loudest face here, and it stays in the
+              corner of the design where loud is the point.
 
          Every style kills the platform font padding and sets its own line
-         spacing, because a bitmap face ships with metrics built for nobody:
-         includeFontPadding=false is what stops mixed rows from sitting on
-         different baselines, and lineSpacingExtra is the only leading these
-         faces get. letterSpacing stays 0 everywhere - pixel grids are drawn,
-         not tracked.
+         spacing, because these faces ship metrics built for nobody:
+         includeFontPadding=false is what keeps a mixed row (a 28sp figure
+         beside a 14sp unit) on one baseline, and lineSpacingExtra is the only
+         leading they get. letterSpacing stays 0 everywhere - pixel and mono
+         faces are drawn, not tracked.
 
-         The reading ladder steps 34 / 28 / 22 / 18 / 14 / 10, numbers run
-         56 / 28, and every step sits at least 2sp from its neighbour. The
-         reading voice sits ABOVE the old sans-serif ladder on purpose: vt323
-         is narrow, so a size set in it reads one step smaller than the same
-         number in sans-serif. Sentence case stays for the reading voice -
-         arcade caps are already a stamp on every short label. -->
+         The ladder steps 34 / 26 / 22 / 18 / 14 / 10, figures run 56 / 28,
+         and nothing sits two steps apart by less than 2sp. -->
 
-    <!-- ============ THE ARCANE VOICE (short) ============ -->
+    <!-- ============ TITLES AND FIGURES: SILKSCREEN ============ -->
 
     <style name="TextAppearance.ALIVE.Display" parent="TextAppearance.MaterialComponents.Headline3">
-        <item name="android:fontFamily">@font/press_start_2p</item>
+        <item name="android:fontFamily">@font/silkscreen_bold</item>
         <item name="android:textColor">@color/alive_ink</item>
         <item name="android:textSize">34sp</item>
         <item name="android:letterSpacing">0</item>
@@ -41,23 +40,11 @@
         <item name="android:includeFontPadding">false</item>
     </style>
 
-    <!-- Card titles and section names: short enough for the arcade voice. -->
-    <style name="TextAppearance.ALIVE.SectionHeader" parent="TextAppearance.MaterialComponents.Subtitle1">
-        <item name="android:fontFamily">@font/press_start_2p</item>
-        <item name="android:textColor">@color/alive_ink</item>
-        <item name="android:textSize">14sp</item>
-        <item name="android:letterSpacing">0</item>
-        <item name="android:lineSpacingExtra">2sp</item>
-        <item name="android:includeFontPadding">false</item>
-    </style>
-
-    <!-- ============ THE READING VOICE (sentences) ============ -->
-
     <!-- The one sentence a card leads with. -->
     <style name="TextAppearance.ALIVE.Headline" parent="TextAppearance.MaterialComponents.Headline5">
-        <item name="android:fontFamily">@font/vt323</item>
+        <item name="android:fontFamily">@font/silkscreen_bold</item>
         <item name="android:textColor">@color/alive_ink</item>
-        <item name="android:textSize">28sp</item>
+        <item name="android:textSize">26sp</item>
         <item name="android:letterSpacing">0</item>
         <item name="android:lineSpacingExtra">2sp</item>
         <item name="android:includeFontPadding">false</item>
@@ -66,7 +53,7 @@
     <!-- Row titles and in-flight statements: what Statement and QuestRowTitle used
          to be, at one size instead of two that were indistinguishable. -->
     <style name="TextAppearance.ALIVE.Lead" parent="TextAppearance.MaterialComponents.Headline6">
-        <item name="android:fontFamily">@font/vt323</item>
+        <item name="android:fontFamily">@font/silkscreen_regular</item>
         <item name="android:textColor">@color/alive_ink</item>
         <item name="android:textSize">22sp</item>
         <item name="android:letterSpacing">0</item>
@@ -74,8 +61,47 @@
         <item name="android:includeFontPadding">false</item>
     </style>
 
+    <!-- Card titles and section names: short enough for the title face, and
+         sentence case is a stamp's job, not this one's. -->
+    <style name="TextAppearance.ALIVE.SectionHeader" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:fontFamily">@font/silkscreen_bold</item>
+        <item name="android:textColor">@color/alive_ink</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:lineSpacingExtra">2sp</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <!-- A note, not a paragraph: the character's own line, in the title face
+         one step down from the Lead. -->
+    <style name="TextAppearance.ALIVE.Annotation" parent="TextAppearance.MaterialComponents.Body2">
+        <item name="android:fontFamily">@font/silkscreen_regular</item>
+        <item name="android:textColor">@color/alive_ink_secondary</item>
+        <item name="android:textSize">22sp</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:lineSpacingExtra">2sp</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <!-- ============ FIGURES: THE SAME FACE, BIG ============ -->
+
+    <style name="TextAppearance.ALIVE.Timer" parent="TextAppearance.MaterialComponents.Headline2">
+        <item name="android:fontFamily">@font/silkscreen_bold</item>
+        <item name="android:textColor">@color/alive_ink</item>
+        <item name="android:textSize">56sp</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <!-- A ledger number: the same face as the hero, one step down. -->
+    <style name="TextAppearance.ALIVE.Number" parent="TextAppearance.ALIVE.Timer">
+        <item name="android:textSize">28sp</item>
+    </style>
+
+    <!-- ============ THE INTERFACE: IBM PLEX MONO ============ -->
+
     <style name="TextAppearance.ALIVE.Body" parent="TextAppearance.MaterialComponents.Body1">
-        <item name="android:fontFamily">@font/vt323</item>
+        <item name="android:fontFamily">@font/ibm_plex_mono_regular</item>
         <item name="android:textColor">@color/alive_ink</item>
         <item name="android:textSize">18sp</item>
         <item name="android:letterSpacing">0</item>
@@ -91,11 +117,10 @@
         <item name="android:textColor">@color/alive_ink_secondary</item>
     </style>
 
-    <!-- The small grey line beside a tile: "24 quests", "2 routes". It is not a
-         note (18sp prose) and not a tag (10sp arcade caps), and a two-column grid
-         has no room for either of those next to an icon. -->
+    <!-- The small grey line beside a tile: "24 quests", "2 routes", and the
+         unit that rides the baseline of a figure. -->
     <style name="TextAppearance.ALIVE.Meta" parent="TextAppearance.MaterialComponents.Body2">
-        <item name="android:fontFamily">@font/vt323</item>
+        <item name="android:fontFamily">@font/ibm_plex_mono_regular</item>
         <item name="android:textColor">@color/alive_ink_secondary</item>
         <item name="android:textSize">14sp</item>
         <item name="android:letterSpacing">0</item>
@@ -103,19 +128,7 @@
         <item name="android:includeFontPadding">false</item>
     </style>
 
-    <!-- A note, not a paragraph. Sized at the Lead step so the reading ladder
-         stays six sizes; it looks smaller than 22sp because vt323 is narrow,
-         which is why a terminal line reads as an aside and not a shout. -->
-    <style name="TextAppearance.ALIVE.Annotation" parent="TextAppearance.MaterialComponents.Body2">
-        <item name="android:fontFamily">@font/vt323</item>
-        <item name="android:textColor">@color/alive_ink_secondary</item>
-        <item name="android:textSize">22sp</item>
-        <item name="android:letterSpacing">0</item>
-        <item name="android:lineSpacingExtra">2sp</item>
-        <item name="android:includeFontPadding">false</item>
-    </style>
-
-    <!-- ============ TAGS: the arcade voice at its smallest ============ -->
+    <!-- ============ BADGES: THE ACCENT, AND ITS LIMIT ============ -->
 
     <style name="TextAppearance.ALIVE.Label" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:fontFamily">@font/press_start_2p</item>
@@ -127,24 +140,9 @@
         <item name="android:maxLines">1</item>
     </style>
 
-    <!-- ============ NUMBERS: the arcade voice, big and small ============ -->
-
-    <style name="TextAppearance.ALIVE.Timer" parent="TextAppearance.MaterialComponents.Headline2">
-        <item name="android:fontFamily">@font/press_start_2p</item>
-        <item name="android:textColor">@color/alive_ink</item>
-        <item name="android:textSize">56sp</item>
-        <item name="android:letterSpacing">0</item>
-        <item name="android:includeFontPadding">false</item>
-    </style>
-
-    <!-- A ledger number: the same face as the hero, one step down. -->
-    <style name="TextAppearance.ALIVE.Number" parent="TextAppearance.ALIVE.Timer">
-        <item name="android:textSize">28sp</item>
-    </style>
-
     <!-- ============ FORM ============ -->
 
-    <!-- The Body size, in the reading voice. -->
+    <!-- The Body size, in the interface voice. -->
     <style name="TextAppearance.ALIVE.Option" parent="TextAppearance.ALIVE.Body">
         <item name="android:textColor">@color/alive_ink</item>
     </style>
@@ -156,13 +154,13 @@
 
     <!-- ============ ACTIONS ============ -->
 
-    <!-- 15sp: the arcade face at 13 read as fine print next to the 18sp body.
-         The longest action labels wrap to a second centred line on narrow
-         screens, which the button shape wears fine; too-small text on the
-         thing you are being asked to press was the worse trade. -->
+    <!-- 16sp bold: the widest the mono face needs to be to read as an offer
+         rather than a caption. The longest action labels still fit one line
+         of a full-width button, because a monospace glyph is half as wide as
+         the arcade face this replaced. -->
     <style name="TextAppearance.ALIVE.Button" parent="TextAppearance.MaterialComponents.Button">
-        <item name="android:fontFamily">@font/press_start_2p</item>
-        <item name="android:textSize">15sp</item>
+        <item name="android:fontFamily">@font/ibm_plex_mono_bold</item>
+        <item name="android:textSize">16sp</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:letterSpacing">0</item>
         <item name="android:lineSpacingExtra">2sp</item>
@@ -175,8 +173,8 @@
     <style name="Widget.ALIVE.Button.Primary" parent="Widget.MaterialComponents.Button">
         <item name="backgroundTint">@color/alive_amber_action</item>
         <item name="android:textColor">@color/alive_ink</item>
-        <item name="android:textSize">15sp</item>
-        <item name="android:fontFamily">@font/press_start_2p</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:fontFamily">@font/ibm_plex_mono_bold</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:letterSpacing">0</item>
         <item name="cornerRadius">@dimen/radius_tile</item>
@@ -191,12 +189,11 @@
 
     <!-- ============ NAVIGATION ============ -->
 
-    <!-- The bottom bar's key labels. Permanent navigation in the arcade face
-         was the least legible text on the screen and it could not be skipped
-         by scrolling past it; the terminal voice keeps it pixel while keeping
-         it readable. -->
+    <!-- The bottom bar's key labels, in the interface voice: permanent
+         navigation is read at arm's length and it cannot be skipped by
+         scrolling past, so it gets the most legible face in the file. -->
     <style name="TextAppearance.ALIVE.NavLabel" parent="TextAppearance.MaterialComponents.Caption">
-        <item name="android:fontFamily">@font/vt323</item>
+        <item name="android:fontFamily">@font/ibm_plex_mono_bold</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textAllCaps">false</item>
         <item name="android:letterSpacing">0</item>

@@ -832,8 +832,8 @@ class AliveComponents(private val context: Context) {
         // Pinned in code, not inherited from the appearance: AppCompatButton
         // resolves its font through the theme as well, and a theme-level family
         // can silently outrank the text appearance - which is how the buttons
-        // dropped out of the arcade voice while every plain TextView kept it.
-        typeface = ResourcesCompat.getFont(context, R.font.press_start_2p)
+        // dropped out of their face while every plain TextView kept it.
+        typeface = ResourcesCompat.getFont(context, R.font.ibm_plex_mono_bold)
         setTextColor(ContextCompat.getColorStateList(context, textColor))
         setBackgroundResource(background)
         stateListAnimator = null

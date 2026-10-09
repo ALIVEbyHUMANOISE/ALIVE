@@ -13,14 +13,14 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The typography is pixel, full stop.
+ * The typography is ALIVE's own faces, full stop.
  *
  * One regression is all it takes for a style to fall back to the platform
- * face, and a single sans-serif line next to forty pixel ones is exactly the
- * "some of it is still normal" this design keeps catching. This test locks
- * every ALIVE text style to the two pixel fonts - the same way
- * [AlivePaletteTest] locks the colours - and to a killed font padding, which
- * is what keeps mixed rows from sitting on different baselines.
+ * face, and a single Roboto line next to forty Silkscreen and Plex Mono ones
+ * is exactly the "some of it is still normal" this design keeps catching.
+ * This test locks every ALIVE text style to the faces the design owns - the
+ * same way [AlivePaletteTest] locks the colours - and to a killed font
+ * padding, which is what keeps mixed rows from sitting on different baselines.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
@@ -33,7 +33,13 @@ class AliveTypographyTest {
         context = ApplicationProvider.getApplicationContext()
     }
 
-    private val pixelFonts = setOf(R.font.press_start_2p, R.font.vt323)
+    private val faces = setOf(
+        R.font.silkscreen_regular,
+        R.font.silkscreen_bold,
+        R.font.ibm_plex_mono_regular,
+        R.font.ibm_plex_mono_bold,
+        R.font.press_start_2p
+    )
 
     private val textStyles = listOf(
         R.style.TextAppearance_ALIVE_Display to "Display",
@@ -58,13 +64,13 @@ class AliveTypographyTest {
     )
 
     @Test
-    fun `every text style is one of the two pixel fonts`() {
+    fun `every text style is one of the faces the design owns`() {
         (textStyles + widgetStyles).forEach { (style, name) ->
             val font = resolveFontFamily(style)
             assertTrue(
-                "$name resolves to a non-pixel font ($font); every face must be " +
-                    "press_start_2p or vt323",
-                font in pixelFonts
+                "$name resolves to a face outside the design ($font); it must be " +
+                    "Silkscreen, IBM Plex Mono, or Press Start 2P for badges",
+                font in faces
             )
         }
     }
