@@ -1084,9 +1084,19 @@ class MainActivity : AppCompatActivity() {
 
         card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(
+            // In is blue - the Focus hue these minutes are earned in - and out is
+            // the critter's rose. The pair is the flow, not a status.
             statRow(
-                ui.statTile(getString(R.string.stat_bank_earned), getString(R.string.stat_minutes, state.earnedMinutes)),
-                ui.statTile(getString(R.string.stat_bank_spent), getString(R.string.stat_minutes, state.spentMinutes))
+                ui.statTile(
+                    getString(R.string.stat_bank_earned),
+                    getString(R.string.stat_minutes, state.earnedMinutes),
+                    ui.palette.workPale
+                ),
+                ui.statTile(
+                    getString(R.string.stat_bank_spent),
+                    getString(R.string.stat_minutes, state.spentMinutes),
+                    ui.palette.pinkSoft
+                )
             )
         )
 
@@ -1141,8 +1151,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         when (decision) {
+            // The claim is the one thing on this card you are invited to press,
+            // so it wears the offer colour rather than the paper one.
             is EntertainmentClaimPolicy.Decision.Claim -> block.addView(
-                ui.secondary(getString(R.string.time_bank_claim_action, decision.minutes)).apply {
+                ui.primary(getString(R.string.time_bank_claim_action, decision.minutes)).apply {
                     layoutParams = LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT
@@ -2253,12 +2265,12 @@ class MainActivity : AppCompatActivity() {
                 ui.statTile(
                     getString(R.string.stat_bank_earned),
                     getString(R.string.stat_minutes, state.earnedMinutes),
-                    ui.palette.rewardPale
+                    ui.palette.workPale
                 ),
                 ui.statTile(
                     getString(R.string.stat_bank_spent),
                     getString(R.string.stat_minutes, state.spentMinutes),
-                    ui.palette.warmGray
+                    ui.palette.pinkSoft
                 )
             )
         )

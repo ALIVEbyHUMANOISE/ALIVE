@@ -14,7 +14,8 @@ import com.projectego.app.R
  *    Structure and identity.
  *  - Three role hues - gold is reward, red is time running out, blue is the work
  *    itself - plus `amber`, which is the colour of an offer: the one thing on a
- *    screen you are being invited to press.
+ *    screen you are being invited to press, and `pinkSoft`, the critter's own
+ *    rose, measured to hold ink the way the pales do.
  *  - Nine category hues in `QuestHues`. Those are not status and not text: a
  *    category hue lives on a card's tab and the tile its mark sits in, nowhere
  *    else, which is what lets nine of them exist without a legend.
@@ -67,6 +68,13 @@ class AlivePalette(context: Context) {
 
     /** "Do this." Brighter and flatter than reward gold, and never on the same object. */
     val amber = color(R.color.alive_amber_action)
+
+    /**
+     * The critter's own rose - one flat pink, no outline. Like the role pales it
+     * is a surface ink can read on (`AlivePaletteTest` measures the pair), which
+     * is what lets a tile wear it.
+     */
+    val pinkSoft = color(R.color.alive_pink_soft)
 
     private fun color(id: Int): Int = ContextCompat.getColor(appContext, id)
 }
