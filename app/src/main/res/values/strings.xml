@@ -194,7 +194,7 @@
     <string name="focus_of_total">of %1$d minutes</string>
     <string name="focus_goal_quoted">Goal: %1$s</string>
     <string name="focus_allowed_heading">What stays open</string>
-    <string name="focus_allowed_body">%1$d approved apps stay usable. Everything else — entertainment, browsers, anything outside that list — is blocked while this runs.</string>
+    <string name="focus_allowed_body">%1$d approved apps stay usable, and so do messaging apps. Everything else — entertainment, browsers, anything outside that list — is blocked while this runs.</string>
     <string name="focus_monitors">ALIVE only watches which app is on screen. It never opens your apps or reads what is inside them.</string>
     <string name="focus_next">When the time is up, the session simply ends.</string>
     <string name="focus_extend">Extend 15 minutes</string>
@@ -238,7 +238,7 @@
     <string name="lock_days_row">You\'re on a %1$d-day run.</string>
     <string name="lock_essential">Calls, messages, your home screen and Settings still work.</string>
     <string name="lock_do_instead">There are other things you can do.</string>
-    <string name="lock_focus_body">%1$s is still going. Entertainment and anything outside your approved apps stay closed until it ends.</string>
+    <string name="lock_focus_body">%1$s is still going. Entertainment and anything outside your approved apps stay closed until it ends. Messaging apps stay open.</string>
     <string name="lock_focus_blocked">Blocked while this runs: %1$s</string>
     <string name="lock_action_focus">Make time for something</string>
     <string name="lock_action_home">Go to your home screen</string>

@@ -181,7 +181,7 @@
     <string name="focus_of_total">dari %1$d menit</string>
     <string name="focus_goal_quoted">Tujuan: %1$s</string>
     <string name="focus_allowed_heading">Yang tetap terbuka</string>
-    <string name="focus_allowed_body">%1$d aplikasi yang diizinkan tetap bisa dipakai. Selain itu — hiburan, browser, apa pun di luar daftar itu — tertutup selama sesi jalan.</string>
+    <string name="focus_allowed_body">%1$d aplikasi yang diizinkan tetap bisa dipakai, begitu juga aplikasi pesan. Selain itu — hiburan, browser, apa pun di luar daftar itu — tertutup selama sesi jalan.</string>
     <string name="focus_monitors">ALIVE hanya melihat aplikasi mana yang ada di layar. Ia tidak membuka aplikasimu atau membaca isinya.</string>
     <string name="focus_next">Saat waktunya habis, sesinya selesai begitu saja.</string>
     <string name="focus_extend">Perpanjang 15 menit</string>
@@ -223,7 +223,7 @@
     <string name="lock_days_row">Kamu sedang %1$d hari beruntun.</string>
     <string name="lock_essential">Telepon, pesan, layar utama, dan Setelan tetap jalan.</string>
     <string name="lock_do_instead">Ada hal lain yang bisa kamu kerjakan.</string>
-    <string name="lock_focus_body">%1$s masih berjalan. Hiburan dan apa pun di luar aplikasi yang kamu izinkan tetap tertutup sampai selesai.</string>
+    <string name="lock_focus_body">%1$s masih berjalan. Hiburan dan apa pun di luar aplikasi yang kamu izinkan tetap tertutup sampai selesai. Aplikasi pesan tetap terbuka.</string>
     <string name="lock_focus_blocked">Tertutup selama ini jalan: %1$s</string>
     <string name="lock_action_focus">Sisihkan waktu untuk sesuatu</string>
     <string name="lock_action_home">Ke layar utama</string>

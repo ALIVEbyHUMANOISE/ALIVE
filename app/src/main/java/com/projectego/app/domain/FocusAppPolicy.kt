@@ -95,31 +95,38 @@ object FocusAppPolicy {
     }
 
     /**
-     * Determines whether [packageName] is allowed during an active Focus Session for [activityType].
-     * Rules:
-     * 1. ESSENTIAL apps: Always allowed.
-     * 2. ENTERTAINMENT apps: NEVER allowed.
-     * 3. Focus-approved productivity apps: Allowed only if in [activityType]'s approved list.
-     * 4. All other apps (unknown, browsers, non-approved): Blocked.
+     * The focus gate as a pure rule, so the rule can be tested as a rule.
+     *
+     * Order is the whole policy:
+     * 1. The activity's curated list wins first. A curated app is allowed even
+     *    when AppClassifier's screen-time defaults paint it as entertainment,
+     *    because naming the third-party apps a session is FOR is the list's
+     *    entire job. (The old order ran the entertainment veto first, which
+     *    silently blocked every non-system curated app.)
+     * 2. ESSENTIAL, SYSTEM_IGNORED and TRACKED always stay open. TRACKED is
+     *    messaging, and its contract is "counted, never locked" - a block
+     *    could cost the person a message they cannot see, which is as true
+     *    while focusing as at any other time (see AppCategory.TRACKED).
+     * 3. Everything else - entertainment, browsers, anything the list does
+     *    not name - stays closed.
+     */
+    fun decide(approved: Set<String>, category: AppCategory, packageName: String): Boolean =
+        approved.contains(packageName) ||
+            category == AppCategory.ESSENTIAL ||
+            category == AppCategory.SYSTEM_IGNORED ||
+            category == AppCategory.TRACKED
+
+    /**
+     * Whether [packageName] is allowed during an active Focus Session for
+     * [activityType]. See [decide] for the rule and its order.
      */
     fun isPackageAllowedDuringFocus(
         context: Context,
         packageName: String,
         activityType: FocusActivityType
-    ): Boolean {
-        // Rule A: Essential apps always allowed
-        val baseCategory = AppClassifier.categorize(context, packageName)
-        if (baseCategory == AppCategory.ESSENTIAL || baseCategory == AppCategory.SYSTEM_IGNORED) {
-            return true
-        }
-
-        // Rule B: Entertainment apps NEVER allowed during Focus
-        if (baseCategory == AppCategory.ENTERTAINMENT) {
-            return false
-        }
-
-        // Rule C: Approved productivity apps for the current activity type
-        val approved = getApprovedPackages(activityType)
-        return approved.contains(packageName)
-    }
+    ): Boolean = decide(
+        getApprovedPackages(activityType),
+        AppClassifier.categorize(context, packageName),
+        packageName
+    )
 }
