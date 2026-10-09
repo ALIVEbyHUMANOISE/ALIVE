@@ -4,6 +4,7 @@ import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
+import com.projectego.app.data.FocusSessionManager
 import com.projectego.app.data.LockStateManager
 import com.projectego.app.data.TimeBankRepository
 import com.projectego.app.data.UsageHistoryRepository
@@ -37,6 +38,9 @@ class UsageTracker(private val context: Context) {
     /** Read-only archive of what this method already computed, for the chart. */
     private val usageHistory = UsageHistoryRepository(context)
 
+    /** Today's focus windows, for the exemption; a second instance over the same prefs. */
+    private val focusSessionManager = FocusSessionManager(context, timeBankRepository)
+
     fun getTodayStartTimestamp(): Long {
         val calendar = Calendar.getInstance()
         calendar.set(Calendar.HOUR_OF_DAY, 0)
@@ -60,6 +64,10 @@ class UsageTracker(private val context: Context) {
         var unblockedMillis = 0L
         val details = mutableListOf<Pair<String, Long>>()
 
+        // Minutes today's focus sessions swallowed, per package. Computed first
+        // because the loop below charges whatever is left over.
+        val exemptByPackage = focusExemptedMillis()
+
         if (usageStatsManager != null) {
             val usageStats = usageStatsManager.queryUsageStats(
                 UsageStatsManager.INTERVAL_DAILY,
@@ -72,14 +80,18 @@ class UsageTracker(private val context: Context) {
                     if (stat.totalTimeInForeground <= 0) continue
 
                     val category = AppClassifier.categorize(context, stat.packageName)
-                    val appMinutes = stat.totalTimeInForeground / 1000 / 60
 
                     when (category) {
-                        // Only what ALIVE actually closes spends the allowance.
+                        // Only what ALIVE actually closes spends the allowance -
+                        // minus whatever a focus session that approved the app
+                        // swallowed, because that time was spent focusing.
                         AppCategory.ENTERTAINMENT -> {
-                            totalMillis += stat.totalTimeInForeground
-                            if (appMinutes > 0) {
-                                details.add(Pair(stat.packageName, appMinutes))
+                            val exempt = exemptByPackage[stat.packageName] ?: 0L
+                            val charged = (stat.totalTimeInForeground - exempt).coerceAtLeast(0L)
+                            totalMillis += charged
+                            val chargedMinutes = charged / 1000 / 60
+                            if (chargedMinutes > 0) {
+                                details.add(Pair(stat.packageName, chargedMinutes))
                             }
                         }
 
@@ -97,6 +109,10 @@ class UsageTracker(private val context: Context) {
                 }
             }
         }
+
+        // The focus-swallowed minutes are the third kind of time that does not
+        // charge, and they are reported the same way the other two are.
+        unblockedMillis += exemptByPackage.values.sum()
 
         val totalMinutes = totalMillis / 1000 / 60
         val dayType = lockStateManager.getDayType()
@@ -190,16 +206,71 @@ class UsageTracker(private val context: Context) {
      * disagree about the same day.
      */
     fun hourlyUsedMillisToday(): LongArray {
-        val usageStatsManager =
-            context.getSystemService(AppCompatActivity.USAGE_STATS_SERVICE) as? UsageStatsManager
-                ?: return LongArray(HourlyUsage.HOURS)
+        val dayStart = getTodayStartTimestamp()
+        val now = System.currentTimeMillis()
+
+        val events = readEvents(dayStart, now) { packageName ->
+            AppClassifier.categorize(context, packageName) == AppCategory.ENTERTAINMENT
+        }
+        if (events.isEmpty()) return LongArray(HourlyUsage.HOURS)
+
+        // The same exemption the daily figure applies: the hours and the total
+        // must never tell two different stories about one day.
+        val spans = Foreground.spans(events, now)
+        val chargeable = FocusExemption.chargeableSpans(spans, focusWindows())
+        return HourlyUsage.bucketSpans(dayStart, chargeable)
+    }
+
+    /** Today's focus windows, with the packages each session said were allowed. */
+    private fun focusWindows(): List<FocusExemption.Window> =
+        focusSessionManager.getTodayWindows().map { window ->
+            FocusExemption.Window(
+                start = window.start,
+                end = window.end,
+                approved = FocusAppPolicy.getApprovedPackages(window.activityType)
+            )
+        }
+
+    /**
+     * The minutes today's focus sessions swallowed, per package.
+     *
+     * Only the apps a session itself approved are exempt - there is no other
+     * list and no other path, so an app no focus activity approves can never be
+     * excused by this, whatever the state of the accessibility service.
+     */
+    private fun focusExemptedMillis(): Map<String, Long> {
+        val windows = focusWindows()
+        if (windows.isEmpty()) return emptyMap()
 
         val dayStart = getTodayStartTimestamp()
         val now = System.currentTimeMillis()
-        val stream = usageStatsManager.queryEvents(dayStart, now) ?: return LongArray(HourlyUsage.HOURS)
+        val spans = ArrayList<Foreground.Span>()
+        windows.forEach { window ->
+            val from = maxOf(window.start, dayStart)
+            val to = minOf(window.end, now)
+            if (to <= from) return@forEach
+            val events = readEvents(from, to) { packageName ->
+                window.approved.contains(packageName)
+            }
+            spans += Foreground.spans(events, to)
+        }
+        return FocusExemption.exemptedMillis(spans, windows)
+    }
+
+    /**
+     * The foreground log between two instants, filtered to what [keep] accepts.
+     *
+     * Screen-off and keyguard events always pass: they close sessions, and the
+     * session they close belongs to whoever the event names.
+     */
+    private fun readEvents(from: Long, to: Long, keep: (String) -> Boolean): List<HourlyUsage.Event> {
+        val usageStatsManager =
+            context.getSystemService(AppCompatActivity.USAGE_STATS_SERVICE) as? UsageStatsManager
+                ?: return emptyList()
+        val stream = usageStatsManager.queryEvents(from, to) ?: return emptyList()
 
         val events = mutableListOf<HourlyUsage.Event>()
-        val counted = HashMap<String, Boolean>()
+        val kept = HashMap<String, Boolean>()
         val event = UsageEvents.Event()
 
         while (stream.hasNextEvent()) {
@@ -212,22 +283,14 @@ class UsageTracker(private val context: Context) {
                 else -> continue
             }
 
-            // The screen going dark ends every session, whoever the event names.
-            // Everything else is kept only if the app is one the allowance is
-            // spent on - the same rule the daily figure above uses, so the hours
-            // and the total cannot tell two different stories about one day.
             if (kind != HourlyUsage.Kind.SCREEN_OFF) {
                 val packageName = event.packageName ?: continue
-                val isCounted = counted.getOrPut(packageName) {
-                    AppClassifier.categorize(context, packageName) == AppCategory.ENTERTAINMENT
-                }
-                if (!isCounted) continue
+                if (!kept.getOrPut(packageName) { keep(packageName) }) continue
             }
 
             events.add(HourlyUsage.Event(event.timeStamp, kind, event.packageName ?: ""))
         }
-
-        return HourlyUsage.bucket(dayStart, events, now)
+        return events
     }
 
     private companion object {

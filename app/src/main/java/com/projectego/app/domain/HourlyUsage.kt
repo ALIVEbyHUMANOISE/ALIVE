@@ -30,33 +30,19 @@ object HourlyUsage {
      * called has been running until now, and dropping it would make the hour the
      * person is living in the only empty one on the chart.
      */
-    fun bucket(dayStartMillis: Long, events: List<Event>, nowMillis: Long): LongArray {
+    fun bucket(dayStartMillis: Long, events: List<Event>, nowMillis: Long): LongArray =
+        bucketSpans(dayStartMillis, Foreground.spans(events, nowMillis))
+
+    /**
+     * The same bucketing, from spans the caller has already decided count.
+     *
+     * The exemption path uses this: it trims the focus-session minutes out of
+     * the spans first, so the hourly chart and the daily total agree about what
+     * a day cost, by sharing one rule.
+     */
+    fun bucketSpans(dayStartMillis: Long, spans: List<Foreground.Span>): LongArray {
         val out = LongArray(HOURS)
-        val open = HashMap<String, Long>()
-
-        fun close(id: String, endAt: Long) {
-            val from = open.remove(id) ?: return
-            if (endAt > from) addSpan(out, dayStartMillis, from, endAt)
-        }
-
-        events.sortedBy { it.at }.forEach { event ->
-            when (event.kind) {
-                Kind.RESUMED -> {
-                    // One app is in front at a time, so a resume ends whatever was
-                    // open before it, whatever the stream claims about that app.
-                    open.keys.toList().forEach { close(it, event.at) }
-                    open[event.id] = event.at
-                }
-
-                Kind.PAUSED -> close(event.id, event.at)
-
-                // The screen went dark: nothing is in front any more, even if the
-                // app never got its pause.
-                Kind.SCREEN_OFF -> open.keys.toList().forEach { close(it, event.at) }
-            }
-        }
-
-        open.keys.toList().forEach { close(it, nowMillis) }
+        spans.forEach { addSpan(out, dayStartMillis, it.start, it.end) }
         return out
     }
 

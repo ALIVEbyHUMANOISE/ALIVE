@@ -7,6 +7,19 @@ import com.projectego.app.model.FocusSession
 import com.projectego.app.model.FocusState
 import java.util.UUID
 
+/**
+ * One stretch of focus, the way the allowance's arithmetic needs it.
+ *
+ * The session itself expires; the window is what keeps the promise "time spent
+ * focusing is not entertainment" true afterwards. The archive is day-scoped, so
+ * it prunes itself the way every other daily fact in the app does.
+ */
+data class FocusWindow(
+    val start: Long,
+    val end: Long,
+    val activityType: FocusActivityType
+)
+
 class FocusSessionManager(
     context: Context,
     private val timeBankRepository: TimeBankRepository
@@ -27,6 +40,16 @@ class FocusSessionManager(
         private const val KEY_FOCUS_SESSION_ID = "key_focus_session_id"
         private const val KEY_LINKED_QUEST_ATTEMPT_ID = "key_linked_quest_attempt_id"
         private const val KEY_VIOLATION_COUNT = "key_violation_count"
+
+        // Today's focus windows, for the allowance exemption. The day they
+        // belong to is written beside them so the archive prunes itself.
+        private const val KEY_WINDOWS_DAY = "key_windows_day"
+        private const val KEY_WINDOWS = "key_windows"
+
+        // ASCII control separators, the same trick the quest attempt uses: a
+        // visible delimiter would eventually appear inside a goal string.
+        private const val WINDOW_SEPARATOR = "\u001E"
+        private const val WINDOW_FIELD_SEPARATOR = "\u001F"
     }
 
     @Synchronized
@@ -90,6 +113,67 @@ class FocusSessionManager(
     }
 
     /**
+     * Today's focus windows, oldest first.
+     *
+     * The archive is what keeps the exemption true after a session has ended:
+     * the allowance's arithmetic needs the *window*, and a session that is over
+     * is still a window of time the person did not spend on entertainment.
+     */
+    @Synchronized
+    fun getTodayWindows(): List<FocusWindow> {
+        val today = LockStateManager.dayKeyOf(System.currentTimeMillis())
+        val storedDay = prefs.getString(KEY_WINDOWS_DAY, null)
+        if (storedDay != today) return emptyList()
+        return deserializeWindows(prefs.getString(KEY_WINDOWS, null))
+    }
+
+    @Synchronized
+    private fun recordWindow(start: Long, end: Long, activityType: FocusActivityType) {
+        val today = LockStateManager.dayKeyOf(start)
+        val storedDay = prefs.getString(KEY_WINDOWS_DAY, null)
+        val existing = if (storedDay == today) deserializeWindows(prefs.getString(KEY_WINDOWS, null)) else emptyList()
+        // A session that was replaced is truncated at the moment its replacement
+        // began, so two windows can never overlap and double-count an exemption.
+        val truncated = existing.map { it.copy(end = minOf(it.end, start)) }
+        val updated = (truncated + FocusWindow(start, end, activityType)).sortedBy { it.start }
+        prefs.edit()
+            .putString(KEY_WINDOWS_DAY, today)
+            .putString(KEY_WINDOWS, serializeWindows(updated))
+            .apply()
+    }
+
+    @Synchronized
+    private fun extendWindow(start: Long, newEnd: Long) {
+        val today = LockStateManager.dayKeyOf(start)
+        val storedDay = prefs.getString(KEY_WINDOWS_DAY, null)
+        if (storedDay != today) return
+        val updated = deserializeWindows(prefs.getString(KEY_WINDOWS, null))
+            .map { if (it.start == start) it.copy(end = newEnd) else it }
+        prefs.edit().putString(KEY_WINDOWS, serializeWindows(updated)).apply()
+    }
+
+    private fun serializeWindows(windows: List<FocusWindow>): String =
+        windows.joinToString(WINDOW_SEPARATOR) {
+            "${it.start}$WINDOW_FIELD_SEPARATOR${it.end}$WINDOW_FIELD_SEPARATOR${it.activityType.name}"
+        }
+
+    private fun deserializeWindows(raw: String?): List<FocusWindow> {
+        if (raw.isNullOrBlank()) return emptyList()
+        return raw.split(WINDOW_SEPARATOR).mapNotNull { part ->
+            val fields = part.split(WINDOW_FIELD_SEPARATOR)
+            if (fields.size != 3) return@mapNotNull null
+            val start = fields[0].toLongOrNull() ?: return@mapNotNull null
+            val end = fields[1].toLongOrNull() ?: return@mapNotNull null
+            val type = try {
+                FocusActivityType.valueOf(fields[2])
+            } catch (_: Exception) {
+                return@mapNotNull null
+            }
+            FocusWindow(start, end, type)
+        }
+    }
+
+    /**
      * Starts a new Focus Session.
      * Allowed durations: 30, 60, 90, 120 minutes.
      * Rejects if a session is already active.
@@ -135,6 +219,10 @@ class FocusSessionManager(
 
         edit.apply()
 
+        // The allowance's arithmetic keeps the window, not the session: from
+        // here on, this stretch of time is the stretch that does not charge.
+        recordWindow(now, end, activityType)
+
         return true
     }
 
@@ -163,6 +251,9 @@ class FocusSessionManager(
             .putLong(KEY_DURATION_MINUTES, newDuration)
             .putLong(KEY_END_TIMESTAMP, newEndTimestamp)
             .apply()
+
+        // An extended session is a longer window of time that does not charge.
+        extendWindow(currentSession.startTimestamp, newEndTimestamp)
 
         return true
     }

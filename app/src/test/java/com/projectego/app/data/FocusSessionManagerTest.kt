@@ -444,4 +444,62 @@ class FocusSessionManagerTest {
 
         assertNull(session)
     }
+
+    // ----------------------------------------------------------------
+    // The window archive: what the allowance's arithmetic reads back.
+    // ----------------------------------------------------------------
+
+    @Test
+    fun `starting a session records its window for today`() {
+        assertTrue(focusSessionManager.startFocusSession(FocusActivityType.STUDY, "belajar", 60L))
+
+        val windows = focusSessionManager.getTodayWindows()
+
+        assertEquals(1, windows.size)
+        val window = windows.first()
+        assertEquals(FocusActivityType.STUDY, window.activityType)
+        assertTrue(window.end > window.start)
+        assertEquals(60 * 60 * 1000L, window.end - window.start)
+    }
+
+    @Test
+    fun `a replacement session truncates the window it replaced`() {
+        focusSessionManager.startFocusSession(FocusActivityType.STUDY, "satu", 120L)
+        val first = focusSessionManager.getTodayWindows().first()
+
+        focusSessionManager.startFocusSession(FocusActivityType.WORK, "dua", 60L)
+
+        val windows = focusSessionManager.getTodayWindows()
+        assertEquals(2, windows.size)
+        assertTrue("windows must never overlap", windows[0].end <= windows[1].start)
+        assertEquals(first.start, windows[0].start)
+        assertEquals(windows[1].start, windows[0].end)
+    }
+
+    @Test
+    fun `extending a session extends its window`() {
+        focusSessionManager.startFocusSession(FocusActivityType.STUDY, "belajar", 30L)
+        val before = focusSessionManager.getTodayWindows().first()
+
+        timeBankRepository.addEarnedMinutes(15L)
+        assertTrue(focusSessionManager.extendFocusWithTimeBank(15L))
+
+        val after = focusSessionManager.getTodayWindows().first()
+        assertEquals(before.start, after.start)
+        assertEquals(15 * 60 * 1000L, after.end - before.end)
+    }
+
+    @Test
+    fun `an archive from another day reads as empty`() {
+        focusSessionManager.startFocusSession(FocusActivityType.STUDY, "belajar", 30L)
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        // The day the archive belongs to is stored beside it; stamp it with a
+        // day that is not today and the windows must stop existing.
+        val dayKey = LockStateManager.dayKeyOf(System.currentTimeMillis() - 86_400_000L)
+        context.getSharedPreferences("project_ego_focus_session", Context.MODE_PRIVATE)
+            .edit().putString("key_windows_day", dayKey).apply()
+
+        assertTrue(focusSessionManager.getTodayWindows().isEmpty())
+    }
 }
