@@ -1,6 +1,7 @@
 package com.projectego.app.domain
 
 import com.projectego.app.data.FocusSessionManager
+import com.projectego.app.data.QuestEvidenceRepository
 import com.projectego.app.data.QuestRepository
 import com.projectego.app.model.FocusActivityType
 import com.projectego.app.model.QuestCategory
@@ -53,7 +54,12 @@ class QuestStartCoordinator(
     },
     private val linkFocusSession: (focusSessionId: String) -> Boolean = { focusSessionId ->
         questRepository.linkFocusSession(focusSessionId)
-    }
+    },
+    // Physical-quest evidence, recorded the moment a steps-quest starts. The
+    // defaults measure nothing, which keeps every existing call site untouched.
+    private val physicalEvidenceProvider: PhysicalQuestEvidenceProvider =
+        PhysicalQuestEvidenceProvider.Unavailable,
+    private val questEvidenceRepository: QuestEvidenceRepository? = null
 ) {
 
     companion object {
@@ -180,6 +186,23 @@ class QuestStartCoordinator(
         if (!questRepository.startAttempt()) {
             questRepository.failQuest(REASON_ATTEMPT_START_FAILED)
             return false
+        }
+
+        // Snapshot the step counter at the moment the attempt's clock starts,
+        // but only for quests whose policy measures steps. Recording the
+        // unavailable marker (null) is still a record: a missing snapshot is
+        // what the verifier treats as "never recorded".
+        val evidenceRepository = questEvidenceRepository
+        if (evidenceRepository != null &&
+            PhysicalQuestPolicy.requirementFor(quest.id, quest.category).needsSteps
+        ) {
+            val attempt = questRepository.getCurrentAttempt()
+            if (attempt != null) {
+                evidenceRepository.recordStepsAtStart(
+                    attempt.attemptId,
+                    physicalEvidenceProvider.readStepCount()
+                )
+            }
         }
         return true
     }

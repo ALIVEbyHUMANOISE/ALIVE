@@ -4,9 +4,12 @@ import android.content.Context
 import android.provider.Settings
 import android.text.TextUtils
 import com.projectego.app.data.FocusSessionManager
+import com.projectego.app.data.QuestEvidenceRepository
 import com.projectego.app.data.QuestRepository
 import com.projectego.app.model.DigitalQuestEvidence
 import com.projectego.app.model.DigitalQuestVerificationResult
+import com.projectego.app.model.PhysicalQuestEvidence
+import com.projectego.app.model.PhysicalQuestRequirement
 import com.projectego.app.model.QuestCategory
 import com.projectego.app.model.QuestAttempt
 import com.projectego.app.model.QuestAttemptState
@@ -30,7 +33,14 @@ import com.projectego.app.model.VerificationOutcome
 class QuestVerificationCoordinator(
     private val questRepository: QuestRepository,
     private val focusSessionManager: FocusSessionManager,
-    private val digitalQuestVerifier: DigitalQuestVerifier = DigitalQuestVerifier
+    private val digitalQuestVerifier: DigitalQuestVerifier = DigitalQuestVerifier,
+    // Physical-quest evidence and clock. The defaults measure nothing and use
+    // the real clock, so every existing call site stays untouched; MainActivity
+    // wires the real provider and repository.
+    private val physicalEvidenceProvider: PhysicalQuestEvidenceProvider =
+        PhysicalQuestEvidenceProvider.Unavailable,
+    private val questEvidenceRepository: QuestEvidenceRepository? = null,
+    private val clock: () -> Long = System::currentTimeMillis
 ) {
 
     /**
@@ -146,10 +156,22 @@ class QuestVerificationCoordinator(
         if (attempt.state != QuestAttemptState.IN_PROGRESS) return false
         if (PhysicalQuestVerifier.remainingMinutes(
                 attempt.activityStartTimestamp,
-                System.currentTimeMillis(),
+                clock(),
                 attempt.committedDurationMinutes
             ) > 0L
         ) return false
+
+        // Snapshot the step counter at the moment the person declares done,
+        // before the window is stamped closed by requestVerification().
+        val evidenceRepository = questEvidenceRepository
+        if (evidenceRepository != null &&
+            requirementFor(attempt)?.needsSteps == true
+        ) {
+            evidenceRepository.recordStepsAtDeclare(
+                attempt.attemptId,
+                physicalEvidenceProvider.readStepCount()
+            )
+        }
 
         if (!questRepository.requestVerification()) return false
         return settlePhysicalAttempt(questRepository.getCurrentAttempt() ?: attempt)
@@ -169,22 +191,80 @@ class QuestVerificationCoordinator(
     }
 
     private fun settlePhysicalAttempt(attempt: QuestAttempt): Boolean {
-        val result = PhysicalQuestVerifier.verify(
+        val timeResult = PhysicalQuestVerifier.verify(
             startedAt = attempt.activityStartTimestamp,
-            declaredAt = attempt.activityEndTimestamp ?: System.currentTimeMillis(),
+            declaredAt = attempt.activityEndTimestamp ?: clock(),
             committedMinutes = attempt.committedDurationMinutes
         )
-        val verified = when (result) {
-            is PhysicalQuestVerifier.Result.Passed ->
-                questRepository.verifyQuest(VerificationOutcome.PASS, result.reason)
-            is PhysicalQuestVerifier.Result.Failed ->
-                questRepository.verifyQuest(VerificationOutcome.FAIL, result.reason)
-            PhysicalQuestVerifier.Result.Waiting -> false
+
+        val requirement = requirementFor(attempt)
+        val signalsResult =
+            if (timeResult is PhysicalQuestVerifier.Result.Failed ||
+                requirement == null || !requirement.hasAnyCheck
+            ) {
+                PhysicalQuestSignalsVerifier.Result.NotApplicable
+            } else {
+                PhysicalQuestSignalsVerifier.verify(
+                    requirement,
+                    gatherPhysicalEvidence(attempt, requirement),
+                    attempt.committedDurationMinutes
+                )
+            }
+
+        val outcome: Pair<VerificationOutcome, String> = when {
+            timeResult is PhysicalQuestVerifier.Result.Waiting -> return false
+            timeResult is PhysicalQuestVerifier.Result.Failed ->
+                VerificationOutcome.FAIL to timeResult.reason
+
+            signalsResult is PhysicalQuestSignalsVerifier.Result.Failed ->
+                VerificationOutcome.FAIL to signalsResult.reason
+
+            else -> VerificationOutcome.PASS to composePassReason(timeResult, signalsResult)
         }
+
+        val verified = questRepository.verifyQuest(outcome.first, outcome.second)
         // The reward leaves through the one door every quest uses: claimReward()
         // after VERIFIED, and nothing else.
         if (verified) questRepository.claimReward()
+        // Terminal in both directions: evidence belongs to one attempt and
+        // must never outlive its verdict.
+        questEvidenceRepository?.clear(attempt.attemptId)
         return verified
+    }
+
+    private fun gatherPhysicalEvidence(
+        attempt: QuestAttempt,
+        requirement: PhysicalQuestRequirement
+    ): PhysicalQuestEvidence {
+        val snapshot = questEvidenceRepository?.snapshotFor(attempt.attemptId)
+        val distractions =
+            if (requirement.checkDistractions && attempt.activityStartTimestamp != null) {
+                physicalEvidenceProvider.entertainmentPackagesBetween(
+                    attempt.activityStartTimestamp!!,
+                    attempt.activityEndTimestamp ?: clock()
+                )
+            } else {
+                null
+            }
+        return PhysicalQuestEvidence(
+            stepsAtStart = snapshot?.startSteps,
+            stepsAtDeclare = snapshot?.declareSteps,
+            distractionPackages = distractions
+        )
+    }
+
+    private fun composePassReason(
+        time: PhysicalQuestVerifier.Result,
+        signals: PhysicalQuestSignalsVerifier.Result
+    ): String = listOf(
+        (time as? PhysicalQuestVerifier.Result.Passed)?.reason,
+        (signals as? PhysicalQuestSignalsVerifier.Result.Passed)?.reason
+    ).filterNotNull().joinToString("; ")
+
+    private fun requirementFor(attempt: QuestAttempt): PhysicalQuestRequirement? {
+        val quest = questRepository.getAllQuests().find { it.id == attempt.questId }
+            ?: return null
+        return PhysicalQuestPolicy.requirementFor(quest.id, quest.category)
     }
 
     /**

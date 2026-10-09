@@ -135,8 +135,16 @@
     <string name="quest_step_start">Kamu tekan mulai.</string>
     <string name="quest_step_watch_digital">ALIVE melihat aplikasi yang diizinkan untuk sesi ini.</string>
     <string name="quest_step_watch_physical">ALIVE tidak bisa melihat yang satu ini — ia menjaga jamnya sementara kamu mengerjakannya.</string>
+    <string name="quest_step_watch_steps">ALIVE menjaga jamnya dan mengukur langkahmu selama kamu mengerjakannya.</string>
+    <string name="quest_step_watch_stillness">ALIVE menjaga jamnya dan mengecek kamu diam — beberapa langkah tidak apa-apa.</string>
+    <string name="quest_step_watch_attention">ALIVE menjaga jamnya dan mengecek tidak ada aplikasi hiburan yang terbuka.</string>
     <string name="quest_step_reward">%1$d menit kembali ke Bank Waktumu.</string>
     <string name="quest_detail_reward_title">Hadiah</string>
+    <string name="quest_how_steps">Jamnya berjalan %1$d menit, dan ALIVE mengukur langkahmu sepanjang waktu. Kalau langkahnya bilang misinya tidak terjadi, hadiahnya tetap di bank.</string>
+    <string name="quest_how_stillness">ALIVE mengecek kamu diam — beberapa langkah tidak apa-apa, berjalan tidak. Aplikasi musik tidak dihitung melawanmu.</string>
+    <string name="quest_how_attention">ALIVE mengecek tidak ada aplikasi hiburan yang terbuka selama %1$d menit.</string>
+    <string name="quest_how_steps_unavailable">Ponsel ini tidak bisa melaporkan langkah ke ALIVE sekarang, jadi ia hanya akan mengecek jam dan aplikasinya.</string>
+    <string name="quest_how_steps_permission">Penghitungan langkah butuh izin aktivitas fisik. Nyalakan di Pengaturan, atau mulai saja — ALIVE mengecek apa yang bisa dicek.</string>
 
     <!-- ============ STATUS PERCOBAAN ============ -->
     <string name="attempt_committed">Kamu sudah berkomitmen ke ini.</string>
@@ -160,6 +168,10 @@
     <string name="reason_technical_link">ALIVE tidak bisa menghubungkan sesi ke misimu. Itu masalah teknis, bukan salahmu.</string>
     <string name="reason_unknown">ALIVE tidak bisa memverifikasi sesi ini.</string>
     <string name="verified_reason">Sesinya berjalan selama waktu yang kamu komitkan.</string>
+    <string name="reason_steps_mismatch">Penghitung langkah tidak cocok dengan kebutuhan misi ini, jadi hadiahnya tetap di bank.</string>
+    <string name="reason_steps_reset">Penghitung langkah mulai ulang di tengah misi, jadi ALIVE tidak bisa mengukurnya. Hadiahnya tetap di bank.</string>
+    <string name="reason_distraction_open">Aplikasi hiburan terbuka selama misi berjalan.</string>
+    <string name="verified_reason_signals">Jamnya selesai, dan sinyal yang diukur ALIVE cocok.</string>
 
     <!-- ============ FOKUS ============ -->
     <string name="focus_heading">Fokus</string>

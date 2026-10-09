@@ -5,6 +5,11 @@
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
 
+    <!-- Step-count evidence for physical quests (API 29+ runtime permission;
+         below Q the step counter needs none). Play Data Safety must declare
+         Physical activity collection. -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+
     <!-- Names for the apps the chart counts. Without these declarations Android
          11+ hides every other package's label, and the chart falls back to a
          fragment of the package name ("Trill" instead of "TikTok"). Must stay

@@ -2,6 +2,7 @@ package com.projectego.app.ui
 
 import com.projectego.app.R
 import com.projectego.app.model.DayType
+import com.projectego.app.model.PhysicalQuestRequirement
 import com.projectego.app.model.QuestAttemptState
 import com.projectego.app.model.QuestCategory
 import com.projectego.app.model.TimeStatus
@@ -187,6 +188,50 @@ class AliveStatesTest {
             assertEquals(VerificationReasonClass.UNKNOWN, classified)
             assertEquals(R.string.reason_unknown, AliveStates.failureSupport(classified))
         }
+    }
+
+    @Test
+    fun `physical signal failures land in their own honest families`() {
+        assertEquals(
+            VerificationReasonClass.STEPS_RESET,
+            AliveStates.classifyFailure("Step counter reset during the mission (device restarted)")
+        )
+        assertEquals(
+            VerificationReasonClass.STEPS_MISMATCH,
+            AliveStates.classifyFailure("15 steps per committed minute measured, 60 required (300 steps over 20 committed minutes)")
+        )
+        assertEquals(
+            VerificationReasonClass.STEPS_MISMATCH,
+            AliveStates.classifyFailure("Step counter could not be read when the mission ended")
+        )
+        assertEquals(
+            VerificationReasonClass.DISTRACTION_OPEN,
+            AliveStates.classifyFailure("Entertainment app open during the mission: com.instagram.android")
+        )
+
+        assertEquals(R.string.reason_steps_reset, AliveStates.failureSupport(VerificationReasonClass.STEPS_RESET))
+        assertEquals(R.string.reason_steps_mismatch, AliveStates.failureSupport(VerificationReasonClass.STEPS_MISMATCH))
+        assertEquals(R.string.reason_distraction_open, AliveStates.failureSupport(VerificationReasonClass.DISTRACTION_OPEN))
+    }
+
+    @Test
+    fun `the watch and how lines follow the quest's signals`() {
+        val steps = PhysicalQuestRequirement(60, null, true)
+        val stillness = PhysicalQuestRequirement(null, 10, true)
+        val attention = PhysicalQuestRequirement(null, null, true)
+        val none = PhysicalQuestRequirement.NONE
+
+        assertEquals(R.string.quest_step_watch_steps, AliveStates.physicalQuestWatchLine(steps))
+        assertEquals(R.string.quest_step_watch_stillness, AliveStates.physicalQuestWatchLine(stillness))
+        assertEquals(R.string.quest_step_watch_attention, AliveStates.physicalQuestWatchLine(attention))
+        assertEquals(R.string.quest_step_watch_physical, AliveStates.physicalQuestWatchLine(none))
+
+        assertEquals(R.string.quest_how_steps, AliveStates.physicalQuestHowLine(steps, stepsMeasurable = true))
+        assertEquals(R.string.quest_how_steps_unavailable, AliveStates.physicalQuestHowLine(steps, stepsMeasurable = false))
+        assertEquals(R.string.quest_how_stillness, AliveStates.physicalQuestHowLine(stillness, stepsMeasurable = true))
+        assertEquals(R.string.quest_how_steps_unavailable, AliveStates.physicalQuestHowLine(stillness, stepsMeasurable = false))
+        assertEquals(R.string.quest_how_attention, AliveStates.physicalQuestHowLine(attention, stepsMeasurable = true))
+        assertEquals(R.string.quest_physical_how, AliveStates.physicalQuestHowLine(none, stepsMeasurable = true))
     }
 
     @Test

@@ -9,6 +9,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import com.projectego.app.data.FocusSessionManager
+import com.projectego.app.data.QuestEvidenceRepository
 import com.projectego.app.data.QuestRepository
 import com.projectego.app.data.TimeBankRepository
 import com.projectego.app.model.QuestAttemptState
@@ -22,6 +23,7 @@ class QuestStartCoordinatorTest {
     private lateinit var timeBankRepository: TimeBankRepository
     private lateinit var questRepository: QuestRepository
     private lateinit var focusSessionManager: FocusSessionManager
+    private lateinit var evidenceRepository: QuestEvidenceRepository
     private lateinit var context: Context
 
     @Before
@@ -30,9 +32,11 @@ class QuestStartCoordinatorTest {
         context.getSharedPreferences("project_ego_quests", Context.MODE_PRIVATE).edit().clear().apply()
         context.getSharedPreferences("project_ego_focus_session", Context.MODE_PRIVATE).edit().clear().apply()
         context.getSharedPreferences("project_ego_time_bank", Context.MODE_PRIVATE).edit().clear().apply()
+        context.getSharedPreferences("project_ego_quest_evidence", Context.MODE_PRIVATE).edit().clear().apply()
         timeBankRepository = TimeBankRepository(context)
         questRepository = QuestRepository(context, timeBankRepository)
         focusSessionManager = FocusSessionManager(context, timeBankRepository)
+        evidenceRepository = QuestEvidenceRepository(context)
     }
 
     private fun coordinator(
@@ -167,5 +171,53 @@ class QuestStartCoordinatorTest {
         assertNull(QuestStartCoordinator.focusActivityTypeFor(QuestCategory.EXERCISE))
         assertNull(QuestStartCoordinator.focusActivityTypeFor(QuestCategory.WALKING))
         assertNull(QuestStartCoordinator.focusActivityTypeFor(QuestCategory.CLEANING))
+    }
+
+    private fun physicalCoordinator(provider: PhysicalQuestEvidenceProvider): QuestStartCoordinator =
+        QuestStartCoordinator(
+            questRepository,
+            focusSessionManager,
+            physicalEvidenceProvider = provider,
+            questEvidenceRepository = evidenceRepository
+        )
+
+    @Test
+    fun `startPhysicalQuest records the opening step snapshot`() {
+        val provider = object : PhysicalQuestEvidenceProvider {
+            override fun readStepCount(): Int? = 42
+            override fun entertainmentPackagesBetween(startMillis: Long, endMillis: Long): List<String>? = null
+        }
+
+        val started = physicalCoordinator(provider).startPhysicalQuest("quest_walk_20")
+        assertTrue(started)
+
+        val attemptId = questRepository.getCurrentAttempt()!!.attemptId
+        assertEquals(com.projectego.app.data.PhysicalStepSnapshot(42, null), evidenceRepository.snapshotFor(attemptId))
+    }
+
+    @Test
+    fun `startPhysicalQuest records the unavailable marker when steps cannot be read`() {
+        val started = physicalCoordinator(PhysicalQuestEvidenceProvider.Unavailable)
+            .startPhysicalQuest("quest_walk_20")
+        assertTrue(started)
+
+        val attemptId = questRepository.getCurrentAttempt()!!.attemptId
+        val snapshot = evidenceRepository.snapshotFor(attemptId)
+        assertNotNull("an unavailable reading is still a record", snapshot)
+        assertNull(snapshot!!.startSteps)
+    }
+
+    @Test
+    fun `startPhysicalQuest leaves no evidence for a quest without step signals`() {
+        val provider = object : PhysicalQuestEvidenceProvider {
+            override fun readStepCount(): Int? = 42
+            override fun entertainmentPackagesBetween(startMillis: Long, endMillis: Long): List<String>? = null
+        }
+
+        val started = physicalCoordinator(provider).startPhysicalQuest("quest_podcast_30")
+        assertTrue(started)
+
+        val attemptId = questRepository.getCurrentAttempt()!!.attemptId
+        assertNull(evidenceRepository.snapshotFor(attemptId))
     }
 }

@@ -1,9 +1,13 @@
 package com.projectego.app
 
+import android.Manifest
 import android.app.AppOpsManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.drawable.AnimationDrawable
+import android.hardware.Sensor
+import android.hardware.SensorManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Process
@@ -24,19 +28,23 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.app.ActivityCompat
 import androidx.core.os.LocaleListCompat
 import androidx.core.widget.addTextChangedListener
 import androidx.core.content.ContextCompat
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.projectego.app.data.FocusSessionManager
 import com.projectego.app.data.LockStateManager
+import com.projectego.app.data.QuestEvidenceRepository
 import com.projectego.app.data.QuestRepository
 import com.projectego.app.data.TimeBankRepository
 import com.projectego.app.data.UsageHistoryRepository
+import com.projectego.app.domain.AndroidPhysicalQuestEvidenceProvider
 import com.projectego.app.domain.CriticalAlertPolicy
 import com.projectego.app.domain.EntertainmentClaimCoordinator
 import com.projectego.app.domain.EntertainmentClaimPolicy
 import com.projectego.app.domain.FocusAppPolicy
+import com.projectego.app.domain.PhysicalQuestPolicy
 import com.projectego.app.domain.PhysicalQuestVerifier
 import com.projectego.app.domain.QuestStartCoordinator
 import com.projectego.app.domain.QuestVerificationCoordinator
@@ -45,6 +53,7 @@ import com.projectego.app.domain.UsageTracker
 import com.projectego.app.model.DayType
 import com.projectego.app.model.FocusActivityType
 import com.projectego.app.model.FocusSession
+import com.projectego.app.model.PhysicalQuestRequirement
 import com.projectego.app.model.Quest
 import com.projectego.app.model.QuestAttempt
 import com.projectego.app.model.QuestAttemptState
@@ -96,6 +105,12 @@ import java.util.Locale
  */
 class MainActivity : AppCompatActivity() {
 
+    private companion object {
+        // The only runtime permission this app ever asks for; nothing else
+        // uses onRequestPermissionsResult, so the code cannot collide.
+        const val REQUEST_CODE_ACTIVITY_RECOGNITION = 1001
+    }
+
     private lateinit var usageTracker: UsageTracker
     private lateinit var lockStateManager: LockStateManager
     private lateinit var timeBankRepository: TimeBankRepository
@@ -139,6 +154,11 @@ class MainActivity : AppCompatActivity() {
     private var lastDevTapTime = 0L
     private var showDevPanel = false
 
+    // The physical quest whose start is waiting on the ACTIVITY_RECOGNITION
+    // dialog. Only one quest can start at a time, so one slot is enough.
+    private var pendingPhysicalQuestId: String? = null
+    private var activityRecognitionDenied = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -147,8 +167,20 @@ class MainActivity : AppCompatActivity() {
         timeBankRepository = TimeBankRepository(this)
         questRepository = QuestRepository(this, timeBankRepository)
         focusSessionManager = FocusSessionManager(this, timeBankRepository)
-        questStartCoordinator = QuestStartCoordinator(questRepository, focusSessionManager)
-        questVerificationCoordinator = QuestVerificationCoordinator(questRepository, focusSessionManager)
+        val questEvidenceRepository = QuestEvidenceRepository(this)
+        val physicalEvidenceProvider = AndroidPhysicalQuestEvidenceProvider(this)
+        questStartCoordinator = QuestStartCoordinator(
+            questRepository,
+            focusSessionManager,
+            physicalEvidenceProvider = physicalEvidenceProvider,
+            questEvidenceRepository = questEvidenceRepository
+        )
+        questVerificationCoordinator = QuestVerificationCoordinator(
+            questRepository,
+            focusSessionManager,
+            physicalEvidenceProvider = physicalEvidenceProvider,
+            questEvidenceRepository = questEvidenceRepository
+        )
         claimCoordinator = EntertainmentClaimCoordinator(lockStateManager, timeBankRepository, usageTracker)
 
         setContentView(R.layout.activity_main)
@@ -950,7 +982,13 @@ class MainActivity : AppCompatActivity() {
                 gateLeft
             )
             // VERIFIED is not REWARDED: the minutes have counted, not landed.
-            attempt.state == QuestAttemptState.VERIFIED -> getString(AliveStates.verifiedSupport())
+            attempt.state == QuestAttemptState.VERIFIED -> getString(
+                if (attempt.method == VerificationMethod.PHYSICAL) {
+                    R.string.verified_reason_signals
+                } else {
+                    AliveStates.verifiedSupport()
+                }
+            )
             attempt.state == QuestAttemptState.REWARDED -> getString(R.string.attempt_rewarded_total, available)
             else -> getString(AliveStates.attemptSupport(attempt.state))
         }
@@ -1576,6 +1614,8 @@ class MainActivity : AppCompatActivity() {
      */
     private fun buildQuestDetailInto(column: LinearLayout, quest: Quest) {
         val verifiable = AliveStates.isSelfVerifiable(quest.category)
+        val requirement = PhysicalQuestPolicy.requirementFor(quest.id, quest.category)
+        val stepsMeasurable = stepSensorPresent() && activityRecognitionGranted()
 
         val hue = ContextCompat.getColor(this, QuestHues.quest(quest.category))
 
@@ -1630,7 +1670,7 @@ class MainActivity : AppCompatActivity() {
         column.addView(ui.vgap(ui.dimens.lineGap))
         listOf(
             getString(R.string.quest_step_start),
-            getString(if (verifiable) R.string.quest_step_watch_digital else R.string.quest_step_watch_physical),
+            getString(if (verifiable) R.string.quest_step_watch_digital else AliveStates.physicalQuestWatchLine(requirement)),
             getString(R.string.quest_step_reward, quest.rewardMinutes)
         ).forEachIndexed { index, step ->
             if (index > 0) column.addView(ui.vgap(ui.dimens.pairGap))
@@ -1654,30 +1694,105 @@ class MainActivity : AppCompatActivity() {
                         setOnClickListener {
                             // One call owns the whole chain, and which chain it is
                             // comes down to what ALIVE can watch. A quest it cannot
-                            // see starts a clock and nothing else.
-                            val started = if (verifiable) questStartCoordinator.startDigitalQuest(quest.id)
-                            else questStartCoordinator.startPhysicalQuest(quest.id)
-                            if (started) {
-                                closeOverlay()
-                                renderDashboard()
-                                renderQuestSection()
+                            // see starts a clock and whatever evidence its policy
+                            // asks for.
+                            if (verifiable) {
+                                val started = questStartCoordinator.startDigitalQuest(quest.id)
+                                if (started) {
+                                    closeOverlay()
+                                    renderDashboard()
+                                    renderQuestSection()
+                                } else {
+                                    toast(R.string.quest_start_failed)
+                                }
                             } else {
-                                toast(R.string.quest_start_failed)
+                                startPhysicalQuestFlow(quest)
                             }
                         }
                     }
                 )
                 if (!verifiable) {
                     // Said under the button, not instead of it: the button works,
-                    // and what it promises is bounded by the clock.
+                    // and what it promises is bounded by the clock and the quest's
+                    // own signals.
                     column.addView(ui.vgap(ui.dimens.lineGap))
                     column.addView(
-                        ui.annotation(getString(R.string.quest_physical_how, quest.estimatedDurationMinutes))
+                        ui.annotation(
+                            getString(
+                                AliveStates.physicalQuestHowLine(requirement, stepsMeasurable),
+                                quest.estimatedDurationMinutes
+                            )
+                        )
                     )
+                    if (requirement.needsSteps && activityRecognitionDenied) {
+                        column.addView(ui.vgap(ui.dimens.pairGap))
+                        column.addView(ui.annotation(getString(R.string.quest_how_steps_permission)))
+                    }
                 }
             }
         }
     }
+
+    /**
+     * The door a physical quest starts through. A steps-quest on a phone that
+     * can measure steps asks for the physical-activity permission first; either
+     * answer still starts the quest, because a denied permission only means
+     * ALIVE checks what it can (see PhysicalQuestSignalsVerifier).
+     */
+    private fun startPhysicalQuestFlow(quest: Quest) {
+        val requirement = PhysicalQuestPolicy.requirementFor(quest.id, quest.category)
+        if (requirement.needsSteps &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+            stepSensorPresent() &&
+            !activityRecognitionGranted()
+        ) {
+            pendingPhysicalQuestId = quest.id
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACTIVITY_RECOGNITION),
+                REQUEST_CODE_ACTIVITY_RECOGNITION
+            )
+            return
+        }
+        completePhysicalQuestStart(quest.id)
+    }
+
+    private fun completePhysicalQuestStart(questId: String) {
+        val started = questStartCoordinator.startPhysicalQuest(questId)
+        if (started) {
+            closeOverlay()
+            renderDashboard()
+            renderQuestSection()
+        } else {
+            toast(R.string.quest_start_failed)
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != REQUEST_CODE_ACTIVITY_RECOGNITION) return
+
+        val questId = pendingPhysicalQuestId
+        pendingPhysicalQuestId = null
+        if (grantResults.firstOrNull() != PackageManager.PERMISSION_GRANTED) {
+            activityRecognitionDenied = true
+        }
+        if (questId != null) completePhysicalQuestStart(questId)
+    }
+
+    private fun stepSensorPresent(): Boolean {
+        val sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        return sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER) != null
+    }
+
+    private fun activityRecognitionGranted(): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION) ==
+            PackageManager.PERMISSION_GRANTED
 
     private fun openCurrentQuestPanel() {
         val attempt = state.attempt

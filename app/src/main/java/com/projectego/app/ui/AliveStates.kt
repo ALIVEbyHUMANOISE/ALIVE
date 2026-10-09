@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 import com.projectego.app.R
 import com.projectego.app.model.DayType
 import com.projectego.app.model.FocusActivityType
+import com.projectego.app.model.PhysicalQuestRequirement
 import com.projectego.app.model.QuestAttemptState
 import com.projectego.app.model.QuestCategory
 import com.projectego.app.model.QuestDifficulty
@@ -57,6 +58,9 @@ enum class VerificationReasonClass {
     NOT_SUPPORTED,
     ACTIVITY_MISMATCH,
     TECHNICAL_LINK,
+    STEPS_MISMATCH,
+    STEPS_RESET,
+    DISTRACTION_OPEN,
     UNKNOWN
 }
 
@@ -346,6 +350,17 @@ object AliveStates {
                 value.contains("could not be started", ignoreCase = true) ->
                 VerificationReasonClass.TECHNICAL_LINK
 
+            // Physical-quest signals. Reset before generic step: the reset
+            // sentence contains the word "step" too.
+            value.contains("step counter reset", ignoreCase = true) ->
+                VerificationReasonClass.STEPS_RESET
+
+            value.contains("step", ignoreCase = true) ->
+                VerificationReasonClass.STEPS_MISMATCH
+
+            value.contains("entertainment app", ignoreCase = true) ->
+                VerificationReasonClass.DISTRACTION_OPEN
+
             else -> VerificationReasonClass.UNKNOWN
         }
     }
@@ -357,6 +372,9 @@ object AliveStates {
         VerificationReasonClass.NOT_SUPPORTED -> R.string.reason_not_supported
         VerificationReasonClass.ACTIVITY_MISMATCH -> R.string.reason_activity_mismatch
         VerificationReasonClass.TECHNICAL_LINK -> R.string.reason_technical_link
+        VerificationReasonClass.STEPS_MISMATCH -> R.string.reason_steps_mismatch
+        VerificationReasonClass.STEPS_RESET -> R.string.reason_steps_reset
+        VerificationReasonClass.DISTRACTION_OPEN -> R.string.reason_distraction_open
         VerificationReasonClass.UNKNOWN -> R.string.reason_unknown
     }
 
@@ -388,6 +406,38 @@ object AliveStates {
         QuestCategory.CREATIVE -> true
 
         else -> false
+    }
+
+    /**
+     * The "how ALIVE decides" step line for a physical quest, decided by the
+     * quest's own signal requirement.
+     */
+    @StringRes
+    fun physicalQuestWatchLine(requirement: PhysicalQuestRequirement): Int = when {
+        requirement.maxStepsPerMinute != null -> R.string.quest_step_watch_stillness
+        requirement.minStepsPerMinute != null -> R.string.quest_step_watch_steps
+        requirement.checkDistractions -> R.string.quest_step_watch_attention
+        else -> R.string.quest_step_watch_physical
+    }
+
+    /**
+     * The annotation under the start button: what ALIVE will actually check.
+     * [stepsMeasurable] says whether the step signal can be read on this
+     * phone right now (sensor present and permission granted).
+     */
+    @StringRes
+    fun physicalQuestHowLine(
+        requirement: PhysicalQuestRequirement,
+        stepsMeasurable: Boolean
+    ): Int = when {
+        requirement.maxStepsPerMinute != null ->
+            if (stepsMeasurable) R.string.quest_how_stillness else R.string.quest_how_steps_unavailable
+
+        requirement.minStepsPerMinute != null ->
+            if (stepsMeasurable) R.string.quest_how_steps else R.string.quest_how_steps_unavailable
+
+        requirement.checkDistractions -> R.string.quest_how_attention
+        else -> R.string.quest_physical_how
     }
 
     @StringRes

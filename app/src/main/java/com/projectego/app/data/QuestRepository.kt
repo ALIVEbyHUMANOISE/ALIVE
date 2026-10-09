@@ -16,7 +16,11 @@ import java.util.UUID
 
 class QuestRepository(
     context: Context,
-    private val timeBankRepository: TimeBankRepository
+    private val timeBankRepository: TimeBankRepository,
+    // Test seam only: every persisted timestamp goes through this clock so a
+    // physical settle can be driven deterministically. Defaults to the real
+    // clock, which keeps every existing call site untouched.
+    private val clock: () -> Long = System::currentTimeMillis
 ) {
 
     // Kept as given, not applicationContext: below API 33 AppCompat's per-app
@@ -324,7 +328,8 @@ class QuestRepository(
         val attempt = QuestAttempt.commit(
             questId = questId,
             method = method,
-            committedDurationMinutes = committedDurationMinutes
+            committedDurationMinutes = committedDurationMinutes,
+            now = clock()
         )
         persistAttempt(attempt)
         return true
@@ -338,7 +343,7 @@ class QuestRepository(
 
         val updated = current.copy(
             state = QuestAttemptState.IN_PROGRESS,
-            activityStartTimestamp = System.currentTimeMillis()
+            activityStartTimestamp = clock()
         )
         persistAttempt(updated)
         return true
@@ -352,7 +357,7 @@ class QuestRepository(
 
         val updated = current.copy(
             state = QuestAttemptState.PENDING_VERIFICATION,
-            activityEndTimestamp = System.currentTimeMillis()
+            activityEndTimestamp = clock()
         )
         persistAttempt(updated)
         return true
@@ -375,7 +380,7 @@ class QuestRepository(
         val result = VerificationResult(
             outcome = outcome,
             reason = reason,
-            evaluatedTimestamp = System.currentTimeMillis()
+            evaluatedTimestamp = clock()
         )
         val newState = if (outcome == VerificationOutcome.PASS) {
             QuestAttemptState.VERIFIED
@@ -405,7 +410,7 @@ class QuestRepository(
         val result = VerificationResult(
             outcome = VerificationOutcome.FAIL,
             reason = reason,
-            evaluatedTimestamp = System.currentTimeMillis()
+            evaluatedTimestamp = clock()
         )
         persistAttempt(current.copy(state = QuestAttemptState.FAILED, verificationResult = result))
         return true
@@ -456,7 +461,7 @@ class QuestRepository(
         val rewardedAttempt = current.copy(
             state = QuestAttemptState.REWARDED,
             rewardMinutes = quest.rewardMinutes,
-            rewardedTimestamp = System.currentTimeMillis()
+            rewardedTimestamp = clock()
         )
 
         // Critical persistence step: synchronous commit(), not the shared

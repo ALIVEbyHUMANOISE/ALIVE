@@ -148,8 +148,16 @@
     <string name="quest_step_start">You press start.</string>
     <string name="quest_step_watch_digital">ALIVE watches the apps this session is allowed to use.</string>
     <string name="quest_step_watch_physical">ALIVE can\'t see this one — it keeps the clock while you do it.</string>
+    <string name="quest_step_watch_steps">ALIVE keeps the clock and measures your steps while you do it.</string>
+    <string name="quest_step_watch_stillness">ALIVE keeps the clock and checks you stayed still — a few steps are fine.</string>
+    <string name="quest_step_watch_attention">ALIVE keeps the clock and checks no entertainment app is open.</string>
     <string name="quest_step_reward">%1$d minutes come back to your Time Bank.</string>
     <string name="quest_detail_reward_title">Reward</string>
+    <string name="quest_how_steps">%1$d minutes on the clock, and ALIVE measures your steps the whole time. If the steps say the mission didn\'t happen, the reward stays in the bank.</string>
+    <string name="quest_how_stillness">ALIVE checks you stayed still — a few steps are fine, walking is not. Music apps don\'t count against you.</string>
+    <string name="quest_how_attention">ALIVE checks no entertainment app was open during the %1$d minutes.</string>
+    <string name="quest_how_steps_unavailable">This phone can\'t report steps to ALIVE right now, so it will check the clock and the apps instead.</string>
+    <string name="quest_how_steps_permission">Step counting needs the physical activity permission. Turn it on in Settings, or start anyway — ALIVE checks what it can.</string>
 
     <!-- ============ ATTEMPT STATES ============ -->
     <string name="attempt_committed">You\'ve committed to this.</string>
@@ -173,6 +181,10 @@
     <string name="reason_technical_link">ALIVE couldn\'t match the session to your quest. That\'s a technical problem, not yours.</string>
     <string name="reason_unknown">ALIVE couldn\'t verify this session.</string>
     <string name="verified_reason">The session ran for the time you committed.</string>
+    <string name="reason_steps_mismatch">The step counter didn\'t match what this mission needs, so the reward stays in the bank.</string>
+    <string name="reason_steps_reset">The step counter reset mid-mission, so ALIVE couldn\'t measure it. The reward stays in the bank.</string>
+    <string name="reason_distraction_open">An entertainment app was open during the mission.</string>
+    <string name="verified_reason_signals">The clock ran, and the signals ALIVE measured checked out.</string>
 
     <!-- ============ FOCUS ============ -->
     <string name="focus_heading">Focus</string>
