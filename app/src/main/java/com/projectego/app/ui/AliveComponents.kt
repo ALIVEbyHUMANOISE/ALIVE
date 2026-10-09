@@ -93,6 +93,14 @@ class AliveComponents(private val context: Context) {
         text(R.style.TextAppearance_ALIVE_Meta, value)
 
     /**
+     * A tile's name. The Meta voice at full ink: the same family as the unit on
+     * the other side of the figure, dark enough to still be the tile's title.
+     */
+    fun tileLabel(value: CharSequence): TextView = meta(value).apply {
+        setTextColor(palette.ink)
+    }
+
+    /**
      * A tag: numbers with a unit, a weekday, `+20 MIN`. Pixel caps at 10sp.
      *
      * Ten glyphs is the limit, and it is not a stylistic preference - below that
@@ -594,6 +602,13 @@ class AliveComponents(private val context: Context) {
      * [unit] rides the baseline of the number instead of a note under the whole
      * grid, so each figure says what it is by itself - a 160 with no unit is a
      * number, 160 min is a fact.
+     *
+     * A tile is roughly 90dp tall and used to carry three different faces in it -
+     * the name in the heading voice, the figure in pixel, the unit in the reading
+     * voice - which is three things for the eye to re-tune to inside one box, and
+     * six boxes on one screen. So a tile speaks with two voices only: the figure
+     * in pixel, and every word in it - name and unit alike - in the reading voice
+     * at one weight.
      */
     fun statTile(
         name: CharSequence,
@@ -610,7 +625,7 @@ class AliveComponents(private val context: Context) {
             inset + edge + dimens.shadowMinor,
             inset + edge + dimens.shadowMinor
         )
-        addView(sectionHeader(name))
+        addView(tileLabel(name))
         addView(vgap(dimens.pairGap))
         if (unit == null) {
             addView(number(value))
