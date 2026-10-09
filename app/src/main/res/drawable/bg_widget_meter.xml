@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The frame the allowance is measured inside: the paper of a day that is
+     still there to spend, behind an ink edge. The slices themselves are painted
+     by ALIVE and laid over this, because a launcher cannot load our font and a
+     bar that changes shape every day cannot be a fixed drawable. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/alive_paper" />
+    <stroke
+        android:width="2dp"
+        android:color="@color/alive_ink" />
+    <corners android:radius="4dp" />
+</shape>

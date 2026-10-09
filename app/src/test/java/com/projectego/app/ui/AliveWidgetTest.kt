@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 import androidx.test.core.app.ApplicationProvider
 import com.projectego.app.R
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -63,6 +64,17 @@ class AliveWidgetTest {
             emptyList<String>(),
             built.filterNot { allowed.contains(it.javaClass) }.map { it.javaClass.name },
         )
+    }
+
+    @Test
+    fun `the figure and the meter are pictures ALIVE paints, not text the launcher sets`() {
+        val root = LayoutInflater.from(context).inflate(R.layout.widget_alive_stats, null)
+
+        // A launcher cannot load a font that ships with this app, so anything
+        // wearing Silkscreen has to arrive as a picture. A TextView in either of
+        // these two slots is the system face on the home screen again.
+        assertTrue(root.findViewById<View>(R.id.widget_figure) is ImageView)
+        assertTrue(root.findViewById<View>(R.id.widget_meter) is ImageView)
     }
 
     @Test
