@@ -79,7 +79,14 @@ object UsageChartStates {
     )
 
     /**
-     * One hour of today: what that hour took out of the day's allowance.
+     * One block of hours on the today chart.
+     *
+     * The day is drawn in [HOURS_PER_BAR]-hour blocks rather than as twenty-four
+     * bars: twenty-four of them do not fit one row on a phone, and a chart that
+     * wraps onto a second row reads as two different days rather than as one
+     * sequence. Three hours is also the finest division that still says
+     * something worth knowing - "nothing between nine and noon" is a fact about
+     * a morning, "nothing at 09:40" is not.
      *
      * [fraction] is deliberately measured against the *daily* allowance and not
      * against the busiest hour, so a full bar keeps meaning what it means on
@@ -87,7 +94,7 @@ object UsageChartStates {
      * hour would make every quiet day look identical to a heavy one.
      */
     data class HourBar(
-        val hour: Int,
+        val startHour: Int,
         val minutes: Long,
         val fraction: Float,
         val kind: DayBarKind
@@ -97,17 +104,27 @@ object UsageChartStates {
         millisPerHour: LongArray,
         limitMinutes: Long,
         currentHour: Int
-    ): List<HourBar> = (0 until HOURS_PER_DAY).map { hour ->
-        val minutes = millisPerHour.getOrElse(hour) { 0L } / 60_000L
+    ): List<HourBar> = (0 until HOURS_PER_DAY step HOURS_PER_BAR).map { start ->
+        val minutes = (start until start + HOURS_PER_BAR)
+            .sumOf { millisPerHour.getOrElse(it) { 0L } } / 60_000L
         val kind = when {
-            // The hour has not happened yet. Not a zero: a zero is a fact.
-            hour > currentHour -> DayBarKind.MISSING
+            // The whole block is still ahead. Not a zero: a zero is a fact about
+            // the past, and three hours from now are not a fact about anything.
+            start > currentHour -> DayBarKind.MISSING
             minutes <= 0L -> DayBarKind.ZERO
             limitMinutes > 0L && minutes >= limitMinutes -> DayBarKind.FULL
             else -> DayBarKind.SPENT
         }
-        HourBar(hour, minutes, fractionOf(minutes, limitMinutes), kind)
+        HourBar(start, minutes, fractionOf(minutes, limitMinutes), kind)
     }
+
+    /** "00–03": the label under a block, short enough for its own slot. */
+    fun hourBlockLabel(startHour: Int): String =
+        "%s–%02d".format(hourLabel(startHour), startHour + HOURS_PER_BAR)
+
+    /** "00.00–03.00": the same block, spelled out where there is room for it. */
+    fun hourBlockDetail(startHour: Int): String =
+        "%s.00–%02d.00".format(hourLabel(startHour), startHour + HOURS_PER_BAR)
 
     /** Whole percent, for a screen that states shares rather than minutes. */
     fun percentOf(minutes: Long, limitMinutes: Long): Int = when {
@@ -115,10 +132,11 @@ object UsageChartStates {
         else -> Math.round(minutes * 100.0 / limitMinutes).toInt()
     }
 
-    /** "09" - the axis label an hour carries, and only some of them do. */
+    /** "09" - the clock, zero padded. */
     fun hourLabel(hour: Int): String = "%02d".format(hour)
 
     const val HOURS_PER_DAY = 24
+    const val HOURS_PER_BAR = 3
 
     /**
      * One entry per requested date, in order. Dates ALIVE never saw come back

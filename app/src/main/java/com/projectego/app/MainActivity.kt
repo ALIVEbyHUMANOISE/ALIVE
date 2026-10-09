@@ -71,6 +71,7 @@ import com.projectego.app.ui.BrutalistDonut
 import com.projectego.app.ui.ChartRange
 import com.projectego.app.ui.DayBar
 import com.projectego.app.ui.DayBarKind
+import com.projectego.app.ui.Durations
 import com.projectego.app.ui.HomeAction
 import com.projectego.app.ui.PermissionChecks
 import com.projectego.app.ui.PixelMarks
@@ -2259,7 +2260,7 @@ class MainActivity : AppCompatActivity() {
 
         val (totalMinutes, _) = UsageChartStates.totals(bars)
         card.addView(ui.vgap(ui.dimens.groupGap))
-        card.addView(ui.note(getString(R.string.chart_total_minutes, totalMinutes)))
+        card.addView(ui.note(getString(R.string.chart_total_minutes, Durations.of(this, totalMinutes))))
 
         card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(ui.note(getString(R.string.chart_axis_note)))
@@ -2306,7 +2307,7 @@ class MainActivity : AppCompatActivity() {
             setData(
                 bars.map { bar ->
                     BrutalistBarChart.Column(
-                        label = hourAxisLabel(bar.hour, currentHour),
+                        label = hourAxisLabel(bar.startHour, currentHour),
                         minutes = bar.minutes,
                         fraction = bar.fraction,
                         kind = bar.kind
@@ -2354,16 +2355,20 @@ class MainActivity : AppCompatActivity() {
         return card
     }
 
-    /** Under the hours: "00", "03", ... - and always the one being lived in. */
-    private fun hourAxisLabel(hour: Int, currentHour: Int): String = when {
-        hour == currentHour -> getString(R.string.chart_label_today)
-        hour % 3 == 0 -> UsageChartStates.hourLabel(hour)
-        else -> ""
-    }
+    /**
+     * Under the hours: "00–03", "03–06", ... Eight of them fit one row, so every
+     * block is named, and the one being lived in says so instead.
+     */
+    private fun hourAxisLabel(startHour: Int, currentHour: Int): String =
+        if (currentHour in startHour until startHour + UsageChartStates.HOURS_PER_BAR) {
+            getString(R.string.chart_label_today)
+        } else {
+            UsageChartStates.hourBlockLabel(startHour)
+        }
 
-    /** Under an hour bar: which hour it was, and its share of the day. */
+    /** Under a block of hours: which block, and its share of the day. */
     private fun hourDetail(bar: UsageChartStates.HourBar): String {
-        val name = getString(R.string.chart_hour_name, UsageChartStates.hourLabel(bar.hour))
+        val name = UsageChartStates.hourBlockDetail(bar.startHour)
         return when (bar.kind) {
             DayBarKind.MISSING -> getString(R.string.chart_hour_future_detail, name)
             DayBarKind.ZERO -> getString(R.string.chart_hour_zero_detail, name)
@@ -2431,6 +2436,9 @@ class MainActivity : AppCompatActivity() {
             )
             totalCaption = getString(R.string.chart_total_label)
             contentDescription = getString(R.string.cd_app_donut)
+            // The ring is the loudest number in the panel, so it is the first
+            // place a total past an hour has to stop being minutes.
+            minutesText = { minutes -> Durations.compact(this@MainActivity, minutes) }
             setData(slices, total)
         }
         card.addView(donut)
@@ -2470,7 +2478,7 @@ class MainActivity : AppCompatActivity() {
                 )
             )
             row.addView(ui.hgap(ui.dimens.m))
-            row.addView(ui.meta(getString(R.string.unit_minutes, slice.minutes)))
+            row.addView(ui.meta(Durations.of(this, slice.minutes)))
             card.addView(row)
         }
 
@@ -2510,7 +2518,7 @@ class MainActivity : AppCompatActivity() {
         return when (bar.kind) {
             DayBarKind.MISSING -> getString(R.string.chart_day_missing_detail, name)
             DayBarKind.RECOVERY -> getString(R.string.chart_day_recovery_detail, name)
-            else -> getString(R.string.chart_day_detail, name, bar.minutes, bar.limitMinutes)
+            else -> getString(R.string.chart_day_detail, name, Durations.of(this, bar.minutes), bar.limitMinutes)
         }
     }
 

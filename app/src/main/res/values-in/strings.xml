@@ -40,6 +40,10 @@
     <string name="stat_bank">Bank</string>
     <string name="unit_minutes">%1$d menit</string>
     <string name="unit_minutes_suffix">menit</string>
+    <string name="duration_hours">%1$d jam</string>
+    <string name="duration_hours_minutes">%1$d jam %2$d menit</string>
+    <string name="duration_hours_short">%1$dj</string>
+    <string name="duration_hours_minutes_short">%1$dj%2$d</string>
     <string name="unit_minutes_gain">+%1$d menit</string>
     <string name="time_hero_line">Menit hiburan tersisa sebelum ALIVE menutupnya.</string>
     <string name="time_of_allowance">dari %1$d</string>
@@ -347,8 +351,7 @@
     <string name="chart_days_heading">Hari</string>
     <string name="chart_hours_heading">Jam</string>
     <string name="chart_hours_coverage">%1$d dari %2$d jam hari ini sudah lewat. Jam yang belum terjadi digambar kosong, bukan nol.</string>
-    <string name="chart_hours_tap_hint">Ketuk batang untuk jam itu.</string>
-    <string name="chart_hour_name">Jam %1$s</string>
+    <string name="chart_hours_tap_hint">Ketuk batang untuk rentang jam itu.</string>
     <string name="chart_hour_detail">%1$s — %2$d%% dari jatah harian.</string>
     <string name="chart_hour_future_detail">%1$s — jam ini belum lewat.</string>
     <string name="chart_hour_zero_detail">%1$s — nol pemakaian di jam ini.</string>
@@ -361,7 +364,7 @@
     <string name="chart_label_today">KINI</string>
     <string name="chart_tap_hint">Ketuk batang untuk hari itu.</string>
     <string name="chart_day_name">%1$s %2$d</string>
-    <string name="chart_day_detail">%1$s — %2$d dari %3$d menit.</string>
+    <string name="chart_day_detail">%1$s — %2$s dari %3$d menit.</string>
     <string name="chart_day_missing_detail">%1$s — ALIVE tidak melihat hari ini.</string>
     <string name="chart_day_recovery_detail">%1$s — tidak ada waktu hiburan untuk dipakai.</string>
     <string name="chart_total_label">Total</string>
@@ -383,7 +386,7 @@
     <string name="chart_apps_folded">%1$d lainnya lebih kecil</string>
     <string name="chart_apps_none">Belum ada menit aplikasi untuk hari ini.</string>
     <string name="chart_apps_none_support">ALIVE mencatat hanya yang dilihatnya, jadi hari yang tidak terlihat apa pun tetap hari tanpa catatan.</string>
-    <string name="chart_total_minutes">%1$d menit di hari-hari yang ALIVE lihat</string>
+    <string name="chart_total_minutes">%1$s di hari-hari yang ALIVE lihat</string>
     <string name="chart_none">ALIVE belum mencatat satu hari pun.</string>
     <string name="chart_just_started">Ini hari pertama yang ALIVE catat.</string>
     <string name="chart_partial">Hanya hari yang ALIVE lihat yang dihitung. Tidak ada yang ditebak.</string>

@@ -44,6 +44,13 @@ class BrutalistDonut(context: Context) : View(context) {
     /** Printed under the number when no slice is selected. */
     var totalCaption: String = ""
 
+    /**
+     * How the figure in the hole is written. Left null it is a bare number of
+     * minutes; the app hands in a formatter so an amount past an hour is said in
+     * hours, the way every other reading in the panel is.
+     */
+    var minutesText: ((Long) -> String)? = null
+
     private val palette = AlivePalette(context)
     private val dimens = AliveDimens(context)
 
@@ -194,7 +201,8 @@ class BrutalistDonut(context: Context) : View(context) {
     /** The number in the hole: the selected slice, or the day's total. */
     private fun drawCentre(canvas: Canvas, centreX: Float, centreY: Float, inner: Float) {
         val slice = slices.getOrNull(selected)
-        val number = (slice?.minutes ?: totalMinutes).toString()
+        val number = minutesText?.invoke(slice?.minutes ?: totalMinutes)
+            ?: (slice?.minutes ?: totalMinutes).toString()
         val caption = slice?.label ?: totalCaption
         val maxWidth = inner * 1.5f
 
