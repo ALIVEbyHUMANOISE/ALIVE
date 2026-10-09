@@ -57,6 +57,7 @@
     <string name="action_continue_quest">Continue quest</string>
     <string name="action_return_session">Return to session</string>
     <string name="action_continue">Continue</string>
+    <string name="action_finish_life_mission">Complete a life mission!</string>
     <string name="action_back">Back</string>
     <string name="action_start_quest">Start quest</string>
 

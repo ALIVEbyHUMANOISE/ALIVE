@@ -1084,13 +1084,13 @@ class MainActivity : AppCompatActivity() {
 
         card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(
-            // In is blue - the Focus hue these minutes are earned in - and out is
+            // In is the house green these minutes come back through, and out is
             // the critter's rose. The pair is the flow, not a status.
             statRow(
                 ui.statTile(
                     getString(R.string.stat_bank_earned),
                     getString(R.string.stat_minutes, state.earnedMinutes),
-                    ui.palette.workPale
+                    ui.palette.softForest
                 ),
                 ui.statTile(
                     getString(R.string.stat_bank_spent),
@@ -2265,7 +2265,7 @@ class MainActivity : AppCompatActivity() {
                 ui.statTile(
                     getString(R.string.stat_bank_earned),
                     getString(R.string.stat_minutes, state.earnedMinutes),
-                    ui.palette.workPale
+                    ui.palette.softForest
                 ),
                 ui.statTile(
                     getString(R.string.stat_bank_spent),

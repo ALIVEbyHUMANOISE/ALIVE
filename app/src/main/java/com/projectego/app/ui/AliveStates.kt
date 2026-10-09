@@ -459,7 +459,7 @@ object AliveStates {
         HomeAction.START_FOCUS -> R.string.action_start_focus
         HomeAction.CONTINUE_QUEST -> R.string.action_continue_quest
         HomeAction.RETURN_TO_SESSION -> R.string.action_return_session
-        HomeAction.CONTINUE -> R.string.action_continue
+        HomeAction.CONTINUE -> R.string.action_finish_life_mission
         HomeAction.NONE -> 0
     }
 }
