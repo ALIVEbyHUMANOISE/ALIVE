@@ -73,14 +73,16 @@
     <!-- ============ BANK WAKTU ============ -->
     <string name="time_bank_heading">Bank Waktu</string>
     <string name="time_bank_empty">Belum ada waktu yang kembali. Sesi yang terverifikasi mengembalikan waktumu.</string>
-    <string name="time_bank_use_running">Ada sesi fokus yang sedang jalan. Di situlah menit-menit ini membeli waktu.</string>
-    <string name="time_bank_use_cta">Buka sesi yang sedang jalan</string>
-    <string name="time_bank_use_none">Tidak ada yang bisa diperpanjang. Mulai sesi fokus, lalu pakai di sana.</string>
+    <string name="time_bank_claim_action">Klaim %1$d menit</string>
+    <string name="time_bank_claim_status">Terklaim hari ini: %1$d dari %2$d menit.</string>
+    <string name="time_bank_claim_full">Jatah klaim hari ini sudah penuh.</string>
+    <string name="time_bank_claim_recovery">Hari pemulihan menutup hiburan, jadi tidak ada jatah yang bisa ditambah.</string>
+    <string name="time_bank_claim_toast">%1$d menit ditambahkan ke jatah hiburan hari ini.</string>
     <string name="time_bank_not_enough">Waktu yang kembali belum cukup untuk itu.</string>
     <string name="time_bank_available_total">%1$d menit tersedia</string>
     <string name="stat_bank_earned">Masuk</string>
     <string name="stat_bank_spent">Keluar</string>
-    <string name="time_bank_explain">Misi yang terverifikasi memasukkan menit. Memperpanjang sesi fokus mengeluarkannya.</string>
+    <string name="time_bank_explain">Misi yang terverifikasi memasukkan menit. Klaim ke jatah hiburan hari ini (maks. %1$d menit sehari), atau pakai untuk memperpanjang sesi fokus.</string>
     <string name="cd_time_bank">Jam pixel: Bank Waktu, tempat menit yang kembali disimpan.</string>
     <string name="cd_shortcut_chart">Bar pixel: buka grafik pemakaian.</string>
     <string name="cd_shortcut_bank">Jam pixel: lompat ke Bank Waktu.</string>

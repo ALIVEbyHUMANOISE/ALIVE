@@ -34,6 +34,8 @@ import com.projectego.app.data.QuestRepository
 import com.projectego.app.data.TimeBankRepository
 import com.projectego.app.data.UsageHistoryRepository
 import com.projectego.app.domain.CriticalAlertPolicy
+import com.projectego.app.domain.EntertainmentClaimCoordinator
+import com.projectego.app.domain.EntertainmentClaimPolicy
 import com.projectego.app.domain.FocusAppPolicy
 import com.projectego.app.domain.PhysicalQuestVerifier
 import com.projectego.app.domain.QuestStartCoordinator
@@ -101,6 +103,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var focusSessionManager: FocusSessionManager
     private lateinit var questStartCoordinator: QuestStartCoordinator
     private lateinit var questVerificationCoordinator: QuestVerificationCoordinator
+    private lateinit var claimCoordinator: EntertainmentClaimCoordinator
 
     private lateinit var statusContainer: LinearLayout
     private lateinit var questContainer: LinearLayout
@@ -146,6 +149,7 @@ class MainActivity : AppCompatActivity() {
         focusSessionManager = FocusSessionManager(this, timeBankRepository)
         questStartCoordinator = QuestStartCoordinator(questRepository, focusSessionManager)
         questVerificationCoordinator = QuestVerificationCoordinator(questRepository, focusSessionManager)
+        claimCoordinator = EntertainmentClaimCoordinator(lockStateManager, timeBankRepository, usageTracker)
 
         setContentView(R.layout.activity_main)
 
@@ -1052,7 +1056,8 @@ class MainActivity : AppCompatActivity() {
         val head = ui.row()
         head.addView(
             // Blue is the Focus hue - the shortcut that jumps here is gold, but
-            // these minutes are earned by focusing and only spent there.
+            // these minutes are earned by focusing, and spent either on a focus
+            // extension or on a claim onto today's allowance.
             ui.iconTile(ui.palette.workPale, R.drawable.ic_time_indicator, ui.dimens.character).apply {
                 contentDescription = getString(R.string.cd_time_bank)
             }
@@ -1086,7 +1091,14 @@ class MainActivity : AppCompatActivity() {
         )
 
         card.addView(ui.vgap(ui.dimens.groupGap))
-        card.addView(ui.note(getString(R.string.time_bank_explain)))
+        card.addView(
+            ui.note(
+                getString(
+                    R.string.time_bank_explain,
+                    EntertainmentClaimPolicy.DAILY_CAP_MINUTES
+                )
+            )
+        )
 
         renderTimeBankUse(card)
 
@@ -1097,44 +1109,65 @@ class MainActivity : AppCompatActivity() {
     /**
      * Where the bank's minutes actually go.
      *
-     * These two buttons used to call `spendMinutes()` from the card itself, which
-     * moved minutes out of the bank and extended nothing - the real path is
-     * `extendFocusWithTimeBank`, and it only exists on a running session. So the
-     * card hands the person to that screen when one is running, and to the setup
-     * form when none is - a sentence telling someone to start a session is not a
-     * way for them to start one.
+     * The claim is capped per day on purpose: a bank that could refill a
+     * finished day without limit would make the limit decorative. What the
+     * claim cannot do is buy back a recovery day, so those are told why rather
+     * than shown a button that would refuse - the decision rendered here is
+     * the same [EntertainmentClaimPolicy] one the tap would execute.
      */
     private fun renderTimeBankUse(block: LinearLayout) {
         block.addView(ui.vgap(ui.dimens.groupGap))
         block.addView(ui.rule())
         block.addView(ui.vgap(ui.dimens.lineGap))
 
-        val session = state.focusSession
-        if (session != null && session.isActive) {
-            block.addView(ui.note(getString(R.string.time_bank_use_running)))
-            block.addView(ui.vgap(ui.dimens.lineGap))
+        val claimedToday = lockStateManager.claimedMinutesToday()
+        val decision = EntertainmentClaimPolicy.decide(
+            dayType = lockStateManager.getDayType(),
+            claimedToday = claimedToday,
+            availableMinutes = state.signals?.reclaimedAvailableMinutes ?: 0L
+        )
+
+        if (claimedToday > 0L) {
             block.addView(
-                ui.secondary(getString(R.string.time_bank_use_cta)).apply {
-                    layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
+                ui.note(
+                    getString(
+                        R.string.time_bank_claim_status,
+                        claimedToday,
+                        EntertainmentClaimPolicy.DAILY_CAP_MINUTES
                     )
-                    setOnClickListener { openFocusSessionPanel() }
-                }
+                )
             )
-        } else {
-            block.addView(ui.note(getString(R.string.time_bank_use_none)))
             block.addView(ui.vgap(ui.dimens.lineGap))
-            block.addView(
-                ui.secondary(getString(R.string.action_start_focus)).apply {
-                    layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                    )
-                    setOnClickListener { revealFocusSetup() }
-                }
-            )
         }
+
+        when (decision) {
+            is EntertainmentClaimPolicy.Decision.Claim -> block.addView(
+                ui.secondary(getString(R.string.time_bank_claim_action, decision.minutes)).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    setOnClickListener { claimBankMinutes() }
+                }
+            )
+            EntertainmentClaimPolicy.Decision.DailyCapReached ->
+                block.addView(ui.note(getString(R.string.time_bank_claim_full)))
+            EntertainmentClaimPolicy.Decision.RecoveryDay ->
+                block.addView(ui.note(getString(R.string.time_bank_claim_recovery)))
+            // The head of the card already says the bank is empty; a line here
+            // would only say it twice.
+            EntertainmentClaimPolicy.Decision.BankEmpty -> Unit
+        }
+    }
+
+    private fun claimBankMinutes() {
+        val outcome = claimCoordinator.claim()
+        if (outcome is EntertainmentClaimPolicy.Decision.Claim) {
+            toast(R.string.time_bank_claim_toast, outcome.minutes)
+        }
+        // A refusal needs no toast of its own: the render below re-reads the
+        // day and the bank, so the card ends up showing why instead.
+        renderDashboard()
     }
 
     // ------------------------------------------------------------------

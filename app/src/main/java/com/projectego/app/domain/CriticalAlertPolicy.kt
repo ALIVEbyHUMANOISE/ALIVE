@@ -10,12 +10,11 @@ import com.projectego.app.model.TimeStatus
  * reasons that are both visible in `UsageTracker`:
  *
  *  1. In dev-test mode the ladder collapses to `if (isExceeded) 5 else 1`
- *     (`UsageTracker` :100-101), so `tier >= 1` is true on the very first
+ *     (`UsageTracker` :106-107), so `tier >= 1` is true on the very first
  *     minute of a dev day. A tier-based trigger would interrupt immediately.
- *  2. The ladder is written in absolute minutes against an implicit 120
- *     (:103-110). `tier >= 1` means "30 minutes left" only while the allowance
- *     happens to be 120; the moment the allowance changes it means something
- *     else, silently.
+ *  2. The window is this policy's own number of minutes; the ladder is a set
+ *     of rungs the tracker happens to draw. Saying "30 minutes left" with
+ *     `tier >= 1` would silently change meaning the day anyone retunes a rung.
  *
  * No `Context` and no clock, so this is testable on plain JVM.
  */

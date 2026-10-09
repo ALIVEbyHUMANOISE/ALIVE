@@ -42,6 +42,13 @@ class LockStateManager(context: Context) {
         // reason to take someone's day away.
         private const val KEY_QUEST_RULE_ANNOUNCED = "key_quest_rule_announced"
 
+        // Minutes claimed from the Time Bank onto today's entertainment
+        // allowance, keyed by the day they were claimed on - the same
+        // self-scoping trick as the guard gap: a different day makes the number
+        // stale, so no rollover has to remember to clear it.
+        private const val KEY_CLAIMED_DAY = "key_claimed_day"
+        private const val KEY_CLAIMED_MINUTES = "key_claimed_minutes"
+
         const val PRODUCTION_LIMIT_MINUTES = 120L
         const val DEV_TEST_LIMIT_MINUTES = 1L
 
@@ -233,11 +240,47 @@ class LockStateManager(context: Context) {
         prefs.edit().putBoolean(KEY_DEV_TEST_MODE, enabled).apply()
     }
 
+    /**
+     * The minutes claimed from the Time Bank onto today's allowance.
+     *
+     * Reads through the stored day, so yesterday's number reads as zero here
+     * without anything having cleared it.
+     */
+    @Synchronized
+    fun claimedMinutesToday(): Long =
+        if (prefs.getString(KEY_CLAIMED_DAY, null) == getTodayDateString()) {
+            prefs.getLong(KEY_CLAIMED_MINUTES, 0L)
+        } else {
+            0L
+        }
+
+    /**
+     * Adds [minutes] to the claimed total for [dayKey].
+     *
+     * The stored day is consulted before adding, so the first claim after
+     * midnight starts from zero rather than from yesterday's number. The
+     * defaulted day exists for tests - production always claims onto today.
+     */
+    @Synchronized
+    fun addClaimedMinutesToday(minutes: Long, dayKey: String = getTodayDateString()) {
+        if (minutes <= 0L) return
+        val current = if (prefs.getString(KEY_CLAIMED_DAY, null) == dayKey) {
+            prefs.getLong(KEY_CLAIMED_MINUTES, 0L)
+        } else {
+            0L
+        }
+        prefs.edit()
+            .putString(KEY_CLAIMED_DAY, dayKey)
+            .putLong(KEY_CLAIMED_MINUTES, current + minutes)
+            .apply()
+    }
+
     fun getDailyLimitMinutes(): Long {
         if (getDayType() == DayType.ZERO_ENTERTAINMENT_DAY) {
             return 0L
         }
-        return if (isDevTestModeEnabled()) DEV_TEST_LIMIT_MINUTES else PRODUCTION_LIMIT_MINUTES
+        val base = if (isDevTestModeEnabled()) DEV_TEST_LIMIT_MINUTES else PRODUCTION_LIMIT_MINUTES
+        return base + claimedMinutesToday()
     }
 
     fun isLocked(): Boolean {

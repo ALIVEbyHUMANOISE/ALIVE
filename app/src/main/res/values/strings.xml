@@ -76,14 +76,16 @@
     <!-- ============ TIME BANK ============ -->
     <string name="time_bank_heading">Time Bank</string>
     <string name="time_bank_empty">Nothing reclaimed yet. A verified session gives you time back.</string>
-    <string name="time_bank_use_running">A focus session is running. That is where these minutes buy time.</string>
-    <string name="time_bank_use_cta">Go to the running session</string>
-    <string name="time_bank_use_none">Nothing is running to extend. Start a focus session and spend them there.</string>
+    <string name="time_bank_claim_action">Claim %1$d minutes</string>
+    <string name="time_bank_claim_status">Claimed today: %1$d of %2$d minutes.</string>
+    <string name="time_bank_claim_full">Today\'s claim is used up.</string>
+    <string name="time_bank_claim_recovery">A recovery day closes entertainment, so there is no allowance to add to.</string>
+    <string name="time_bank_claim_toast">%1$d minutes added to today\'s entertainment allowance.</string>
     <string name="time_bank_not_enough">Not enough reclaimed time for that.</string>
     <string name="time_bank_available_total">%1$d min available</string>
     <string name="stat_bank_earned">Earned</string>
     <string name="stat_bank_spent">Spent</string>
-    <string name="time_bank_explain">Verified quests pay minutes in. Extending a Focus session pays them out.</string>
+    <string name="time_bank_explain">Verified quests pay minutes in. Claim them onto today\'s entertainment allowance (max %1$d minutes a day), or spend them on a focus extension.</string>
     <string name="cd_time_bank">Pixel clock: the Time Bank, where reclaimed minutes are kept.</string>
     <!-- The three Home tiles. Each says what it opens, because a glyph alone is a
          guess and a wrong guess costs a tap. -->

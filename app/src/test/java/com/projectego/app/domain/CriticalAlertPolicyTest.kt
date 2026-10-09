@@ -13,8 +13,8 @@ import org.junit.Test
  * The window is defined in minutes of the day's own allowance. These tests hold
  * that line: the boundary is inclusive on both ends, a locked or recovery day
  * never gets a warning, and - most importantly - nothing here keys off
- * `criticalZoneTier`, because the tier ladder is written against an implicit
- * 120 minutes and collapses entirely in dev-test mode.
+ * `criticalZoneTier`, because the tier ladder can collapse entirely in
+ * dev-test mode.
  */
 class CriticalAlertPolicyTest {
 

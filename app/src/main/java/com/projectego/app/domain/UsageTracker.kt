@@ -18,7 +18,7 @@ data class UsageReport(
     val limitMinutes: Long,
     val isLimitExceeded: Boolean,
     val remainingMinutes: Long,
-    val criticalZoneTier: Int, // 0 = normal, 1 = 90m (30m left), 2 = 105m (15m left), 3 = 115m (5m left), 4 = 119m (1m left), 5 = locked
+    val criticalZoneTier: Int, // 0 = normal, 1 = 30m left, 2 = 15m left, 3 = 5m left, 4 = 1m left, 5 = locked
     val timeStatus: TimeStatus,
     val dayType: DayType,
     val currentStreak: Int,
@@ -106,12 +106,17 @@ class UsageTracker(private val context: Context) {
             tier = if (lockStateManager.isDevTestModeEnabled()) {
                 if (isExceeded) 5 else 1
             } else {
+                // Rungs are minutes-left, never absolute usage: the allowance
+                // grows when minutes are claimed from the Time Bank, and a
+                // threshold like ">= 120" would silently mean something else
+                // at every other limit.
+                val minutesLeft = limitMinutes - totalMinutes
                 when {
-                    totalMinutes >= 120 -> 5 // Locked
-                    totalMinutes >= 119 -> 4 // 1 min left
-                    totalMinutes >= 115 -> 3 // 5 min left
-                    totalMinutes >= 105 -> 2 // 15 min left
-                    totalMinutes >= 90  -> 1 // 30 min left (Critical Zone Start)
+                    isExceeded -> 5 // Locked
+                    minutesLeft <= 1L -> 4 // 1 min left
+                    minutesLeft <= 5L -> 3 // 5 min left
+                    minutesLeft <= 15L -> 2 // 15 min left
+                    minutesLeft <= 30L -> 1 // 30 min left (Critical Zone Start)
                     else -> 0
                 }
             }
