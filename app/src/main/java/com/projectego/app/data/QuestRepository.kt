@@ -63,6 +63,11 @@ class QuestRepository(
         private const val KEY_ACTIVE_QUEST_ID = "key_active_quest_id"
         private const val KEY_COMPLETED_QUEST_IDS = "key_completed_quest_ids"
 
+        // The day the quest state above belongs to. Written whenever the
+        // rollover runs, so the first read of a new day can tell that yesterday's
+        // board is still on file.
+        private const val KEY_QUEST_DAY = "key_quest_day"
+
         // Phase 2.3.3: one-time migration marker. When this key is present,
         // the legacy Phase 2.1 quest lifecycle state (active id + completed
         // ids) has already been cleared and will never be cleared again.
@@ -105,6 +110,43 @@ class QuestRepository(
      * card. Nothing stores a title, so this is resolved fresh on each read and
      * follows the language the moment it changes.
      */
+    /**
+     * A quest is something you do today, not a badge you keep.
+     *
+     * Without this the board only ever fills up: a quest that paid out last night
+     * still reads as completed, the attempt that failed at 23:50 is still the
+     * attempt on screen, and after a week the only honest description of the
+     * quest page is "everything is done". So the day the board belongs to is
+     * written down, and the first read of a new day clears yesterday's: the
+     * completed set, and - unless a session is genuinely still running - the
+     * attempt and the chosen quest.
+     *
+     * An attempt in COMMITTED / IN_PROGRESS / PENDING_VERIFICATION / VERIFIED
+     * survives the rollover on purpose. That is not leftover state: it is real
+     * time already being spent, and clearing it at 00:00 would delete a session
+     * the person is still sitting in - or a verdict waiting to be claimed.
+     *
+     * Returns true when a new day was rolled over.
+     */
+    @Synchronized
+    fun rolloverIfNeeded(): Boolean {
+        val today = LockStateManager.dayKeyOf(clock())
+        if (prefs.getString(KEY_QUEST_DAY, null) == today) return false
+
+        val attempt = getCurrentAttempt()
+        val stillRunning = attempt != null && isActiveAttemptState(attempt.state)
+
+        prefs.edit().apply {
+            putString(KEY_QUEST_DAY, today)
+            remove(KEY_COMPLETED_QUEST_IDS)
+            if (!stillRunning) {
+                remove(KEY_CURRENT_ATTEMPT)
+                remove(KEY_ACTIVE_QUEST_ID)
+            }
+        }.apply()
+        return true
+    }
+
     private fun catalog(): List<Quest> = listOf(
         Quest(
             id = "quest_walk_20",

@@ -362,6 +362,11 @@ class MainActivity : AppCompatActivity() {
     private fun renderDashboard() {
         statusContainer.removeAllViews()
 
+        // The first read of a new day clears yesterday's board: the quests that
+        // paid out, and the attempt that ended last night. Done before the reads
+        // below so this render cannot show a day that is already over.
+        questRepository.rolloverIfNeeded()
+
         // Four reads - the same four this dashboard always performed, hoisted so
         // one render cannot quietly poll twice. Everything below uses these.
         val report = usageTracker.calculateTodayEntertainmentUsage()
@@ -1468,6 +1473,11 @@ class MainActivity : AppCompatActivity() {
         // Clear first: onResume and every tab switch re-render this board, so
         // appending would stack another copy under the last.
         questContainer.removeAllViews()
+
+        // The same rollover Home runs, because this is the surface that is open
+        // when a day turns: an app left on this tab overnight must not keep
+        // serving yesterday's quests and yesterday's verdict.
+        questRepository.rolloverIfNeeded()
 
         val allQuests = questRepository.getAllQuests()
 
