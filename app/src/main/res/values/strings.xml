@@ -274,7 +274,25 @@
     <string name="pose_failed_note">That one didn\'t count. You can try again.</string>
     <string name="pose_streak_note">You\'ve done this before.</string>
 
-    <string name="cd_character_pose">ALIVE character, %1$s</string>
+    <!-- Content descriptions for the character sheet. Every surface names the
+         sprite it shows; anger is always aimed at the phone, never the user. -->
+    <string name="cd_face_normal">ALIVE character, looking ahead.</string>
+    <string name="cd_face_happy">ALIVE character, smiling.</string>
+    <string name="cd_face_sad">ALIVE character, looking down.</string>
+    <string name="cd_face_sleepy">ALIVE character, dozing off.</string>
+    <string name="cd_face_angry">ALIVE character, angry at the phone.</string>
+    <string name="cd_face_angry_full">ALIVE character, really angry at the phone.</string>
+    <string name="cd_face_excited">ALIVE character, jumping with joy.</string>
+    <string name="cd_face_confused">ALIVE character, confused.</string>
+    <string name="cd_face_thinking">ALIVE character, thinking.</string>
+    <string name="cd_face_worried">ALIVE character, worried.</string>
+    <string name="cd_face_tired">ALIVE character, running low.</string>
+    <string name="cd_face_phone">ALIVE character, holding a phone.</string>
+    <string name="cd_face_book">ALIVE character, reading a book.</string>
+    <string name="cd_face_laptop">ALIVE character, working on a laptop.</string>
+    <string name="cd_face_camera">ALIVE character, holding a camera.</string>
+    <string name="cd_face_pencil">ALIVE character, writing with a pencil.</string>
+    <string name="cd_face_waving">ALIVE character, waving hello.</string>
 
     <!-- Quest kind, in the user's words. The engine enum names are never shown. -->
     <string name="category_exercise">Move</string>
@@ -385,7 +403,6 @@
     <string name="guard_who_turned_it_off">ALIVE can\'t tell whether you turned it off or the phone did to save battery.</string>
     <string name="guard_enable_action">Turn the guard back on</string>
     <string name="guard_profile_line">Today had a stretch with the guard off.</string>
-    <string name="cd_guard_mark">Pixel figure, awake and looking sideways.</string>
     <string name="permissions_accessibility_why">Accessibility is how ALIVE closes an app when its time is up. Without it nothing is closed, and the day is marked as unguarded.</string>
 
     <!-- ============ DEV PANEL ============

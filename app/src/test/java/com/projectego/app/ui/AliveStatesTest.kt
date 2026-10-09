@@ -2,6 +2,7 @@ package com.projectego.app.ui
 
 import com.projectego.app.R
 import com.projectego.app.model.DayType
+import com.projectego.app.model.FocusActivityType
 import com.projectego.app.model.PhysicalQuestRequirement
 import com.projectego.app.model.QuestAttemptState
 import com.projectego.app.model.QuestCategory
@@ -133,19 +134,79 @@ class AliveStatesTest {
     }
 
     @Test
-    fun `stage derivation covers all six poses`() {
-        val stages = listOf(
-            AliveStage.DISCONNECTED, AliveStage.UNAWARE, AliveStage.CONTROLLED,
-            AliveStage.AWARE, AliveStage.RECLAIMING, AliveStage.ALIVE
-        )
-        stages.forEach { stage ->
-            assertTrue(stage.name, AliveStates.poseFor(stage) != 0)
-            assertTrue(stage.name, AliveStates.stageLabel(stage) != 0)
-        }
+    fun `stage derivation still covers the copy ladder`() {
         assertEquals(AliveStage.DISCONNECTED, AliveStates.stageOf(signals(timeStatus = TimeStatus.LOCKED, tier = 5, remaining = 0)))
         assertEquals(AliveStage.UNAWARE, AliveStates.stageOf(signals()))
         assertEquals(AliveStage.CONTROLLED, AliveStates.stageOf(signals(timeStatus = TimeStatus.CRITICAL, tier = 1, remaining = 28)))
         assertEquals(AliveStage.ALIVE, AliveStates.stageOf(signals(attempt = QuestAttemptState.REWARDED, reclaimed = 20)))
+        AliveStage.values().forEach { stage ->
+            assertTrue(stage.name, AliveStates.stageLabel(stage) != 0)
+        }
+    }
+
+    @Test
+    fun `every face resolves to a sprite and a description`() {
+        AliveFace.values().forEach { face ->
+            assertTrue(face.name, AliveStates.faceSpriteFor(face) != 0)
+            assertTrue(face.name, AliveStates.faceDescription(face) != 0)
+        }
+    }
+
+    @Test
+    fun `faceFor follows what is already happening`() {
+        // Effort in flight outranks everything, even a locked day.
+        assertEquals(
+            AliveFace.LAPTOP,
+            AliveStates.faceFor(signals(timeStatus = TimeStatus.LOCKED, tier = 5, remaining = 0, focusActive = true))
+        )
+        assertEquals(AliveFace.NORMAL, AliveStates.faceFor(signals(attempt = QuestAttemptState.COMMITTED)))
+        assertEquals(AliveFace.NORMAL, AliveStates.faceFor(signals(attempt = QuestAttemptState.IN_PROGRESS)))
+
+        // The verification journey is its own three faces, in order.
+        assertEquals(AliveFace.THINKING, AliveStates.faceFor(signals(attempt = QuestAttemptState.PENDING_VERIFICATION)))
+        assertEquals(AliveFace.HAPPY, AliveStates.faceFor(signals(attempt = QuestAttemptState.VERIFIED)))
+        assertEquals(AliveFace.EXCITED, AliveStates.faceFor(signals(attempt = QuestAttemptState.REWARDED, reclaimed = 20)))
+
+        // A locked day is anger at the phone; a recovery day is a nap.
+        assertEquals(AliveFace.ANGRY, AliveStates.faceFor(signals(timeStatus = TimeStatus.LOCKED, tier = 5, remaining = 0)))
+        assertEquals(
+            AliveFace.SLEEPY,
+            AliveStates.faceFor(signals(timeStatus = TimeStatus.ZERO_ENTERTAINMENT_DAY, tier = 5, remaining = 0, dayType = DayType.ZERO_ENTERTAINMENT_DAY))
+        )
+
+        // The tier ladder.
+        assertEquals(AliveFace.WORRIED, AliveStates.faceFor(signals(timeStatus = TimeStatus.CRITICAL, tier = 3, remaining = 20)))
+        assertEquals(AliveFace.WORRIED, AliveStates.faceFor(signals(timeStatus = TimeStatus.CRITICAL, tier = 4, remaining = 20)))
+        assertEquals(AliveFace.TIRED, AliveStates.faceFor(signals(timeStatus = TimeStatus.CRITICAL, tier = 1, remaining = 30)))
+        assertEquals(AliveFace.TIRED, AliveStates.faceFor(signals(timeStatus = TimeStatus.CRITICAL, tier = 2, remaining = 30)))
+
+        // A failed attempt is sad, a streak or reclaimed time is happy.
+        assertEquals(AliveFace.SAD, AliveStates.faceFor(signals(attempt = QuestAttemptState.FAILED)))
+        assertEquals(AliveFace.HAPPY, AliveStates.faceFor(signals(streak = 3)))
+        assertEquals(AliveFace.HAPPY, AliveStates.faceFor(signals(reclaimed = 15)))
+
+        // And the plain day opens with a wave.
+        assertEquals(AliveFace.WAVING, AliveStates.faceFor(signals()))
+    }
+
+    @Test
+    fun `sheet poses cover the quest heroes and focus previews that have them`() {
+        assertEquals(AliveFace.BOOK, AliveStates.questHeroSpriteFor(QuestCategory.STUDY))
+        assertEquals(AliveFace.BOOK, AliveStates.questHeroSpriteFor(QuestCategory.READING))
+        assertEquals(AliveFace.LAPTOP, AliveStates.questHeroSpriteFor(QuestCategory.CODING))
+        assertEquals(AliveFace.PENCIL, AliveStates.questHeroSpriteFor(QuestCategory.WRITING))
+        assertEquals(AliveFace.CAMERA, AliveStates.questHeroSpriteFor(QuestCategory.CREATIVE))
+
+        listOf(
+            QuestCategory.EXERCISE, QuestCategory.WALKING, QuestCategory.CLEANING,
+            QuestCategory.MINDFULNESS, QuestCategory.SOCIAL, QuestCategory.OTHER
+        ).forEach { assertEquals(it.name, null, AliveStates.questHeroSpriteFor(it)) }
+
+        assertEquals(AliveFace.BOOK, AliveStates.focusPreviewSpriteFor(FocusActivityType.STUDY))
+        assertEquals(AliveFace.LAPTOP, AliveStates.focusPreviewSpriteFor(FocusActivityType.CODING))
+        assertEquals(AliveFace.PENCIL, AliveStates.focusPreviewSpriteFor(FocusActivityType.WRITING))
+        assertEquals(AliveFace.CAMERA, AliveStates.focusPreviewSpriteFor(FocusActivityType.CREATIVE))
+        assertEquals(null, AliveStates.focusPreviewSpriteFor(FocusActivityType.WORK))
     }
 
     @Test

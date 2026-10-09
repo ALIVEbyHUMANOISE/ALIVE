@@ -29,6 +29,18 @@ object CriticalTimeCard {
         // colour, a sound or a movement.
         val block = ui.notice()
 
+        // The one surface where ALIVE is visibly angry - at the phone, not the
+        // user - so the alert reads as ALIVE speaking rather than the system
+        // interrupting.
+        block.addView(
+            ui.mark(
+                AliveStates.faceSpriteFor(AliveFace.ANGRY_FULL),
+                ui.dimens.character,
+                context.getString(AliveStates.faceDescription(AliveFace.ANGRY_FULL))
+            )
+        )
+        block.addView(ui.vgap(ui.dimens.lineGap))
+
         block.addView(ui.sectionHeader(context.getString(R.string.chart_alert_eyebrow)))
         block.addView(ui.vgap(ui.dimens.lineGap))
 

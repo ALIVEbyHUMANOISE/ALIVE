@@ -259,7 +259,25 @@
     <string name="pose_failed_note">Yang tadi tidak dihitung. Coba lagi boleh.</string>
     <string name="pose_streak_note">Kamu sudah pernah melakukan ini.</string>
 
-    <string name="cd_character_pose">Karakter ALIVE, %1$s</string>
+    <!-- Deskripsi konten untuk lembar karakter. Setiap layar menyebut sprite
+         yang ditampilkan; kemarahan selalu ke ponsel, bukan ke pengguna. -->
+    <string name="cd_face_normal">Karakter ALIVE, menatap ke depan.</string>
+    <string name="cd_face_happy">Karakter ALIVE, tersenyum.</string>
+    <string name="cd_face_sad">Karakter ALIVE, menunduk.</string>
+    <string name="cd_face_sleepy">Karakter ALIVE, mengantuk.</string>
+    <string name="cd_face_angry">Karakter ALIVE, marah ke ponsel.</string>
+    <string name="cd_face_angry_full">Karakter ALIVE, sangat marah ke ponsel.</string>
+    <string name="cd_face_excited">Karakter ALIVE, melompat senang.</string>
+    <string name="cd_face_confused">Karakter ALIVE, bingung.</string>
+    <string name="cd_face_thinking">Karakter ALIVE, berpikir.</string>
+    <string name="cd_face_worried">Karakter ALIVE, khawatir.</string>
+    <string name="cd_face_tired">Karakter ALIVE, kehabisan tenaga.</string>
+    <string name="cd_face_phone">Karakter ALIVE, memegang ponsel.</string>
+    <string name="cd_face_book">Karakter ALIVE, membaca buku.</string>
+    <string name="cd_face_laptop">Karakter ALIVE, bekerja dengan laptop.</string>
+    <string name="cd_face_camera">Karakter ALIVE, memegang kamera.</string>
+    <string name="cd_face_pencil">Karakter ALIVE, menulis dengan pensil.</string>
+    <string name="cd_face_waving">Karakter ALIVE, melambai.</string>
 
     <!-- Jenis misi, dengan kata-kata pengguna. Nama enum mesin tidak pernah tampil. -->
     <string name="category_exercise">Gerak</string>
@@ -351,6 +369,5 @@
     <string name="guard_who_turned_it_off">ALIVE tidak bisa tahu kamu yang mematikannya atau ponsel yang melakukannya demi baterai.</string>
     <string name="guard_enable_action">Nyalakan lagi penjaganya</string>
     <string name="guard_profile_line">Hari ini punya bagian tanpa penjaga.</string>
-    <string name="cd_guard_mark">Figur pixel, terjaga dan melihat ke samping.</string>
     <string name="permissions_accessibility_why">Aksesibilitas adalah cara ALIVE menutup aplikasi saat waktunya habis. Tanpanya tidak ada yang tertutup, dan hari itu ditandai tanpa penjaga.</string>
 </resources>

@@ -61,11 +61,15 @@ class LockActivity : AppCompatActivity() {
             )
         }
 
+        // The figure on a lock screen: holding the phone it was cut off from
+        // for an entertainment block, plain ALIVE for a focus session - this
+        // screen is the session's door, not an accusation.
+        val lockFace = if (isFocusSession) AliveFace.NORMAL else AliveFace.PHONE
         page.addView(
             ui.pose(
-                R.drawable.ic_alive_character_aware,
+                AliveStates.faceSpriteFor(lockFace),
                 ui.dimens.characterLarge,
-                getString(R.string.lock_intent)
+                getString(AliveStates.faceDescription(lockFace))
             )
         )
 

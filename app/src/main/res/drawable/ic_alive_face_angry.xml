@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ALIVE face, expression: Angry. Narrow slanting eyes and a red burst
+     overhead - mad at the phone that ate the day, not at the user. Body
+     grid identical to ic_alive_character. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="@color/alive_pink_soft"
+        android:pathData="M5,3h6v1h-6zM4,4h8v1h-8zM4,5h8v1h-8zM4,6h8v1h-8zM2,7h2v1h-2zM4,7h8v1h-8zM12,7h2v1h-2zM2,8h2v1h-2zM4,8h8v1h-8zM12,8h2v1h-2zM4,9h8v1h-8zM5,10h6v1h-6zM5,11h2v1h-2zM9,11h2v1h-2zM5,12h2v1h-2zM9,12h2v1h-2z" />
+    <path
+        android:fillColor="@color/alive_ink"
+        android:pathData="M5,5h2v1h-2zM5,6h1v1h-1zM9,5h2v1h-2zM10,6h1v1h-1z" />
+    <path
+        android:fillColor="@color/alive_red_short_dark"
+        android:pathData="M7,0h1v2h-1zM6,1h3v1h-3z" />
+    <path
+        android:fillColor="@color/alive_red_short_mid"
+        android:pathData="M5,0h1v1h-1zM9,0h1v1h-1zM5,2h1v1h-1zM9,2h1v1h-1z" />
+</vector>

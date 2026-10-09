@@ -37,13 +37,21 @@ class AliveCharacterSilhouetteTest {
 
     private val standingSprites = listOf(
         "ic_alive_character" to R.drawable.ic_alive_character,
-        "ic_alive_character_aware" to R.drawable.ic_alive_character_aware,
-        "alive_pose_disconnected" to R.drawable.alive_pose_disconnected,
-        "alive_pose_unaware" to R.drawable.alive_pose_unaware,
-        "alive_pose_aware" to R.drawable.alive_pose_aware,
-        "alive_pose_controlled" to R.drawable.alive_pose_controlled,
+        "ic_alive_face_happy" to R.drawable.ic_alive_face_happy,
+        "ic_alive_face_sad" to R.drawable.ic_alive_face_sad,
+        "ic_alive_face_sleepy" to R.drawable.ic_alive_face_sleepy,
+        "ic_alive_face_angry" to R.drawable.ic_alive_face_angry,
+        "ic_alive_face_angry_full" to R.drawable.ic_alive_face_angry_full,
+        "ic_alive_face_confused" to R.drawable.ic_alive_face_confused,
+        "ic_alive_face_thinking" to R.drawable.ic_alive_face_thinking,
+        "ic_alive_face_worried" to R.drawable.ic_alive_face_worried,
+        "ic_alive_face_tired" to R.drawable.ic_alive_face_tired,
         "alive_pose_alive" to R.drawable.alive_pose_alive,
-        "alive_pose_reclaiming" to R.drawable.alive_pose_reclaiming
+        "alive_pose_unaware" to R.drawable.alive_pose_unaware,
+        "ic_alive_pose_book" to R.drawable.ic_alive_pose_book,
+        "ic_alive_pose_camera" to R.drawable.ic_alive_pose_camera,
+        "ic_alive_pose_pencil" to R.drawable.ic_alive_pose_pencil,
+        "ic_alive_pose_wave" to R.drawable.ic_alive_pose_wave
     )
 
     @Test

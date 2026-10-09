@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ALIVE face, expression: Angry Full. The critical-alert variant: bigger
+     red burst overhead, side bursts, and a turned-down mouth on top of the
+     narrow eyes. Body grid identical to ic_alive_character. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="@color/alive_pink_soft"
+        android:pathData="M5,3h6v1h-6zM4,4h8v1h-8zM4,5h8v1h-8zM4,6h8v1h-8zM2,7h2v1h-2zM4,7h8v1h-8zM12,7h2v1h-2zM2,8h2v1h-2zM4,8h8v1h-8zM12,8h2v1h-2zM4,9h8v1h-8zM5,10h6v1h-6zM5,11h2v1h-2zM9,11h2v1h-2zM5,12h2v1h-2zM9,12h2v1h-2z" />
+    <path
+        android:fillColor="@color/alive_ink"
+        android:pathData="M5,5h2v1h-2zM5,6h1v1h-1zM9,5h2v1h-2zM10,6h1v1h-1zM6,8h1v1h-1zM9,8h1v1h-1zM7,9h2v1h-2z" />
+    <path
+        android:fillColor="@color/alive_red_short_dark"
+        android:pathData="M7,0h1v3h-1zM4,1h7v1h-7z" />
+    <path
+        android:fillColor="@color/alive_red_short_mid"
+        android:pathData="M3,0h1v1h-1zM11,0h1v1h-1zM3,2h1v1h-1zM11,2h1v1h-1zM1,4h1v1h-1zM0,5h3v1h-3zM1,6h1v1h-1zM14,4h1v1h-1zM13,5h3v1h-3zM14,6h1v1h-1z" />
+</vector>

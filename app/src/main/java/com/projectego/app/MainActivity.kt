@@ -5,7 +5,6 @@ import android.app.AppOpsManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.drawable.AnimationDrawable
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.Build
@@ -63,10 +62,10 @@ import com.projectego.app.model.UsageDay
 import com.projectego.app.model.VerificationMethod
 import com.projectego.app.service.EgoAccessibilityService
 import com.projectego.app.ui.AliveComponents
+import com.projectego.app.ui.AliveFace
 import com.projectego.app.ui.AlivePanel
 import com.projectego.app.ui.AliveRenderState
 import com.projectego.app.ui.AliveSignals
-import com.projectego.app.ui.AliveStage
 import com.projectego.app.ui.AliveStates
 import com.projectego.app.ui.AliveSeries
 import com.projectego.app.ui.AppLabels
@@ -428,12 +427,12 @@ class MainActivity : AppCompatActivity() {
     /**
      * The character, the wordmark, one handwritten line.
      *
-     * The stage is a display derivation, never an engine fact: it shows as a
-     * pose and at most one annotation, and is never printed as a name, a level,
-     * or a bar.
+     * The face is a display derivation, never an engine fact: it shows as a
+     * sprite and at most one annotation, and is never printed as a name, a
+     * level, or a bar.
      */
     private fun renderHeader(signals: AliveSignals) {
-        val stage = AliveStates.stageOf(signals)
+        val face = AliveStates.faceFor(signals)
         val header = ui.column()
 
         header.addView(homeShortcuts())
@@ -442,9 +441,9 @@ class MainActivity : AppCompatActivity() {
         val line = ui.row()
         line.addView(
             ui.animatedPose(
-                AliveStates.poseFor(stage),
+                AliveStates.faceSpriteFor(face),
                 ui.dimens.characterLarge,
-                characterDescription(stage)
+                characterDescription(face)
             )
         )
         line.addView(
@@ -582,13 +581,16 @@ class MainActivity : AppCompatActivity() {
         // The figure used to sit above three grey paragraphs of the same size,
         // which is how the most important sentence on the screen ended up looking
         // like fine print. Now the figure and the headline share a line, and the
-        // rest is separated by what it is for.
+        // rest is separated by what it is for. Static on purpose: a gap asks
+        // "who turned this off?", a repaired guard is just ALIVE at ease.
+        val guardFace = if (repaired) AliveFace.NORMAL else AliveFace.CONFUSED
         val line = ui.row()
         line.addView(
-            ui.iconTile(ui.palette.white, R.drawable.alive_anim_cycle, ui.dimens.character).apply {
-                contentDescription = getString(R.string.cd_guard_mark)
-                (drawable as? AnimationDrawable)?.start()
-            }
+            ui.iconTile(
+                ui.palette.white,
+                AliveStates.faceSpriteFor(guardFace),
+                ui.dimens.character
+            ).apply { contentDescription = getString(AliveStates.faceDescription(guardFace)) }
         )
         line.addView(ui.hgap(ui.dimens.m))
         line.addView(
@@ -633,8 +635,8 @@ class MainActivity : AppCompatActivity() {
         statusContainer.addView(card)
     }
 
-    private fun characterDescription(stage: AliveStage): String =
-        getString(R.string.cd_character_pose, getString(AliveStates.stageLabel(stage)))
+    private fun characterDescription(face: AliveFace): String =
+        getString(AliveStates.faceDescription(face))
 
     /**
      * What ALIVE cannot see, and how to let it.
@@ -751,15 +753,16 @@ class MainActivity : AppCompatActivity() {
                 )
             )
         } else {
-            // Closed, or a recovery day: a statement, not a number, and the
-            // figure walking toward something else.
+            // No big number: the day is locked (ALIVE is angry at the phone),
+            // in recovery (ALIVE naps), or down to its last minute.
+            val face = AliveStates.faceFor(signals)
             card.addView(ui.headline(getString(headlineRes)))
             card.addView(ui.vgap(ui.dimens.lineGap))
             card.addView(
                 ui.mark(
-                    R.drawable.ic_alive_character_aware,
+                    AliveStates.faceSpriteFor(face),
                     ui.dimens.character,
-                    getString(R.string.lock_intent)
+                    getString(AliveStates.faceDescription(face))
                 )
             )
         }
@@ -935,12 +938,15 @@ class MainActivity : AppCompatActivity() {
             block.addView(ui.vgap(ui.dimens.lineGap))
         }
 
+        // The face follows the attempt - one is always in flight in this block -
+        // inside the tile that keeps the category hue.
+        val face = state.signals?.let { AliveStates.faceFor(it) } ?: AliveFace.NORMAL
         block.addView(
             ui.iconTile(
                 ContextCompat.getColor(this, QuestHues.quest(quest.category)),
-                PixelMarks.quest(quest.category),
+                AliveStates.faceSpriteFor(face),
                 ui.dimens.character
-            ).apply { contentDescription = getString(PixelMarks.description(quest.category)) }
+            ).apply { contentDescription = getString(AliveStates.faceDescription(face)) }
         )
         block.addView(ui.vgap(ui.dimens.lineGap))
 
@@ -1274,13 +1280,19 @@ class MainActivity : AppCompatActivity() {
         val durations = listOf(30L, 60L, 90L, 120L)
 
         // The tile above the list is the answer to "what am I about to pick":
-        // its mark and its colour both change the moment another activity is chosen.
+        // its mark and its colour both change the moment another activity is
+        // chosen. Sheet poses replace the mark where one exists; WORK keeps its
+        // briefcase because the sheet has no work pose.
         val markType = activities.getOrNull(state.selectedActivityIndex) ?: FocusActivityType.STUDY
+        val previewFace = AliveStates.focusPreviewSpriteFor(markType)
         val mark = ui.iconTile(
             ContextCompat.getColor(this, QuestHues.focus(markType)),
-            PixelMarks.focus(markType),
+            previewFace?.let { AliveStates.faceSpriteFor(it) } ?: PixelMarks.focus(markType),
             ui.dimens.character
-        ).apply { contentDescription = getString(R.string.cd_focus_mark, activityLabel(markType)) }
+        ).apply {
+            contentDescription = previewFace?.let { getString(AliveStates.faceDescription(it)) }
+                ?: getString(R.string.cd_focus_mark, activityLabel(markType))
+        }
         anchor.addView(mark)
         anchor.addView(ui.vgap(ui.dimens.groupGap))
 
@@ -1621,11 +1633,21 @@ class MainActivity : AppCompatActivity() {
 
         // Name, mark, and what kind of doing it is - one line. The page used to
         // open with a paragraph, which is the last thing anyone reads about a quest
-        // they are deciding whether to spend twenty minutes on.
+        // they are deciding whether to spend twenty minutes on. Categories with a
+        // sheet pose get the character; the rest keep their pixel mark.
+        val heroFace = AliveStates.questHeroSpriteFor(quest.category)
         val hero = ui.row()
         hero.addView(
-            ui.iconTile(hue, PixelMarks.quest(quest.category), ui.dimens.characterLarge)
-                .apply { contentDescription = getString(PixelMarks.description(quest.category)) }
+            ui.iconTile(
+                hue,
+                heroFace?.let { AliveStates.faceSpriteFor(it) } ?: PixelMarks.quest(quest.category),
+                ui.dimens.characterLarge
+            ).apply {
+                contentDescription = getString(
+                    heroFace?.let { AliveStates.faceDescription(it) }
+                        ?: PixelMarks.description(quest.category)
+                )
+            }
         )
         hero.addView(ui.hgap(ui.dimens.l))
         hero.addView(
@@ -2326,13 +2348,13 @@ class MainActivity : AppCompatActivity() {
         profileContainer.addView(how)
     }
 
-    /** Where the day stands: the pose, the sentence, and the two day facts. */
+    /** Where the day stands: the face, the sentence, and the two day facts. */
     private fun buildStateCard(signals: AliveSignals): LinearLayout {
         val card = ui.bentoCard(getString(R.string.profile_state_heading))
-        val stage = AliveStates.stageOf(signals)
+        val face = AliveStates.faceFor(signals)
 
         val line = ui.row()
-        line.addView(ui.animatedPose(AliveStates.poseFor(stage), ui.dimens.character, characterDescription(stage)))
+        line.addView(ui.animatedPose(AliveStates.faceSpriteFor(face), ui.dimens.character, characterDescription(face)))
         line.addView(
             ui.column().apply {
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)

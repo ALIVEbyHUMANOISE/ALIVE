@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ALIVE animation frame: the critter sits behind an open laptop, hands on
-     the keyboard. One of the frames in alive_anim_cycle. -->
+<!-- ALIVE pose: Laptop. The critter sits behind an open laptop, hands on
+     the keyboard. Shown while a focus session is really running. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="48dp"
     android:height="48dp"

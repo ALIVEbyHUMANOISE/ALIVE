@@ -31,6 +31,18 @@ import com.projectego.app.model.TimeStatus
 enum class AliveStage { DISCONNECTED, UNAWARE, CONTROLLED, AWARE, RECLAIMING, ALIVE }
 
 /**
+ * The character's face and pose, straight from the sprite sheet.
+ *
+ * The sheet is one vocabulary: expressions and activity poses live in the same
+ * enum because every surface picks exactly one sprite. Copy about a state still
+ * uses [AliveStage]; this enum only chooses how ALIVE looks.
+ */
+enum class AliveFace {
+    NORMAL, HAPPY, SAD, SLEEPY, ANGRY, ANGRY_FULL, EXCITED, CONFUSED,
+    THINKING, WORRIED, TIRED, PHONE, BOOK, LAPTOP, CAMERA, PENCIL, WAVING
+}
+
+/**
  * How a block of the interface is dressed - what happened, not how heavy it is.
  *
  * Weight (`SurfaceWeight`) is a separate axis: this enum picks the face colour
@@ -121,14 +133,110 @@ object AliveStates {
         }
     }
 
+    /**
+     * Which face the character shows, mirroring [stageOf] priority for priority:
+     * effort in flight first, then the attempt's verification journey, then the
+     * day's state. Anger is aimed at the phone that ate the day - a locked day
+     * gets the red burst, a recovery day gets a quiet nap instead.
+     */
+    fun faceFor(signals: AliveSignals): AliveFace {
+        val attempt = signals.attemptState
+
+        return when {
+            signals.focusActive -> AliveFace.LAPTOP
+
+            attempt == QuestAttemptState.COMMITTED ||
+                attempt == QuestAttemptState.IN_PROGRESS -> AliveFace.NORMAL
+
+            attempt == QuestAttemptState.PENDING_VERIFICATION -> AliveFace.THINKING
+
+            attempt == QuestAttemptState.VERIFIED -> AliveFace.HAPPY
+
+            attempt == QuestAttemptState.REWARDED -> AliveFace.EXCITED
+
+            // A recovery day naps even though its tier reads high: nothing was
+            // taken, so there is no phone to be angry at.
+            signals.timeStatus == TimeStatus.ZERO_ENTERTAINMENT_DAY -> AliveFace.SLEEPY
+
+            signals.timeStatus == TimeStatus.LOCKED ||
+                signals.criticalZoneTier >= 5 -> AliveFace.ANGRY
+
+            signals.criticalZoneTier >= 3 -> AliveFace.WORRIED
+
+            signals.criticalZoneTier >= 1 -> AliveFace.TIRED
+
+            attempt == QuestAttemptState.FAILED -> AliveFace.SAD
+
+            signals.currentStreak >= 1 || signals.reclaimedAvailableMinutes > 0 -> AliveFace.HAPPY
+
+            else -> AliveFace.WAVING
+        }
+    }
+
     @DrawableRes
-    fun poseFor(stage: AliveStage): Int = when (stage) {
-        AliveStage.DISCONNECTED -> R.drawable.alive_pose_disconnected
-        AliveStage.UNAWARE -> R.drawable.alive_pose_unaware
-        AliveStage.CONTROLLED -> R.drawable.alive_pose_controlled
-        AliveStage.AWARE -> R.drawable.alive_pose_aware
-        AliveStage.RECLAIMING -> R.drawable.alive_pose_reclaiming
-        AliveStage.ALIVE -> R.drawable.alive_pose_alive
+    fun faceSpriteFor(face: AliveFace): Int = when (face) {
+        AliveFace.NORMAL -> R.drawable.ic_alive_character
+        AliveFace.HAPPY -> R.drawable.ic_alive_face_happy
+        AliveFace.SAD -> R.drawable.ic_alive_face_sad
+        AliveFace.SLEEPY -> R.drawable.ic_alive_face_sleepy
+        AliveFace.ANGRY -> R.drawable.ic_alive_face_angry
+        AliveFace.ANGRY_FULL -> R.drawable.ic_alive_face_angry_full
+        AliveFace.EXCITED -> R.drawable.alive_pose_alive
+        AliveFace.CONFUSED -> R.drawable.ic_alive_face_confused
+        AliveFace.THINKING -> R.drawable.ic_alive_face_thinking
+        AliveFace.WORRIED -> R.drawable.ic_alive_face_worried
+        AliveFace.TIRED -> R.drawable.ic_alive_face_tired
+        AliveFace.PHONE -> R.drawable.alive_pose_unaware
+        AliveFace.BOOK -> R.drawable.ic_alive_pose_book
+        AliveFace.LAPTOP -> R.drawable.alive_anim_laptop
+        AliveFace.CAMERA -> R.drawable.ic_alive_pose_camera
+        AliveFace.PENCIL -> R.drawable.ic_alive_pose_pencil
+        AliveFace.WAVING -> R.drawable.ic_alive_pose_wave
+    }
+
+    @StringRes
+    fun faceDescription(face: AliveFace): Int = when (face) {
+        AliveFace.NORMAL -> R.string.cd_face_normal
+        AliveFace.HAPPY -> R.string.cd_face_happy
+        AliveFace.SAD -> R.string.cd_face_sad
+        AliveFace.SLEEPY -> R.string.cd_face_sleepy
+        AliveFace.ANGRY -> R.string.cd_face_angry
+        AliveFace.ANGRY_FULL -> R.string.cd_face_angry_full
+        AliveFace.EXCITED -> R.string.cd_face_excited
+        AliveFace.CONFUSED -> R.string.cd_face_confused
+        AliveFace.THINKING -> R.string.cd_face_thinking
+        AliveFace.WORRIED -> R.string.cd_face_worried
+        AliveFace.TIRED -> R.string.cd_face_tired
+        AliveFace.PHONE -> R.string.cd_face_phone
+        AliveFace.BOOK -> R.string.cd_face_book
+        AliveFace.LAPTOP -> R.string.cd_face_laptop
+        AliveFace.CAMERA -> R.string.cd_face_camera
+        AliveFace.PENCIL -> R.string.cd_face_pencil
+        AliveFace.WAVING -> R.string.cd_face_waving
+    }
+
+    /**
+     * The hero face for a quest detail page, or null when the sheet has no
+     * pose for that category and the category's pixel mark should stay.
+     */
+    fun questHeroSpriteFor(category: QuestCategory): AliveFace? = when (category) {
+        QuestCategory.STUDY, QuestCategory.READING -> AliveFace.BOOK
+        QuestCategory.CODING -> AliveFace.LAPTOP
+        QuestCategory.WRITING -> AliveFace.PENCIL
+        QuestCategory.CREATIVE -> AliveFace.CAMERA
+        else -> null
+    }
+
+    /**
+     * The preview face on the focus setup page, or null when the sheet has no
+     * pose for that activity and the pixel mark should stay.
+     */
+    fun focusPreviewSpriteFor(type: FocusActivityType): AliveFace? = when (type) {
+        FocusActivityType.STUDY -> AliveFace.BOOK
+        FocusActivityType.CODING -> AliveFace.LAPTOP
+        FocusActivityType.WRITING -> AliveFace.PENCIL
+        FocusActivityType.CREATIVE -> AliveFace.CAMERA
+        else -> null
     }
 
     @StringRes
