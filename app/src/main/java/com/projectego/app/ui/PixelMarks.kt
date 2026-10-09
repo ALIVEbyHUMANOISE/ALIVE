@@ -38,6 +38,8 @@ object PixelMarks {
         QuestCategory.CREATIVE -> R.drawable.ic_pixel_brush
         QuestCategory.CODING -> R.drawable.ic_pixel_terminal
         QuestCategory.WRITING -> R.drawable.ic_pixel_pen
+        QuestCategory.MINDFULNESS -> R.drawable.ic_pixel_lotus
+        QuestCategory.SOCIAL -> R.drawable.ic_pixel_people
         QuestCategory.OTHER -> R.drawable.alive_accent_star
     }
 
@@ -51,6 +53,8 @@ object PixelMarks {
         QuestCategory.CREATIVE -> R.string.cd_mark_creative
         QuestCategory.CODING -> R.string.cd_mark_coding
         QuestCategory.WRITING -> R.string.cd_mark_writing
+        QuestCategory.MINDFULNESS -> R.string.cd_mark_mindfulness
+        QuestCategory.SOCIAL -> R.string.cd_mark_social
         QuestCategory.OTHER -> R.string.cd_mark_other
     }
 }

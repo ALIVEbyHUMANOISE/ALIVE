@@ -223,7 +223,8 @@ class AliveStatesTest {
 
         listOf(
             QuestCategory.WALKING, QuestCategory.READING, QuestCategory.EXERCISE,
-            QuestCategory.CLEANING, QuestCategory.OTHER
+            QuestCategory.CLEANING, QuestCategory.MINDFULNESS, QuestCategory.SOCIAL,
+            QuestCategory.OTHER
         ).forEach { assertTrue(it.name, AliveStates.isSelfVerifiable(it).not()) }
     }
 

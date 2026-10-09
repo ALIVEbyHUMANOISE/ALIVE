@@ -69,6 +69,12 @@
     <color name="alive_cat_creative">#F58FA6</color>
     <color name="alive_cat_coding">#A99AF2</color>
     <color name="alive_cat_writing">#F4B168</color>
+    <!-- Two life missions that had no home among the doing hues: sitting with
+         yourself (a muted lavender), and being with people (a sea-glass teal
+         that sits in the one wide gap left between exercise green and sky
+         blue). Chrome like the rest: a tab and a tile, ink measured on them. -->
+    <color name="alive_cat_mindfulness">#C9A3DE</color>
+    <color name="alive_cat_social">#77C9B6</color>
     <!-- Focus's WORK activity, and the one category hue that is not a quest
          category. It is a step lighter than blue_work_mid because ink strokes on
          blue_work_mid measure 4.3:1 - a tile whose mark cannot be read is not a

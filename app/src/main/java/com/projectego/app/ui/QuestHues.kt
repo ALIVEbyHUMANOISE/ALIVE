@@ -29,6 +29,8 @@ object QuestHues {
         QuestCategory.CREATIVE -> R.color.alive_cat_creative
         QuestCategory.CODING -> R.color.alive_cat_coding
         QuestCategory.WRITING -> R.color.alive_cat_writing
+        QuestCategory.MINDFULNESS -> R.color.alive_cat_mindfulness
+        QuestCategory.SOCIAL -> R.color.alive_cat_social
         QuestCategory.OTHER -> R.color.alive_cat_other
     }
 

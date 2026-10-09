@@ -110,6 +110,16 @@
     <string name="quest_clean_body">Organize your desk, make your bed, clean your living environment.</string>
     <string name="quest_draw_title">Draw for 20 Minutes</string>
     <string name="quest_draw_body">Sketch, ink, or paint something on paper or in a drawing app.</string>
+    <string name="quest_run_title">Run for 20 Minutes</string>
+    <string name="quest_run_body">Run easy or with intervals, outside or on a treadmill.</string>
+    <string name="quest_meditate_title">Meditate for 10 Minutes</string>
+    <string name="quest_meditate_body">Sit still, slow the breathing, no screen in front of you.</string>
+    <string name="quest_socialize_title">Socialize for 30 Minutes</string>
+    <string name="quest_socialize_body">Spend real time talking with someone, face to face or over a call.</string>
+    <string name="quest_kindness_title">Share Kindness for 15 Minutes</string>
+    <string name="quest_kindness_body">Help someone today: a hand, some time, or your full attention.</string>
+    <string name="quest_podcast_title">Watch a Podcast for 30 Minutes</string>
+    <string name="quest_podcast_body">Watch or listen to one episode, start to finish.</string>
 
     <!-- ============ QUEST BOARD ============ -->
     <!-- The board's headline is a statement in two lines, the way the reference
@@ -263,6 +273,8 @@
     <string name="category_creative">Make something</string>
     <string name="category_coding">Code</string>
     <string name="category_writing">Write</string>
+    <string name="category_mindfulness">Mindfulness</string>
+    <string name="category_social">Social</string>
     <string name="category_other">Something else</string>
 
     <!-- Focus activity names, same wording as the engine display names. -->
@@ -323,6 +335,8 @@
     <string name="cd_mark_creative">Pixel paintbrush: a creative quest.</string>
     <string name="cd_mark_coding">Pixel terminal: a coding quest.</string>
     <string name="cd_mark_writing">Pixel pen: a writing quest.</string>
+    <string name="cd_mark_mindfulness">Pixel lotus: a mindfulness quest.</string>
+    <string name="cd_mark_social">Two pixel figures: a quest with people.</string>
     <string name="cd_mark_other">Pixel star: an uncategorised quest.</string>
     <string name="cd_focus_mark">Pixel mark: %1$s focus.</string>
     <string name="chart_apps_heading">Today, by app</string>

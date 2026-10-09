@@ -400,6 +400,8 @@ object AliveStates {
         QuestCategory.CREATIVE -> R.string.category_creative
         QuestCategory.CODING -> R.string.category_coding
         QuestCategory.WRITING -> R.string.category_writing
+        QuestCategory.MINDFULNESS -> R.string.category_mindfulness
+        QuestCategory.SOCIAL -> R.string.category_social
         QuestCategory.OTHER -> R.string.category_other
     }
 

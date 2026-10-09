@@ -9,6 +9,8 @@ enum class QuestCategory {
     CREATIVE,
     CODING,
     WRITING,
+    MINDFULNESS,
+    SOCIAL,
     OTHER
 }
 

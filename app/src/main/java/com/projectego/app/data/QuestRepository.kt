@@ -87,7 +87,9 @@ class QuestRepository(
         // storage, so re-resolving the words on every read costs nothing.
         val INITIAL_QUEST_IDS = listOf(
             "quest_walk_20", "quest_study_30", "quest_read_30",
-            "quest_exercise_20", "quest_clean_20", "quest_draw_20"
+            "quest_exercise_20", "quest_clean_20", "quest_draw_20",
+            "quest_run_20", "quest_meditate_10", "quest_socialize_30",
+            "quest_kindness_15", "quest_podcast_30"
         )
     }
 
@@ -153,6 +155,54 @@ class QuestRepository(
             difficulty = QuestDifficulty.EASY,
             estimatedDurationMinutes = 20,
             rewardMinutes = 15
+        ),
+        // The life missions: body, stillness, people, kindness - and one
+        // long-form thing watched all the way through. All physical: ALIVE
+        // can watch a screen, and none of these happen on one.
+        Quest(
+            id = "quest_run_20",
+            title = context.getString(R.string.quest_run_title),
+            description = context.getString(R.string.quest_run_body),
+            category = QuestCategory.EXERCISE,
+            difficulty = QuestDifficulty.MEDIUM,
+            estimatedDurationMinutes = 20,
+            rewardMinutes = 25
+        ),
+        Quest(
+            id = "quest_meditate_10",
+            title = context.getString(R.string.quest_meditate_title),
+            description = context.getString(R.string.quest_meditate_body),
+            category = QuestCategory.MINDFULNESS,
+            difficulty = QuestDifficulty.EASY,
+            estimatedDurationMinutes = 10,
+            rewardMinutes = 10
+        ),
+        Quest(
+            id = "quest_socialize_30",
+            title = context.getString(R.string.quest_socialize_title),
+            description = context.getString(R.string.quest_socialize_body),
+            category = QuestCategory.SOCIAL,
+            difficulty = QuestDifficulty.MEDIUM,
+            estimatedDurationMinutes = 30,
+            rewardMinutes = 20
+        ),
+        Quest(
+            id = "quest_kindness_15",
+            title = context.getString(R.string.quest_kindness_title),
+            description = context.getString(R.string.quest_kindness_body),
+            category = QuestCategory.SOCIAL,
+            difficulty = QuestDifficulty.EASY,
+            estimatedDurationMinutes = 15,
+            rewardMinutes = 10
+        ),
+        Quest(
+            id = "quest_podcast_30",
+            title = context.getString(R.string.quest_podcast_title),
+            description = context.getString(R.string.quest_podcast_body),
+            category = QuestCategory.READING,
+            difficulty = QuestDifficulty.MEDIUM,
+            estimatedDurationMinutes = 30,
+            rewardMinutes = 20
         )
     )
 

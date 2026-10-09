@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lotus: Mindfulness. Ink petals with a white bloom band, floating on a
+     forest water line. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="@color/alive_ink"
+        android:pathData="M7,2h2v2h-2zM7,6h2v2h-2zM5,3h1v1h-1zM4,4h1v2h-1zM3,6h1v2h-1zM10,3h1v1h-1zM11,4h1v2h-1zM12,6h1v2h-1z" />
+    <path
+        android:fillColor="@color/alive_white"
+        android:pathData="M7,4h2v2h-2z" />
+    <path
+        android:fillColor="@color/alive_forest"
+        android:pathData="M3,9h10v1h-10z" />
+</vector>

@@ -126,6 +126,8 @@ class AlivePaletteTest {
             R.color.alive_cat_creative,
             R.color.alive_cat_coding,
             R.color.alive_cat_writing,
+            R.color.alive_cat_mindfulness,
+            R.color.alive_cat_social,
             R.color.alive_cat_work,
             R.color.alive_cat_other,
             R.color.alive_amber_action

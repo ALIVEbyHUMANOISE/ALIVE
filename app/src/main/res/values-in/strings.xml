@@ -103,6 +103,16 @@
     <string name="quest_clean_body">Rapikan meja, rapikan tempat tidur, bersihkan tempat tinggalmu.</string>
     <string name="quest_draw_title">Menggambar 20 Menit</string>
     <string name="quest_draw_body">Coret, gambar, atau warnai sesuatu di kertas atau di aplikasi gambar.</string>
+    <string name="quest_run_title">Lari 20 Menit</string>
+    <string name="quest_run_body">Lari santai atau interval, di luar atau di treadmill.</string>
+    <string name="quest_meditate_title">Meditasi 10 Menit</string>
+    <string name="quest_meditate_body">Duduk tenang, pelan-pelan atur napas, tanpa layar di depan mata.</string>
+    <string name="quest_socialize_title">Bersosialisasi 30 Menit</string>
+    <string name="quest_socialize_body">Luangkan waktu ngobrol sungguhan, langsung atau lewat telepon.</string>
+    <string name="quest_kindness_title">Berbagi Kebaikan 15 Menit</string>
+    <string name="quest_kindness_body">Bantu seseorang hari ini: tenaga, waktu, atau perhatian penuhmu.</string>
+    <string name="quest_podcast_title">Nonton Podcast 30 Menit</string>
+    <string name="quest_podcast_body">Tonton atau dengar satu episode, dari awal sampai selesai.</string>
 
     <!-- ============ PAPAN MISI ============ -->
     <string name="quest_heading">Pilih sebuah misi.</string>
@@ -248,6 +258,8 @@
     <string name="category_creative">Berkarya</string>
     <string name="category_coding">Koding</string>
     <string name="category_writing">Menulis</string>
+    <string name="category_mindfulness">Tenang</string>
+    <string name="category_social">Sosial</string>
     <string name="category_other">Lainnya</string>
 
     <string name="focus_activity_study">Belajar</string>
@@ -297,6 +309,8 @@
     <string name="cd_mark_creative">Kuas pixel: misi berkarya.</string>
     <string name="cd_mark_coding">Terminal pixel: misi koding.</string>
     <string name="cd_mark_writing">Pena pixel: misi menulis.</string>
+    <string name="cd_mark_mindfulness">Teratai pixel: misi menenangkan diri.</string>
+    <string name="cd_mark_social">Dua sosok pixel: misi bersama orang.</string>
     <string name="cd_mark_other">Bintang pixel: misi tanpa kategori.</string>
     <string name="cd_focus_mark">Penanda pixel: fokus %1$s.</string>
     <string name="chart_apps_heading">Hari ini, per aplikasi</string>
