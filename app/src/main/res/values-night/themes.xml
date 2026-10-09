@@ -22,10 +22,10 @@
         <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
 
         <!-- The loading splash: the same canvas the app opens onto, with the
-             wordmark standing in for the character. No circle behind it - the
-             name is the mark, not an icon in a badge. -->
+             hourglass mark on it. No plate behind it - the mark reads on its
+             own, and a circle would only shrink the thing inside it. -->
         <item name="android:windowSplashScreenBackground">@drawable/bg_canvas</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_splash_wordmark</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_splash_hourglass</item>
         <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
         <item name="android:windowSplashScreenAnimationDuration">300</item>
         <item name="android:textColorPrimary">@color/alive_ink</item>

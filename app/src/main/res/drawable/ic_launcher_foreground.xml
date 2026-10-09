@@ -1,15 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ALIVE launcher foreground: the wordmark, pixel letters in ink with the
-     pink block caret from the header, centred inside the adaptive safe zone. -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="32"
-    android:viewportHeight="32">
-    <path
-        android:fillColor="@color/alive_ink"
-        android:pathData="M7,14h1v1h-1zM6,15h1v3h-1zM8,15h1v3h-1zM6,16h3v1h-3zM10,14h1v4h-1zM10,18h3v1h-3zM14,14h1v5h-1zM16,14h1v4h-1zM18,14h1v4h-1zM17,18h1v1h-1zM20,14h3v1h-3zM20,15h1v1h-1zM20,16h2v1h-2zM20,17h1v1h-1zM20,18h3v1h-3z" />
-    <path
-        android:fillColor="@color/alive_pink_soft"
-        android:pathData="M24,14h1v5h-1z" />
-</vector>
+<!-- ALIVE launcher foreground: the hourglass mark, sized into the adaptive safe
+     zone rather than filling the 108dp canvas - the system crops the outer ring,
+     and a mark that touches the edge loses its frame on most launchers. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:width="64dp"
+        android:height="64dp"
+        android:drawable="@drawable/ic_alive_hourglass"
+        android:gravity="center" />
+</layer-list>

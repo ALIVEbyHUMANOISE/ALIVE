@@ -67,6 +67,6 @@
     <dimen name="nav_icon_size">32dp</dimen>
     <dimen name="step_size">16dp</dimen>
     <dimen name="step_gap">2dp</dimen>
-    <dimen name="caret_height">20dp</dimen>
+    <dimen name="hourglass_size">20dp</dimen>
 
 </resources>

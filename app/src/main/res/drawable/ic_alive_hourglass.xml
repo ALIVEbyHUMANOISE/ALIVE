@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ALIVE's mark: a pixel hourglass on the same 16x16 grid as every sprite.
+
+     Ink for the frame, reward gold for the sand - the two colours that already
+     mean "time" and "what you earned" everywhere else in the app. The sand sits
+     as two full triangles with an empty waist, so the shape still reads at the
+     48dp a launcher icon actually gives it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="16dp"
+    android:height="16dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="@color/alive_ink"
+        android:pathData="M3,2h10v1h-10zM3,3h10v1h-10zM3,12h10v1h-10zM3,13h10v1h-10zM4,4h1v1h-1zM11,4h1v1h-1zM5,5h1v1h-1zM10,5h1v1h-1zM6,6h1v1h-1zM9,6h1v1h-1zM7,7h2v1h-2zM7,8h2v1h-2zM6,9h1v1h-1zM9,9h1v1h-1zM5,10h1v1h-1zM10,10h1v1h-1zM4,11h1v1h-1zM11,11h1v1h-1z" />
+    <path
+        android:fillColor="@color/alive_gold_reward_mid"
+        android:pathData="M5,4h6v1h-6zM6,5h4v1h-4zM7,6h2v1h-2zM7,9h2v1h-2zM6,10h4v1h-4zM5,11h6v1h-6z" />
+</vector>

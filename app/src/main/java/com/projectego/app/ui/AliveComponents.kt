@@ -801,38 +801,44 @@ class AliveComponents(private val context: Context) {
     }
 
     /**
-     * A block cursor beside the wordmark.
+     * The hourglass beside the wordmark.
      *
-     * INVISIBLE, not GONE: a wordmark that shifts half a character every second
-     * is harder to read than one with a blinking tail.
+     * It turns a quarter step at a time rather than smoothly: a pixel mark
+     * rotated through 45 degrees resamples every edge and turns to mush, while
+     * snapped to quarter turns it stays crisp and ticks like the rest of the
+     * pixel chrome. It replaced the blinking block cursor, which said "this is
+     * running" about a word that was never running anything.
      */
-    fun caret(heightPx: Int): View {
-        val cursor = View(context).apply {
-            layoutParams = LinearLayout.LayoutParams(heightPx / 2, heightPx).apply {
+    fun hourglassMark(sizePx: Int): ImageView {
+        val mark = ImageView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(sizePx, sizePx).apply {
                 marginStart = dimens.s
             }
-            setBackgroundColor(palette.ink)
+            setImageResource(R.drawable.ic_alive_hourglass)
+            // Decorative: the name it belongs to is written next to it.
+            contentDescription = null
         }
-        if (!animationsAllowed) return cursor
+        if (!animationsAllowed) return mark
 
         val handler = Handler(Looper.getMainLooper())
-        val blink = object : Runnable {
+        var step = 0
+        val turn = object : Runnable {
             override fun run() {
-                val on = cursor.visibility != View.VISIBLE
-                cursor.visibility = if (on) View.VISIBLE else View.INVISIBLE
-                handler.postDelayed(this, if (on) CARET_ON_MILLIS else CARET_OFF_MILLIS)
+                step = (step + 1) % 4
+                mark.rotation = step * 90f
+                handler.postDelayed(this, HOURGLASS_STEP_MILLIS)
             }
         }
-        cursor.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+        mark.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(view: View) {
-                handler.postDelayed(blink, CARET_ON_MILLIS)
+                handler.postDelayed(turn, HOURGLASS_STEP_MILLIS)
             }
 
             override fun onViewDetachedFromWindow(view: View) {
-                handler.removeCallbacks(blink)
+                handler.removeCallbacks(turn)
             }
         })
-        return cursor
+        return mark
     }
 
     /** The device decides, not us: "remove animated transitions" stops all of this. */
@@ -1072,7 +1078,7 @@ class AliveComponents(private val context: Context) {
 
         const val BOB_UP_MILLIS = 240L
         const val BOB_DOWN_MILLIS = 1_500L
-        const val CARET_ON_MILLIS = 620L
-        const val CARET_OFF_MILLIS = 480L
+        /** One quarter turn of the hourglass. Four of them is one full turn. */
+        const val HOURGLASS_STEP_MILLIS = 700L
     }
 }

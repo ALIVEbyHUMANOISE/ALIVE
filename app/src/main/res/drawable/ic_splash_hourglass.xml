@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ALIVE splash icon: the hourglass mark at the size the loading screen gives
+     an icon. The canvas behind it stays the flat paper of the app, so the mark
+     arrives as the app's own surface rather than a badge. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:width="96dp"
+        android:height="96dp"
+        android:drawable="@drawable/ic_alive_hourglass"
+        android:gravity="center" />
+</layer-list>

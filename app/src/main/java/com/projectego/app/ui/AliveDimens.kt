@@ -95,8 +95,8 @@ class AliveDimens(context: Context) {
     /** The bottom navigation icon, which used to be 24dp on a 16 grid. */
     val navIcon = sprite(R.dimen.nav_icon_size)
 
-    /** The block cursor's height; its width is half of it. */
-    val caretHeight = px(R.dimen.caret_height)
+    /** The hourglass beside the wordmark, snapped so its 16 grid stays crisp. */
+    val hourglassSize = sprite(R.dimen.hourglass_size)
 
     /**
      * A sprite size in pixels, rounded so one cell of its 16x16 grid is a whole

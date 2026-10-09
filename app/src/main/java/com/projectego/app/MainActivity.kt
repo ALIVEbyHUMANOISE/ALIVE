@@ -479,9 +479,9 @@ class MainActivity : AppCompatActivity() {
                                 }
                             }
                         })
-                        // A block cursor, so the wordmark reads as something that
-                        // is running rather than a printed title.
-                        addView(ui.caret(ui.dimens.caretHeight))
+                        // The hourglass turns beside the name: it is the app's
+                        // mark on the launcher, so the header carries the same one.
+                        addView(ui.hourglassMark(ui.dimens.hourglassSize))
                     }
                 )
                 addView(ui.vgap(ui.dimens.lineGap))
