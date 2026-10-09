@@ -4,8 +4,13 @@
 
      RemoteViews cannot draw and cannot change a layout weight at runtime, so
      the composition is carried by the app colours on the rows and by one
-     ProgressBar for the day's share of the allowance - the only bar a widget is
-     allowed to resize while the person is looking at it. -->
+     ProgressBar for the day's share of the allowance.
+
+     Every text attribute here is written out longhand on purpose. The layout is
+     inflated by the LAUNCHER's process with the launcher's own theme, and this
+     app's text appearances inherit from MaterialComponents parents that resolve
+     theme attributes the launcher has never heard of - which is exactly how the
+     first version earned a "couldn't add widget". -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -36,8 +41,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"
+                android:fontFamily="@font/manrope_medium"
+                android:includeFontPadding="false"
                 android:text="@string/widget_stats_eyebrow"
-                android:textAppearance="@style/TextAppearance.ALIVE.Meta" />
+                android:textColor="@color/alive_ink_secondary"
+                android:textSize="14sp" />
         </LinearLayout>
 
         <TextView
@@ -45,14 +53,20 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:textAppearance="@style/TextAppearance.ALIVE.Number" />
+            android:fontFamily="@font/silkscreen_bold"
+            android:includeFontPadding="false"
+            android:textColor="@color/alive_ink"
+            android:textSize="28sp" />
 
         <TextView
             android:id="@+id/widget_allowance"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:textAppearance="@style/TextAppearance.ALIVE.Meta" />
+            android:fontFamily="@font/manrope_medium"
+            android:includeFontPadding="false"
+            android:textColor="@color/alive_ink_secondary"
+            android:textSize="14sp" />
 
         <ProgressBar
             android:id="@+id/widget_bar"
@@ -66,20 +80,20 @@
 
         <LinearLayout android:id="@+id/widget_row_1" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:gravity="center_vertical" android:orientation="horizontal">
             <View android:id="@+id/widget_swatch_1" android:layout_width="10dp" android:layout_height="10dp" />
-            <TextView android:id="@+id/widget_name_1" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textAppearance="@style/TextAppearance.ALIVE.Meta" />
-            <TextView android:id="@+id/widget_minutes_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textAppearance="@style/TextAppearance.ALIVE.Meta" />
+            <TextView android:id="@+id/widget_name_1" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:ellipsize="end" android:fontFamily="@font/manrope_medium" android:includeFontPadding="false" android:maxLines="1" android:textColor="@color/alive_ink" android:textSize="14sp" />
+            <TextView android:id="@+id/widget_minutes_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="@font/manrope_medium" android:includeFontPadding="false" android:textColor="@color/alive_ink_secondary" android:textSize="14sp" />
         </LinearLayout>
 
         <LinearLayout android:id="@+id/widget_row_2" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:gravity="center_vertical" android:orientation="horizontal">
             <View android:id="@+id/widget_swatch_2" android:layout_width="10dp" android:layout_height="10dp" />
-            <TextView android:id="@+id/widget_name_2" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textAppearance="@style/TextAppearance.ALIVE.Meta" />
-            <TextView android:id="@+id/widget_minutes_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textAppearance="@style/TextAppearance.ALIVE.Meta" />
+            <TextView android:id="@+id/widget_name_2" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:ellipsize="end" android:fontFamily="@font/manrope_medium" android:includeFontPadding="false" android:maxLines="1" android:textColor="@color/alive_ink" android:textSize="14sp" />
+            <TextView android:id="@+id/widget_minutes_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="@font/manrope_medium" android:includeFontPadding="false" android:textColor="@color/alive_ink_secondary" android:textSize="14sp" />
         </LinearLayout>
 
         <LinearLayout android:id="@+id/widget_row_3" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:gravity="center_vertical" android:orientation="horizontal">
             <View android:id="@+id/widget_swatch_3" android:layout_width="10dp" android:layout_height="10dp" />
-            <TextView android:id="@+id/widget_name_3" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:ellipsize="end" android:maxLines="1" android:textAppearance="@style/TextAppearance.ALIVE.Meta" />
-            <TextView android:id="@+id/widget_minutes_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textAppearance="@style/TextAppearance.ALIVE.Meta" />
+            <TextView android:id="@+id/widget_name_3" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:ellipsize="end" android:fontFamily="@font/manrope_medium" android:includeFontPadding="false" android:maxLines="1" android:textColor="@color/alive_ink" android:textSize="14sp" />
+            <TextView android:id="@+id/widget_minutes_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="@font/manrope_medium" android:includeFontPadding="false" android:textColor="@color/alive_ink_secondary" android:textSize="14sp" />
         </LinearLayout>
 
         <TextView
@@ -87,8 +101,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
+            android:fontFamily="@font/manrope_regular"
+            android:includeFontPadding="false"
+            android:lineSpacingExtra="3sp"
             android:text="@string/widget_stats_empty"
-            android:textAppearance="@style/TextAppearance.ALIVE.Note"
+            android:textColor="@color/alive_ink_secondary"
+            android:textSize="18sp"
             android:visibility="gone" />
     </LinearLayout>
 </FrameLayout>

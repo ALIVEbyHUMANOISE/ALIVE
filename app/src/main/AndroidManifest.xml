@@ -111,12 +111,13 @@
                 android:resource="@xml/accessibility_service_config" />
         </service>
 
-        <!-- The home-screen widget. Exported is false on purpose: the platform
-             delivers the update broadcast through the provider metadata, and
-             nothing else has any business waking this receiver. -->
+        <!-- The home-screen widget. Exported must be true: the launcher runs in
+             its own process and is the one that binds this receiver, so an
+             unexported component is invisible to it and the picker answers
+             "couldn't add widget". -->
         <receiver
             android:name=".ui.widget.AliveStatsWidgetProvider"
-            android:exported="false"
+            android:exported="true"
             android:label="@string/widget_stats_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
