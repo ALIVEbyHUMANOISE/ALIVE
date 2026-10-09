@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Nav icon, pixel: home. -->
+<!-- Nav icon, pixel: a solid house with a door cut through it.
+     The nav tints every icon to one colour, so the icon has to read as a
+     silhouette - the door is a hole in the path (evenOdd), not a second fill
+     that the tint would flatten into the walls. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -7,8 +10,6 @@
     android:viewportHeight="16">
     <path
         android:fillColor="@color/alive_ink"
-        android:pathData="M8,2h1v1h-1zM7,3h1v1h-1zM9,3h1v1h-1zM5,4h2v1h-2zM10,4h1v1h-1zM4,5h1v1h-1zM11,5h2v1h-2zM3,6h1v1h-1zM13,6h1v1h-1zM2,7h1v1h-1zM4,7h9v1h-9zM14,7h1v1h-1zM4,8h1v1h-1zM12,8h1v1h-1zM4,9h1v1h-1zM12,9h1v1h-1zM4,10h1v1h-1zM7,10h3v1h-3zM12,10h1v1h-1zM4,11h1v1h-1zM7,11h3v1h-3zM12,11h1v1h-1zM4,12h1v1h-1zM7,12h3v1h-3zM12,12h1v1h-1zM4,13h9v1h-9z" />
-    <path
-        android:fillColor="@color/alive_white"
-        android:pathData="M5,8h7v1h-7zM5,9h7v1h-7zM5,10h2v1h-2zM10,10h2v1h-2zM5,11h2v1h-2zM10,11h2v1h-2zM5,12h2v1h-2zM10,12h2v1h-2z" />
+        android:fillType="evenOdd"
+        android:pathData="M7,2h2v1h-2zM6,3h4v1h-4zM5,4h6v1h-6zM4,5h8v1h-8zM3,6h10v1h-10zM4,7h8v7h-8zM7,11h2v3h-2z" />
 </vector>
