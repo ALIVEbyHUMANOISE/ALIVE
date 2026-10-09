@@ -28,7 +28,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.os.LocaleListCompat
 import androidx.core.widget.addTextChangedListener
 import androidx.core.content.ContextCompat
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.projectego.app.data.FocusSessionManager
 import com.projectego.app.data.LockStateManager
 import com.projectego.app.data.QuestEvidenceRepository
@@ -60,6 +59,7 @@ import com.projectego.app.model.UsageDay
 import com.projectego.app.model.VerificationMethod
 import com.projectego.app.ui.AliveComponents
 import com.projectego.app.ui.AliveFace
+import com.projectego.app.ui.AliveNavBar
 import com.projectego.app.ui.AlivePanel
 import com.projectego.app.ui.AliveRenderState
 import com.projectego.app.ui.AliveSignals
@@ -123,7 +123,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var profileContainer: LinearLayout
     private lateinit var overlayContainer: FrameLayout
     private lateinit var tabContent: FrameLayout
-    private lateinit var bottomNav: BottomNavigationView
+    private lateinit var navBar: AliveNavBar
     private lateinit var homeScroll: ScrollView
 
     private val ui by lazy { AliveComponents(this) }
@@ -146,6 +146,9 @@ class MainActivity : AppCompatActivity() {
     private enum class HomeMajor { GUARD, PERMISSIONS, ATTEMPT, TODAY }
 
     private var homeMajor = HomeMajor.TODAY
+
+    /** Which tab is on screen (0 home, 1 quest, 2 profile) - a closed panel returns here. */
+    private var currentTabIndex = 0
 
     // Hidden developer trigger state
     private var devTapCount = 0
@@ -211,17 +214,16 @@ class MainActivity : AppCompatActivity() {
         }
         tabContent.addView(overlayContainer)
 
-        bottomNav = findViewById(R.id.bottomNav)
-        bottomNav.setOnItemSelectedListener { item ->
-            closeOverlay()
-            when (item.itemId) {
-                R.id.nav_home -> { showTab(0); renderDashboard(); true }
-                R.id.nav_quest -> { showTab(1); renderQuestSection(); true }
-                R.id.nav_profile -> { showTab(2); renderProfile(); true }
-                else -> false
+        navBar = findViewById(R.id.navBar)
+        navBar.onSelect = { index ->
+            when (index) {
+                AliveNavBar.Index.HOME -> { closeOverlay(); showTab(0); renderDashboard() }
+                AliveNavBar.Index.QUEST -> { closeOverlay(); showTab(1); renderQuestSection() }
+                AliveNavBar.Index.STATS -> openUsageChartPanel()
+                AliveNavBar.Index.PROFILE -> { closeOverlay(); showTab(2); renderProfile() }
             }
         }
-        bottomNav.selectedItemId = R.id.nav_home
+        navBar.select(AliveNavBar.Index.HOME, animate = false)
         showTab(0)
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -265,7 +267,7 @@ class MainActivity : AppCompatActivity() {
         renderDashboard()
         renderQuestSection()
         // Profile draws from the cache those two renders just refreshed.
-        if (bottomNav.selectedItemId == R.id.nav_profile) renderProfile()
+        if (currentTabIndex == 2) renderProfile()
     }
 
     private fun hasUsageAccess(): Boolean = PermissionChecks.hasUsageAccess(this)
@@ -301,6 +303,9 @@ class MainActivity : AppCompatActivity() {
         state.closePanel()
         overlayContainer.removeAllViews()
         overlayContainer.visibility = View.GONE
+        // A closed panel hands the bar back to the tab underneath it - the
+        // stats circle travels home from the chart on its own.
+        navBar.select(AliveNavBar.Index.indexForTab(currentTabIndex), animate = false)
     }
 
     /**
@@ -887,7 +892,9 @@ class MainActivity : AppCompatActivity() {
                 HomeAction.RETURN_TO_SESSION -> setOnClickListener { openFocusSessionPanel() }
                 HomeAction.CONTINUE -> setOnClickListener {
                     closeOverlay()
-                    bottomNav.selectedItemId = R.id.nav_quest
+                    showTab(1)
+                    renderQuestSection()
+                    navBar.select(AliveNavBar.Index.QUEST)
                 }
                 HomeAction.NONE -> Unit
             }
@@ -1845,7 +1852,10 @@ class MainActivity : AppCompatActivity() {
     private fun openFocusSessionPanel() {
         val session = state.focusSession
         if (session == null || !session.isActive) {
-            bottomNav.selectedItemId = R.id.nav_home
+            closeOverlay()
+            showTab(0)
+            renderDashboard()
+            navBar.select(AliveNavBar.Index.HOME)
             revealFocusSetup()
             return
         }
@@ -1933,6 +1943,9 @@ class MainActivity : AppCompatActivity() {
      */
     private fun openUsageChartPanel() {
         state.panel = AlivePanel.USAGE_CHART
+        // The chart is the bar's third key; opening it from anywhere moves the
+        // circle there, so the bar never disagrees with what is on screen.
+        navBar.select(AliveNavBar.Index.STATS)
 
         val (scroll, column) = panel()
         column.addView(panelHeader(getString(R.string.chart_heading)))
@@ -2651,6 +2664,7 @@ class MainActivity : AppCompatActivity() {
     // ------------------------------------------------------------------
 
     private fun showTab(index: Int) {
+        currentTabIndex = index
         tabContent.getChildAt(0).visibility = if (index == 0) View.VISIBLE else View.GONE
         tabContent.getChildAt(1).visibility = if (index == 1) View.VISIBLE else View.GONE
         tabContent.getChildAt(2).visibility = if (index == 2) View.VISIBLE else View.GONE

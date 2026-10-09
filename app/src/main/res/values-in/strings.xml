@@ -17,6 +17,7 @@
     <!-- Navigasi -->
     <string name="nav_home">Beranda</string>
     <string name="nav_quest">Misi</string>
+    <string name="nav_stats">Statistik</string>
     <string name="nav_profile">Profil</string>
 
     <!-- Wordmark -->

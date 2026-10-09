@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ALIVE shell: one content frame, one hard ink rule, one nav bar.
+<!-- ALIVE shell: one content frame, one nav bar.
      Do not reorder or insert children into tabContent from XML: MainActivity
      addresses its tabs positionally (0 = home, 1 = quest, 2 = profile, and
      any overlay is appended at 3). -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -18,22 +17,10 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <View
+    <!-- The bar draws its own bold top contour - with the notch - so the strip
+         no longer needs a separate ink rule above it. -->
+    <com.projectego.app.ui.AliveNavBar
+        android:id="@+id/navBar"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/border_bold"
-        android:background="@color/alive_ink" />
-
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomNav"
-        style="@style/Widget.ALIVE.BottomNav"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/alive_paper"
-        android:paddingTop="@dimen/space_s"
-        android:paddingBottom="@dimen/space_s"
-        app:itemBackground="@drawable/bg_brutal_nav_item"
-        app:itemIconTint="@color/nav_item_tint"
-        app:itemTextColor="@color/nav_item_tint"
-        app:labelVisibilityMode="labeled"
-        app:menu="@menu/bottom_nav" />
+        android:layout_height="wrap_content" />
 </LinearLayout>

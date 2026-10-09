@@ -191,9 +191,10 @@
 
     <!-- ============ NAVIGATION ============ -->
 
-    <!-- Permanent navigation in the arcade face was the least legible text on
-         the screen and it could not be skipped by scrolling past it. The
-         terminal voice keeps it pixel while keeping it readable. -->
+    <!-- The bottom bar's key labels. Permanent navigation in the arcade face
+         was the least legible text on the screen and it could not be skipped
+         by scrolling past it; the terminal voice keeps it pixel while keeping
+         it readable. -->
     <style name="TextAppearance.ALIVE.NavLabel" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:fontFamily">@font/vt323</item>
         <item name="android:textSize">16sp</item>
@@ -201,28 +202,6 @@
         <item name="android:letterSpacing">0</item>
         <item name="android:lineSpacingExtra">2sp</item>
         <item name="android:includeFontPadding">false</item>
-    </style>
-
-    <style name="Widget.ALIVE.BottomNav" parent="Widget.MaterialComponents.BottomNavigationView">
-        <item name="android:background">@color/alive_paper</item>
-        <item name="elevation">0dp</item>
-        <item name="itemIconTint">@color/nav_item_tint</item>
-        <item name="itemTextColor">@color/nav_item_tint</item>
-        <item name="itemActiveIndicatorStyle">@style/Widget.ALIVE.BottomNav.Indicator</item>
-        <item name="labelVisibilityMode">labeled</item>
-        <!-- 32dp on the same 16 grid as every other sprite; it was 24dp, which
-             puts a 16-cell icon on 1.5 pixels per cell. -->
-        <item name="itemIconSize">@dimen/nav_icon_size</item>
-        <item name="itemTextAppearanceActive">@style/TextAppearance.ALIVE.NavLabel</item>
-        <item name="itemTextAppearanceInactive">@style/TextAppearance.ALIVE.NavLabel</item>
-    </style>
-
-    <!-- The selected state is a block behind the item, so the pill indicator
-         would fight it. -->
-    <style name="Widget.ALIVE.BottomNav.Indicator" parent="">
-        <item name="android:width">0dp</item>
-        <item name="android:height">0dp</item>
-        <item name="color">@android:color/transparent</item>
     </style>
 
 </resources>
