@@ -41,6 +41,27 @@ class FocusAppPolicyTest {
     }
 
     @Test
+    fun `work tools stay open in every focus activity`() {
+        for (activityType in FocusActivityType.values()) {
+            assertTrue(
+                FocusAppPolicy.decide(
+                    FocusAppPolicy.getApprovedPackages(activityType),
+                    AppCategory.WORK,
+                    "com.lemon.lvoverseas"
+                )
+            )
+        }
+    }
+
+    @Test
+    fun `the creative list names the editors a person actually works in`() {
+        val approved = FocusAppPolicy.getApprovedPackages(FocusActivityType.CREATIVE)
+        assertTrue(approved.contains("com.lemon.lvoverseas"))     // CapCut
+        assertTrue(approved.contains("com.nexstreaming.app.kinemasterfree"))
+        assertTrue(approved.contains("com.canva.editor"))
+    }
+
+    @Test
     fun `entertainment outside the curated list stays closed`() {
         assertFalse(
             FocusAppPolicy.decide(

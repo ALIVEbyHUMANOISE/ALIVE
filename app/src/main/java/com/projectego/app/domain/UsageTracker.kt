@@ -83,12 +83,14 @@ class UsageTracker(private val context: Context) {
                             }
                         }
 
-                        // Messaging and anything else ALIVE never blocks is
-                        // reported, counted separately, and charged for nothing.
-                        // It used to be added to the day, which meant two hours
-                        // of chatting spent the entertainment allowance and then
-                        // locked the apps that were only ever entertainment.
-                        AppCategory.TRACKED -> unblockedMillis += stat.totalTimeInForeground
+                        // Messaging and the tools a session is for are
+                        // reported, counted separately, and charged for
+                        // nothing. They used to be added to the day, which
+                        // meant two hours of chatting spent the entertainment
+                        // allowance and then locked the apps that were only
+                        // ever entertainment.
+                        AppCategory.TRACKED, AppCategory.WORK ->
+                            unblockedMillis += stat.totalTimeInForeground
 
                         else -> Unit
                     }

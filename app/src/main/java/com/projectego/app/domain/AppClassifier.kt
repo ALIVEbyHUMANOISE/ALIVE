@@ -58,6 +58,35 @@ object AppClassifier {
         "com.whatsapp.w4b"
     )
 
+    // Tools for making things - see AppCategory.WORK. Curated here and nowhere
+    // else: no social app, no game, no browser may ever enter this list, because
+    // the list is the cheat and the cheat is the one thing it must not have.
+    private val WORK_PACKAGES = setOf(
+        "com.microsoft.office.word",                    // Microsoft Word
+        "com.microsoft.office.excel",                   // Microsoft Excel
+        "com.microsoft.office.powerpoint",              // Microsoft PowerPoint
+        "com.microsoft.office.officehubrow",            // Microsoft 365 (Office)
+        "com.google.android.apps.docs.editors.docs",    // Google Docs
+        "com.google.android.apps.docs.editors.sheets",  // Google Sheets
+        "com.google.android.apps.docs.editors.slides",  // Google Slides
+        "com.google.android.apps.docs",                 // Google Drive
+        "com.google.android.keep",                      // Google Keep
+        "com.samsung.android.app.notes",                // Samsung Notes
+        "com.notion.id",                                // Notion
+        "com.quizlet.quizletandroid",                   // Quizlet
+        "com.slack",                                    // Slack
+        "com.microsoft.teams",                          // Microsoft Teams
+        "com.canva.editor",                             // Canva
+        "com.adsk.sketchbook",                          // Sketchbook
+        "com.lemon.lvoverseas",                         // CapCut
+        "com.nexstreaming.app.kinemasterfree",          // KineMaster
+        "com.camerasideas.instashot",                   // InShot
+        "com.adobe.reader",                             // Adobe Acrobat Reader
+        "cn.wps.moffice_eng",                           // WPS Office
+        "com.openai.chatgpt",                           // ChatGPT
+        "com.anthropic.claude"                          // Claude
+    )
+
     // System components that must never be counted or blocked
     private val SYSTEM_IGNORED_PACKAGES = setOf(
         "android",
@@ -70,6 +99,8 @@ object AppClassifier {
         if (SYSTEM_IGNORED_PACKAGES.contains(packageName)) return AppCategory.SYSTEM_IGNORED
 
         if (TRACKED_PACKAGES.contains(packageName)) return AppCategory.TRACKED
+
+        if (WORK_PACKAGES.contains(packageName)) return AppCategory.WORK
 
         // Essential: Default Phone Dialer
         val dialerIntent = Intent(Intent.ACTION_DIAL)

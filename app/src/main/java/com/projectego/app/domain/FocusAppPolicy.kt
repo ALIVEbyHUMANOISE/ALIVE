@@ -69,6 +69,9 @@ object FocusAppPolicy {
         "com.samsung.android.app.notes",
         "com.adsk.sketchbook",                             // Sketchbook
         "com.canva.editor",                                // Canva
+        "com.lemon.lvoverseas",                            // CapCut
+        "com.nexstreaming.app.kinemasterfree",             // KineMaster
+        "com.camerasideas.instashot",                      // InShot
         "com.notion.id",
         "com.openai.chatgpt",
         "com.anthropic.claude"
@@ -103,10 +106,11 @@ object FocusAppPolicy {
      *    because naming the third-party apps a session is FOR is the list's
      *    entire job. (The old order ran the entertainment veto first, which
      *    silently blocked every non-system curated app.)
-     * 2. ESSENTIAL, SYSTEM_IGNORED and TRACKED always stay open. TRACKED is
-     *    messaging, and its contract is "counted, never locked" - a block
-     *    could cost the person a message they cannot see, which is as true
-     *    while focusing as at any other time (see AppCategory.TRACKED).
+     * 2. ESSENTIAL, SYSTEM_IGNORED, TRACKED and WORK always stay open. TRACKED
+     *    is messaging and WORK is the tools a session is for - a block could
+     *    cost the person a message or a file they cannot see, which is as true
+     *    while focusing as at any other time (see AppCategory.TRACKED and
+     *    AppCategory.WORK).
      * 3. Everything else - entertainment, browsers, anything the list does
      *    not name - stays closed.
      */
@@ -114,7 +118,8 @@ object FocusAppPolicy {
         approved.contains(packageName) ||
             category == AppCategory.ESSENTIAL ||
             category == AppCategory.SYSTEM_IGNORED ||
-            category == AppCategory.TRACKED
+            category == AppCategory.TRACKED ||
+            category == AppCategory.WORK
 
     /**
      * Whether [packageName] is allowed during an active Focus Session for
