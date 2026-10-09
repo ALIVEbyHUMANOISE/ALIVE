@@ -22,9 +22,10 @@ import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.core.widget.ImageViewCompat
-import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import com.projectego.app.R
+import kotlin.math.PI
 import kotlin.math.atan2
+import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
@@ -87,20 +88,19 @@ class AliveNavBar @JvmOverloads constructor(
         Slot(R.string.nav_profile, R.drawable.ic_nav_profile, palette.workDark, palette.white)
     )
 
-    private val raisePx = dimens.dp(30)
     private val barHeightPx = dimens.dp(64)
     private val circleSizePx = dimens.dp(54)
 
     /**
-     * The circle's resting top, in container pixels. Its centre sits two
-     * pixels above the bar's own top line, which is what lets the notch read
-     * as an opening rather than a sticker.
+     * The circle's resting Y, in the bar's own coordinates: half of it rises
+     * past the bar's top edge and floats over the page. The bar itself stays
+     * in the layout flow, so nothing above it gets cut for a dead zone - the
+     * circle overlaps the content instead of the content making room for it.
      */
-    private val circleRestTopPx = raisePx - circleSizePx / 2 - dimens.dp(2)
+    private val circleRestY = -(circleSizePx / 2f + dimens.dp(2))
 
     /** Same centre, in the bar body's coordinates, whose top line is y = 0. */
-    private val circleCenterInBodyPx =
-        (circleRestTopPx + circleSizePx / 2f) - raisePx.toFloat()
+    private val circleCenterInBodyPx = circleRestY + circleSizePx / 2f
 
     private val notchRadiusPx = circleSizePx / 2f + dimens.dp(7)
 
@@ -119,12 +119,7 @@ class AliveNavBar @JvmOverloads constructor(
         clipChildren = false
         clipToPadding = false
 
-        addView(
-            body,
-            LayoutParams(LayoutParams.MATCH_PARENT, barHeightPx).apply {
-                topMargin = raisePx
-            }
-        )
+        addView(body, LayoutParams(LayoutParams.MATCH_PARENT, barHeightPx))
 
         val row = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
         slots.forEachIndexed { index, slot ->
@@ -164,9 +159,7 @@ class AliveNavBar @JvmOverloads constructor(
         }
         addView(
             row,
-            LayoutParams(LayoutParams.MATCH_PARENT, barHeightPx).apply {
-                topMargin = raisePx
-            }
+            LayoutParams(LayoutParams.MATCH_PARENT, barHeightPx)
         )
 
         circleGlyph.apply {
@@ -177,40 +170,48 @@ class AliveNavBar @JvmOverloads constructor(
         addView(
             circle,
             LayoutParams(circleSizePx, circleSizePx).apply {
-                topMargin = circleRestTopPx
                 gravity = Gravity.START
             }
         )
     }
 
     /**
-     * Choose a position. The circle travels there and pops; programmatic calls
-     * from a restored panel pass [animate] = false to arrive without theatre.
+     * Choose a position. The circle arcs across the bar and lands with a
+     * bounce - the notch travels with it, because a notch that stayed behind
+     * would be a hole with nothing in it. Programmatic calls from a restored
+     * panel pass [animate] = false to arrive without theatre. Choosing the
+     * position already chosen is a no-op: nothing moves, and an in-flight
+     * trip to it is not cancelled.
      */
     fun select(index: Int, animate: Boolean = true) {
         if (index !in slots.indices) return
+        if (index == selected) return
         val first = selected == -1
-        val moved = selected != index
         selected = index
         paintCells()
         paintCircle()
 
         val target = centerXFor(index)
         travel?.cancel()
-        when {
-            first || !moved || !animate || !animationsAllowed() -> moveTo(target)
-            else -> {
-                val from = notchCenterX
-                travel = ValueAnimator.ofFloat(0f, 1f).apply {
-                    duration = 260L
-                    interpolator = FastOutSlowInInterpolator()
-                    addUpdateListener {
-                        moveTo(from + (target - from) * (it.animatedValue as Float))
-                    }
-                    start()
-                }
-                pop()
+        if (first || !animate || !animationsAllowed()) {
+            moveTo(target, circleRestY)
+            return
+        }
+        val from = notchCenterX
+        travel = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 340L
+            // Overshoot, not ease: the arrival is the moment, so it should
+            // carry a little past the target and settle back.
+            interpolator = OvershootInterpolator(1.18f)
+            addUpdateListener {
+                val t = it.animatedValue as Float
+                val x = from + (target - from) * t
+                // An arc: the circle lifts off the edge mid-flight, then the
+                // overshoot dips it a breath below rest before it settles.
+                val y = circleRestY - dimens.dp(12) * sin(PI.toFloat() * t)
+                moveTo(x, y)
             }
+            start()
         }
     }
 
@@ -218,29 +219,16 @@ class AliveNavBar @JvmOverloads constructor(
         super.onSizeChanged(w, h, oldw, oldh)
         // select() may have run before the first layout; the notch and circle
         // are placed by width, so they re-seat themselves here.
-        if (selected != -1) moveTo(centerXFor(selected))
+        if (selected != -1) moveTo(centerXFor(selected), circleRestY)
     }
 
     private fun centerXFor(index: Int): Float = width * (index + 0.5f) / slots.size
 
-    private fun moveTo(centerX: Float) {
+    private fun moveTo(centerX: Float, centerY: Float) {
         notchCenterX = centerX
         circle.translationX = centerX - circleSizePx / 2f
+        circle.translationY = centerY
         body.invalidate()
-    }
-
-    /** The reference's motion, sized down: the circle hops as it lands. */
-    private fun pop() {
-        circle.translationY = -dimens.dp(12).toFloat()
-        circle.scaleX = 0.82f
-        circle.scaleY = 0.82f
-        circle.animate()
-            .translationY(0f)
-            .scaleX(1f)
-            .scaleY(1f)
-            .setDuration(320L)
-            .setInterpolator(OvershootInterpolator(1.6f))
-            .start()
     }
 
     private fun paintCells() {

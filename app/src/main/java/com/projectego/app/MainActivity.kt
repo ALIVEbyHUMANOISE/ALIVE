@@ -217,10 +217,16 @@ class MainActivity : AppCompatActivity() {
         navBar = findViewById(R.id.navBar)
         navBar.onSelect = { index ->
             when (index) {
-                AliveNavBar.Index.HOME -> { closeOverlay(); showTab(0); renderDashboard() }
-                AliveNavBar.Index.QUEST -> { closeOverlay(); showTab(1); renderQuestSection() }
+                AliveNavBar.Index.HOME -> {
+                    closeOverlay(restoreNav = false); showTab(0); renderDashboard()
+                }
+                AliveNavBar.Index.QUEST -> {
+                    closeOverlay(restoreNav = false); showTab(1); renderQuestSection()
+                }
                 AliveNavBar.Index.STATS -> openUsageChartPanel()
-                AliveNavBar.Index.PROFILE -> { closeOverlay(); showTab(2); renderProfile() }
+                AliveNavBar.Index.PROFILE -> {
+                    closeOverlay(restoreNav = false); showTab(2); renderProfile()
+                }
             }
         }
         navBar.select(AliveNavBar.Index.HOME, animate = false)
@@ -298,14 +304,16 @@ class MainActivity : AppCompatActivity() {
         overlayContainer.visibility = View.VISIBLE
     }
 
-    private fun closeOverlay() {
+    private fun closeOverlay(restoreNav: Boolean = true) {
         if (!state.isPanelOpen && overlayContainer.visibility == View.GONE) return
         state.closePanel()
         overlayContainer.removeAllViews()
         overlayContainer.visibility = View.GONE
         // A closed panel hands the bar back to the tab underneath it - the
-        // stats circle travels home from the chart on its own.
-        navBar.select(AliveNavBar.Index.indexForTab(currentTabIndex), animate = false)
+        // circle travels home from the chart. A tab tap skips the handback:
+        // its own selection is already in flight, and two hands on the wheel
+        // was how the circle ended up parked on the wrong key.
+        if (restoreNav) navBar.select(AliveNavBar.Index.indexForTab(currentTabIndex))
     }
 
     /**
@@ -891,7 +899,7 @@ class MainActivity : AppCompatActivity() {
                 HomeAction.CONTINUE_QUEST -> setOnClickListener { openCurrentQuestPanel() }
                 HomeAction.RETURN_TO_SESSION -> setOnClickListener { openFocusSessionPanel() }
                 HomeAction.CONTINUE -> setOnClickListener {
-                    closeOverlay()
+                    closeOverlay(restoreNav = false)
                     showTab(1)
                     renderQuestSection()
                     navBar.select(AliveNavBar.Index.QUEST)
@@ -1852,7 +1860,7 @@ class MainActivity : AppCompatActivity() {
     private fun openFocusSessionPanel() {
         val session = state.focusSession
         if (session == null || !session.isActive) {
-            closeOverlay()
+            closeOverlay(restoreNav = false)
             showTab(0)
             renderDashboard()
             navBar.select(AliveNavBar.Index.HOME)
