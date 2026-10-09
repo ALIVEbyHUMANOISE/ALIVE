@@ -620,7 +620,8 @@ class AliveComponents(private val context: Context) {
         name: CharSequence,
         value: CharSequence,
         @ColorInt face: Int = palette.white,
-        unit: CharSequence? = null
+        unit: CharSequence? = null,
+        @DrawableRes mark: Int? = null
     ): LinearLayout = column().apply {
         background = framed(face, dimens.borderButton, dimens.shadowMinor, dimens.radiusTile.toFloat())
         val inset = dimens.ledgerInset
@@ -633,19 +634,37 @@ class AliveComponents(private val context: Context) {
         )
         addView(tileLabel(name))
         addView(vgap(dimens.pairGap))
-        if (unit == null) {
+        if (unit == null && mark == null) {
             addView(number(value))
         } else {
             addView(
                 row().apply {
                     gravity = Gravity.BOTTOM
                     addView(number(value))
-                    addView(hgap(dimens.xs))
-                    addView(
-                        meta(unit).apply {
-                            setPadding(0, 0, 0, dimens.xs)
-                        }
-                    )
+                    if (mark != null) {
+                        // A pixel mark beside the figure, on the figure's own
+                        // baseline: it belongs to the number, not to the tile.
+                        val size = dimens.spriteDp(MARK_DP)
+                        addView(
+                            ImageView(context).apply {
+                                setImageResource(mark)
+                                layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                                    marginStart = dimens.s
+                                    bottomMargin = dimens.xs
+                                }
+                                scaleType = ImageView.ScaleType.FIT_CENTER
+                                contentDescription = null
+                            }
+                        )
+                    }
+                    if (unit != null) {
+                        addView(hgap(dimens.xs))
+                        addView(
+                            meta(unit).apply {
+                                setPadding(0, 0, 0, dimens.xs)
+                            }
+                        )
+                    }
                 }
             )
         }
@@ -1080,5 +1099,8 @@ class AliveComponents(private val context: Context) {
         const val BOB_DOWN_MILLIS = 1_500L
         /** One quarter turn of the hourglass. Four of them is one full turn. */
         const val HOURGLASS_STEP_MILLIS = 700L
+
+        /** A tile mark beside a figure, sized against a 28sp number. */
+        const val MARK_DP = 26
     }
 }

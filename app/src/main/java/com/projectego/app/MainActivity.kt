@@ -882,7 +882,10 @@ class MainActivity : AppCompatActivity() {
     private fun streakTile(streak: Int): View = ui.statTile(
         getString(R.string.stat_streak),
         getString(R.string.stat_minutes, streak),
-        ui.palette.rewardPale
+        ui.palette.rewardPale,
+        // A flame only for a run that exists: fire beside a zero would be a lie
+        // about the number it is standing next to.
+        mark = if (streak > 0) R.drawable.ic_alive_flame else null
     ).apply {
             if (streak > 0) {
                 addView(ui.vgap(ui.dimens.lineGap))
