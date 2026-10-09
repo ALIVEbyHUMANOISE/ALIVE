@@ -833,7 +833,7 @@ class AliveComponents(private val context: Context) {
         // resolves its font through the theme as well, and a theme-level family
         // can silently outrank the text appearance - which is how the buttons
         // dropped out of their face while every plain TextView kept it.
-        typeface = ResourcesCompat.getFont(context, R.font.ibm_plex_mono_bold)
+        typeface = ResourcesCompat.getFont(context, R.font.inter_semibold)
         setTextColor(ContextCompat.getColorStateList(context, textColor))
         setBackgroundResource(background)
         stateListAnimator = null

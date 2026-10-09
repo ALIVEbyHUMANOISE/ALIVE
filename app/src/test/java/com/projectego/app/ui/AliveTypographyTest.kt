@@ -16,7 +16,7 @@ import org.robolectric.annotation.Config
  * The typography is ALIVE's own faces, full stop.
  *
  * One regression is all it takes for a style to fall back to the platform
- * face, and a single Roboto line next to forty Silkscreen and Plex Mono ones
+ * face, and a single Roboto line next to forty Silkscreen and Inter ones
  * is exactly the "some of it is still normal" this design keeps catching.
  * This test locks every ALIVE text style to the faces the design owns - the
  * same way [AlivePaletteTest] locks the colours - and to a killed font
@@ -36,8 +36,8 @@ class AliveTypographyTest {
     private val faces = setOf(
         R.font.silkscreen_regular,
         R.font.silkscreen_bold,
-        R.font.ibm_plex_mono_regular,
-        R.font.ibm_plex_mono_bold,
+        R.font.inter_regular,
+        R.font.inter_semibold,
         R.font.press_start_2p
     )
 
@@ -69,7 +69,7 @@ class AliveTypographyTest {
             val font = resolveFontFamily(style)
             assertTrue(
                 "$name resolves to a face outside the design ($font); it must be " +
-                    "Silkscreen, IBM Plex Mono, or Press Start 2P for badges",
+                    "Silkscreen, Inter, or Press Start 2P for badges",
                 font in faces
             )
         }
