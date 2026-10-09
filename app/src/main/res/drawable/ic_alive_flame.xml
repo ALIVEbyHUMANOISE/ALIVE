@@ -1,19 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- ALIVE mark: a flame, on the same 16x16 grid as every sprite.
 
-     Ink contour with a gold fill, the way the streak pips beside it are drawn,
-     because it sits on the pale-gold tile: a gold flame on gold paper would be
-     a smudge, and the ink edge is what every other shape on that tile already
-     has. The tip leans right so it reads as fire rather than as a leaf. -->
+     Three tones, the way fire is actually drawn: an ink contour because it sits
+     on the pale-gold streak tile, a red body, and a bright yellow core at the
+     base where the heat is. An all-gold flame read as a brown blob next to the
+     gold pips, which is the opposite of what a flame is for.
+
+     The tip leans right so it reads as fire and not as a leaf. Two rows at the
+     bottom of the box are left empty on purpose - see AliveComponents' mark,
+     which offsets by exactly that much so the base lands on the baseline. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="16dp"
     android:height="16dp"
     android:viewportWidth="16"
     android:viewportHeight="16">
     <path
+        android:fillColor="@color/alive_red_short_mid"
+        android:pathData="M9,3h1v1h-1zM8,4h2v1h-2zM7,5h3v1h-3zM6,6h5v1h-5zM6,7h5v1h-5zM6,8h5v1h-5zM5,9h7v1h-7zM5,10h7v1h-7zM5,11h7v1h-7zM5,12h7v1h-7z" />
+    <path
+        android:fillColor="@color/alive_amber_action"
+        android:pathData="M7,10h3v1h-3zM7,11h3v1h-3zM7,12h3v1h-3z" />
+    <path
         android:fillColor="@color/alive_ink"
         android:pathData="M9,2h1v1h-1zM8,3h1v1h-1zM10,3h1v1h-1zM7,4h1v1h-1zM10,4h1v1h-1zM6,5h1v1h-1zM10,5h1v1h-1zM5,6h1v1h-1zM11,6h1v1h-1zM5,7h1v1h-1zM11,7h1v1h-1zM5,8h1v1h-1zM11,8h1v1h-1zM4,9h1v1h-1zM12,9h1v1h-1zM4,10h1v1h-1zM12,10h1v1h-1zM4,11h1v1h-1zM12,11h1v1h-1zM4,12h1v1h-1zM12,12h1v1h-1zM5,13h7v1h-7z" />
-    <path
-        android:fillColor="@color/alive_gold_reward_mid"
-        android:pathData="M9,3h1v1h-1zM8,4h2v1h-2zM7,5h3v1h-3zM6,6h5v1h-5zM6,7h5v1h-5zM6,8h5v1h-5zM5,9h7v1h-7zM5,10h7v1h-7zM5,11h7v1h-7zM5,12h7v1h-7z" />
 </vector>

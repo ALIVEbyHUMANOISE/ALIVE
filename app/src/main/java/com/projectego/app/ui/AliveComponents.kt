@@ -637,26 +637,12 @@ class AliveComponents(private val context: Context) {
         if (unit == null && mark == null) {
             addView(number(value))
         } else {
+            val figure = number(value)
             addView(
                 row().apply {
                     gravity = Gravity.BOTTOM
-                    addView(number(value))
-                    if (mark != null) {
-                        // A pixel mark beside the figure, on the figure's own
-                        // baseline: it belongs to the number, not to the tile.
-                        val size = dimens.spriteDp(MARK_DP)
-                        addView(
-                            ImageView(context).apply {
-                                setImageResource(mark)
-                                layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                                    marginStart = dimens.s
-                                    bottomMargin = dimens.xs
-                                }
-                                scaleType = ImageView.ScaleType.FIT_CENTER
-                                contentDescription = null
-                            }
-                        )
-                    }
+                    addView(figure)
+                    if (mark != null) addView(markBeside(mark, figure))
                     if (unit != null) {
                         addView(hgap(dimens.xs))
                         addView(
@@ -667,6 +653,30 @@ class AliveComponents(private val context: Context) {
                     }
                 }
             )
+        }
+    }
+
+    /**
+     * A pixel mark standing on a figure's baseline.
+     *
+     * Not on the bottom of the text view: Silkscreen keeps a deep descender, and
+     * a mark aligned to the box floats most of a line above the number it belongs
+     * to. The baseline is [android.graphics.Paint.FontMetrics.descent] above that
+     * bottom edge, and the art carries [MARK_FOOT_SHARE] of its own height empty
+     * under the base, so the box only drops by the difference.
+     */
+    private fun markBeside(@DrawableRes mark: Int, figure: TextView): ImageView {
+        val size = dimens.spriteDp(MARK_DP)
+        val descent = figure.paint.fontMetrics.descent
+        val bottom = if (descent > 0f) descent - size * MARK_FOOT_SHARE else dimens.xs.toFloat()
+        return ImageView(context).apply {
+            setImageResource(mark)
+            layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                marginStart = dimens.s
+                bottomMargin = bottom.toInt().coerceAtLeast(0)
+            }
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            contentDescription = null
         }
     }
 
@@ -1102,5 +1112,8 @@ class AliveComponents(private val context: Context) {
 
         /** A tile mark beside a figure, sized against a 28sp number. */
         const val MARK_DP = 26
+
+        /** How much of a mark's own box sits empty under its base. */
+        const val MARK_FOOT_SHARE = 2f / 16f
     }
 }
