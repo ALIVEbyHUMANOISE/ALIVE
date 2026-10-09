@@ -9,8 +9,11 @@
      Every text attribute here is written out longhand on purpose. The layout is
      inflated by the LAUNCHER's process with the launcher's own theme, and this
      app's text appearances inherit from MaterialComponents parents that resolve
-     theme attributes the launcher has never heard of - which is exactly how the
-     first version earned a "couldn't add widget". -->
+     theme attributes the launcher has never heard of.
+
+     The same host also refuses to build a bare android.view.View - it inflates
+     only the classes RemoteViews documents - so the row chips are ImageViews
+     carrying a finished colour rather than tinted placeholders. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
@@ -79,19 +82,19 @@
             android:progressDrawable="@drawable/widget_progress" />
 
         <LinearLayout android:id="@+id/widget_row_1" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:gravity="center_vertical" android:orientation="horizontal">
-            <View android:id="@+id/widget_swatch_1" android:layout_width="10dp" android:layout_height="10dp" />
+            <ImageView android:id="@+id/widget_swatch_1" android:layout_width="10dp" android:layout_height="10dp" android:contentDescription="@null" android:src="@drawable/widget_chip_first" />
             <TextView android:id="@+id/widget_name_1" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:ellipsize="end" android:fontFamily="@font/manrope_medium" android:includeFontPadding="false" android:maxLines="1" android:textColor="@color/alive_ink" android:textSize="14sp" />
             <TextView android:id="@+id/widget_minutes_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="@font/manrope_medium" android:includeFontPadding="false" android:textColor="@color/alive_ink_secondary" android:textSize="14sp" />
         </LinearLayout>
 
         <LinearLayout android:id="@+id/widget_row_2" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:gravity="center_vertical" android:orientation="horizontal">
-            <View android:id="@+id/widget_swatch_2" android:layout_width="10dp" android:layout_height="10dp" />
+            <ImageView android:id="@+id/widget_swatch_2" android:layout_width="10dp" android:layout_height="10dp" android:contentDescription="@null" android:src="@drawable/widget_chip_second" />
             <TextView android:id="@+id/widget_name_2" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:ellipsize="end" android:fontFamily="@font/manrope_medium" android:includeFontPadding="false" android:maxLines="1" android:textColor="@color/alive_ink" android:textSize="14sp" />
             <TextView android:id="@+id/widget_minutes_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="@font/manrope_medium" android:includeFontPadding="false" android:textColor="@color/alive_ink_secondary" android:textSize="14sp" />
         </LinearLayout>
 
         <LinearLayout android:id="@+id/widget_row_3" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:gravity="center_vertical" android:orientation="horizontal">
-            <View android:id="@+id/widget_swatch_3" android:layout_width="10dp" android:layout_height="10dp" />
+            <ImageView android:id="@+id/widget_swatch_3" android:layout_width="10dp" android:layout_height="10dp" android:contentDescription="@null" android:src="@drawable/widget_chip_third" />
             <TextView android:id="@+id/widget_name_3" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_weight="1" android:ellipsize="end" android:fontFamily="@font/manrope_medium" android:includeFontPadding="false" android:maxLines="1" android:textColor="@color/alive_ink" android:textSize="14sp" />
             <TextView android:id="@+id/widget_minutes_3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="@font/manrope_medium" android:includeFontPadding="false" android:textColor="@color/alive_ink_secondary" android:textSize="14sp" />
         </LinearLayout>
