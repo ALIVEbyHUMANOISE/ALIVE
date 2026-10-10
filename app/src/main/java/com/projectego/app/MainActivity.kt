@@ -211,8 +211,14 @@ class MainActivity : AppCompatActivity() {
 
         // Appended last and never inserted before index 2: showTab() addresses
         // the three tabs by position.
+        //
+        // A panel is a page, so it stands on the same ground as the pages behind
+        // it. It used to wear `paper`, which is ALIVE's colour for *things* - the
+        // widget's face, the inside of a chart, the bar's body - and that one
+        // shade of difference made the statistics panel read as a whiter screen
+        // than the tabs either side of it.
         overlayContainer = FrameLayout(this).apply {
-            setBackgroundColor(ui.palette.paper)
+            setBackgroundColor(ui.palette.canvas)
             visibility = View.GONE
         }
         tabContent.addView(overlayContainer)

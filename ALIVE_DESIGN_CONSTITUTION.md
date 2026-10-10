@@ -155,6 +155,21 @@ Red is a threshold, not a decoration: it appears exactly where the app already
 states the same number as critical. Colour is never the only signal — the
 minutes are printed next to it.
 
+### The ground and the surfaces
+
+The table says Paper answers "where am I", and for a while that was true of every
+screen — until the page ground moved to `canvas` (`#F1EBDC`), one shade darker,
+because a white card is only a face if there is something to be a face *against*.
+Two creams then started trading jobs, and the statistics panel ended up wearing
+`paper` as its background: a visibly whiter screen than the tabs either side of
+it, for no reason anyone could name.
+
+The rule, so it cannot drift back:
+
+> **`canvas` is the ground — every page stands on it, tabs and panels alike.
+> `paper` is a surface: the widget's card, the inside of an empty chart, the
+> bar's body.**
+
 ### The category family
 
 Nine more colours, and they are a different kind of thing: one hue per category
