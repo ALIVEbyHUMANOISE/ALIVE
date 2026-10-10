@@ -64,6 +64,10 @@ class AlivePalette(context: Context) {
 
     val workDark = color(R.color.alive_blue_work_dark)
     val workMid = color(R.color.alive_blue_work_mid)
+
+    /** A card face, not a fill: the one blue that carries a caption's secondary ink. */
+    val workSoft = color(R.color.alive_blue_work_soft)
+
     val workPale = color(R.color.alive_blue_work_pale)
 
     /** "Do this." Brighter and flatter than reward gold, and never on the same object. */

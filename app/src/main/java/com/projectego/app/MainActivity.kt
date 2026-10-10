@@ -2024,9 +2024,11 @@ class MainActivity : AppCompatActivity() {
         ranges.forEachIndexed { index, range ->
             switch.addView(
                 // Stacked rather than side by side: "Last 7 days" and "This
-                // month" cannot share a 320dp row at a readable size. Blue is the
-                // colour of the work of looking, and the selected one wears it.
-                ui.tileOption(getString(UsageChartStates.rangeLabel(range)), 0, ui.palette.workPale).apply {
+                // month" cannot share a 320dp row at a readable size. Each range
+                // then wears its own colour while it is the one being looked at,
+                // so the three are three different things before their words are
+                // read - and the colour says which one, not only the blue border.
+                ui.tileOption(getString(UsageChartStates.rangeLabel(range)), 0, rangeHue(range)).apply {
                     id = CHART_RANGE_ID_BASE + index
                     isChecked = index == state.chartRangeIndex
                     layoutParams = RadioGroup.LayoutParams(
@@ -2108,7 +2110,10 @@ class MainActivity : AppCompatActivity() {
      * reads as "nothing was used".
      */
     private fun hourCoverageBanner(currentHour: Int): View {
-        val banner = ui.tintedBlock(ui.palette.softForest)
+        // A blue that is plainly about the day's numbers rather than a wash of
+        // it: this banner decides how every figure below is read, so it is the
+        // one block on the screen allowed to be a colour at full attention.
+        val banner = ui.tintedBlock(ui.palette.workSoft)
         val line = ui.row()
         line.addView(ui.iconTile(ui.palette.white, R.drawable.ic_pixel_chart, ui.dimens.character))
         line.addView(ui.hgap(ui.dimens.m))
@@ -2141,7 +2146,10 @@ class MainActivity : AppCompatActivity() {
      * bar should be taken, and a footnote is how that gets skipped.
      */
     private fun coverageBanner(bars: List<DayBar>, recordedCount: Int): View {
-        val banner = ui.tintedBlock(ui.palette.softForest)
+        // A blue that is plainly about the day's numbers rather than a wash of
+        // it: this banner decides how every figure below is read, so it is the
+        // one block on the screen allowed to be a colour at full attention.
+        val banner = ui.tintedBlock(ui.palette.workSoft)
         val line = ui.row()
         line.addView(ui.iconTile(ui.palette.white, R.drawable.ic_pixel_chart, ui.dimens.character))
         line.addView(ui.hgap(ui.dimens.m))
@@ -2284,6 +2292,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * The colour a chosen range wears.
+     *
+     * Three buttons that all turn the same blue when one is picked say "something
+     * is selected" and nothing else. Today is the critter's pink, the week is
+     * reward gold, the month is the soft forest a day that has settled wears -
+     * the same three families the rest of the app already means by them, and
+     * every one holds ink, which is the measurement `AlivePaletteTest` makes.
+     */
+    private fun rangeHue(range: ChartRange): Int = when (range) {
+        ChartRange.TODAY -> ui.palette.pinkSoft
+        ChartRange.LAST_7_DAYS -> ui.palette.rewardMid
+        ChartRange.THIS_MONTH -> ui.palette.softForest
+    }
+
+    /**
      * The day whole, not only the part of it that spends an allowance.
      *
      * Every other figure on this screen is entertainment time, and a person who
@@ -2292,20 +2315,26 @@ class MainActivity : AppCompatActivity() {
      * it names what the difference between the two is made of.
      */
     private fun screenTotalCard(): View {
-        val card = ui.bentoCard(
-            getString(R.string.chart_screen_heading),
-            weight = SurfaceWeight.MINOR
-        )
+        // The critter's own rose. This is the whole day rather than the part of
+        // it that costs something, and it is the one figure on the screen that
+        // nobody is being warned about or rewarded for.
+        val card = ui.tintedBlock(ui.palette.pinkSoft).apply {
+            addView(ui.cardTitle(getString(R.string.chart_screen_heading)))
+        }
         card.addView(ui.lead(Durations.of(this, state.screenMinutes)))
         card.addView(ui.vgap(ui.dimens.pairGap))
         card.addView(
+            // A caption's usual secondary ink is 3.9:1 on the critter's pink, so
+            // on a saturated face the sentence is written in full ink. The blue
+            // banner keeps the secondary tone; `AlivePaletteTest` measures which
+            // face may carry which.
             ui.note(
                 if (state.unblockedMinutes > 0L) {
                     getString(R.string.chart_screen_of_which, Durations.of(this, state.unblockedMinutes))
                 } else {
                     getString(R.string.chart_screen_all_charged)
                 }
-            )
+            ).apply { setTextColor(ui.palette.ink) }
         )
         return card
     }

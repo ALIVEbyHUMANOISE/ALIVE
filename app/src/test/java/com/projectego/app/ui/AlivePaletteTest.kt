@@ -141,6 +141,27 @@ class AlivePaletteTest {
     }
 
     @Test
+    fun `a card face carries both the ink it is titled with and the caption under it`() {
+        // Three cards on the statistics screen now wear a colour rather than the
+        // page: the critter's pink, the reward gold a selected range tile turns
+        // into, and the blue a coverage banner turns into. A face that holds a
+        // heading but loses the caption beneath it is half a surface, so each is
+        // measured against the tone actually written on it - and the pink is the
+        // reason that is per-face rather than one rule: secondary ink is 3.9:1 on
+        // it, which is why a caption on that face is full ink.
+        val ink = color(R.color.alive_ink)
+        val faces = listOf(
+            "pinkSoft" to (ink to color(R.color.alive_pink_soft)),
+            "goldMid" to (ink to color(R.color.alive_gold_reward_mid)),
+            "blueSoft" to (color(R.color.alive_ink_secondary) to color(R.color.alive_blue_work_soft))
+        )
+        faces.forEach { (name, pair) ->
+            val ratio = contrast(pair.first, pair.second)
+            assertTrue("$name = $ratio", ratio >= 4.5)
+        }
+    }
+
+    @Test
     fun `the character pink holds ink eyes and reads on its card`() {
         // The critter is one flat pink fill with no outline, so the pink alone
         // has to keep the ink eyes at 4.5:1 and stay visible on the card it
