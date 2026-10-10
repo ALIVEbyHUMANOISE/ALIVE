@@ -1,0 +1,88 @@
+@import './tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * The site is the app's front door, so it borrows the app's rules rather than
+ * inventing a web version of them: paper and ink only, a bold edge on every
+ * raised thing, a hard offset shadow instead of a blur, one pixel voice for
+ * numbers, and no gradients, no grain, no glass. Motion is a press and a
+ * reveal, never an entrance - the same calm-UX line the app holds.
+ */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--alive-paper);
+  color: var(--alive-ink);
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--alive-gold_reward_mid);
+  color: var(--alive-ink);
+}
+
+@layer components {
+  /* A face with an ink edge and a hard shadow to its bottom-right. */
+  .card {
+    @apply rounded-card border-[3px] border-ink bg-white shadow-raise;
+  }
+
+  .card-sm {
+    @apply rounded-tile border-[3px] border-ink bg-white shadow-raise-sm;
+  }
+
+  /* The amber action: brighter than everything else and never beside gold. */
+  .btn {
+    @apply font-body text-base font-medium rounded-tile border-[3px] border-ink px-6 py-3
+      transition-transform duration-100 select-none;
+  }
+
+  .btn-primary {
+    @apply bg-amber text-ink shadow-raise-sm;
+  }
+
+  .btn-quiet {
+    @apply bg-white text-ink shadow-raise-sm;
+  }
+
+  /* Pressing a raised thing moves it onto its own shadow. */
+  .btn:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0 0 0 0 var(--alive-ink);
+  }
+
+  /* A thick ink rule between the parts of one card. */
+  .rule {
+    height: 3px;
+    background: var(--alive-ink);
+  }
+
+  /* The small pixel badge: a category stated in one word. */
+  .badge {
+    @apply font-display rounded-step border-2 border-ink bg-white px-2 py-1 text-[10px] uppercase;
+  }
+
+  .eyebrow {
+    @apply font-display text-xs uppercase tracking-[0.12em] text-ink-secondary;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
