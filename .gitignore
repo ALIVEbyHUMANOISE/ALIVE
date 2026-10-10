@@ -15,3 +15,6 @@
 local.properties
 .kotlin/
 .idea/vcs.xml
+# The Windows Python stub drops its runtime next to the working directory when
+# `python` is run from here. It is a tool byproduct, never part of the app.
+/Python/
