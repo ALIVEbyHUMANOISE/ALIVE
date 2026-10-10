@@ -394,6 +394,7 @@
     <string name="widget_stats_eyebrow">Hari ini</string>
     <string name="widget_stats_of_allowance">%1$d%% dari jatah hari ini</string>
     <string name="widget_stats_no_allowance">Hari ini tanpa jatah</string>
+    <string name="widget_stats_streak">%1$d hari beruntun</string>
     <string name="widget_stats_empty">Buka ALIVE sekali, ini terisi sendiri.</string>
     <string name="chart_total_minutes">%1$s di hari-hari yang ALIVE lihat</string>
     <string name="chart_none">ALIVE belum mencatat satu hari pun.</string>

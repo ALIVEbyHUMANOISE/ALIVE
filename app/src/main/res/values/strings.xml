@@ -421,6 +421,7 @@
     <string name="widget_stats_eyebrow">Today</string>
     <string name="widget_stats_of_allowance">%1$d%% of today\'s allowance</string>
     <string name="widget_stats_no_allowance">No allowance today</string>
+    <string name="widget_stats_streak">%1$d days in a row</string>
     <string name="widget_stats_empty">Open ALIVE once and this fills itself in.</string>
     <string name="chart_total_minutes">%1$s across the days ALIVE saw</string>
     <string name="chart_none">ALIVE hasn\'t recorded a day yet.</string>

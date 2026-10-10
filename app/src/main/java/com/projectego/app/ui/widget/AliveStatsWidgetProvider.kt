@@ -100,8 +100,10 @@ class AliveStatsWidgetProvider : AppWidgetProvider() {
             // run of zero, which would be a lie about the number it stands next
             // to.
             val streak = LockStateManager(context).getCurrentStreak()
-            views.setTextViewText(R.id.widget_streak_value, context.getString(R.string.stat_minutes, streak))
-            views.setTextViewText(R.id.widget_streak_label, context.getString(R.string.stat_streak))
+            views.setTextViewText(
+                R.id.widget_streak,
+                context.getString(R.string.widget_stats_streak, streak)
+            )
             views.setViewVisibility(R.id.widget_flame, if (streak > 0) View.VISIBLE else View.GONE)
 
             val rowIds = intArrayOf(R.id.widget_row_1, R.id.widget_row_2, R.id.widget_row_3)
