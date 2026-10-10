@@ -280,9 +280,10 @@ class MainActivity : AppCompatActivity() {
 
         // The home-screen widget opens the app on the panel its number came
         // from. Consumed once, so leaving and returning does not re-open it.
+        // No tab is chosen here: the numbers are a panel over whichever tab the
+        // app was on, and closing it hands the bar back to that one.
         if (intent?.getBooleanExtra(AliveStatsWidgetProvider.EXTRA_OPEN_STATS, false) == true) {
             intent?.removeExtra(AliveStatsWidgetProvider.EXTRA_OPEN_STATS)
-            showTab(2)
             openUsageChartPanel()
         }
     }

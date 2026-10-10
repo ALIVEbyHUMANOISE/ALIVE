@@ -193,7 +193,14 @@ class AliveNavBar @JvmOverloads constructor(
 
         val target = centerXFor(index)
         travel?.cancel()
-        if (first || !animate || !animationsAllowed()) {
+        // A bar that has not been measured yet has no where to travel to: every
+        // centre on it is zero. Jumping instead of animating is not a shortcut -
+        // an animator started here would carry that zero as both its start and
+        // its end, and its next frame after the first layout would pull the
+        // circle back off the key `onSizeChanged` had just put it on. That is how
+        // opening the app from the widget parked the circle at the left edge with
+        // the notch somewhere off-screen beside it.
+        if (first || !animate || !animationsAllowed() || width == 0) {
             moveTo(target, circleRestY)
             return
         }
@@ -218,7 +225,11 @@ class AliveNavBar @JvmOverloads constructor(
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         // select() may have run before the first layout; the notch and circle
-        // are placed by width, so they re-seat themselves here.
+        // are placed by width, so they re-seat themselves here. A trip still in
+        // flight is cancelled rather than left running, because it is carrying a
+        // centre computed against a width that no longer exists - and its next
+        // frame would undo this line.
+        travel?.cancel()
         if (selected != -1) moveTo(centerXFor(selected), circleRestY)
     }
 
