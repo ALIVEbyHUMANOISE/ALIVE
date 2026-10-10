@@ -15,19 +15,24 @@
      because this app's text appearances resolve theme attributes the launcher
      has never heard of.
 
-     One left edge and one right edge: the mark, the figure, the meter and the
-     row chips all start at the card's content edge, and the minutes all end
-     where the meter ends. -->
+     Padding is measured from the face, not from the view: the right and bottom
+     carry the shadow's 6dp as well, so the interior is optically square and no
+     glyph ever sits on a shadow. One left edge for the mark, the figure, the
+     meter and the row chips; one right edge where the minutes and the character
+     end. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_widget"
-    android:padding="14dp">
+    android:paddingLeft="21dp"
+    android:paddingTop="21dp"
+    android:paddingRight="27dp"
+    android:paddingBottom="27dp">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical">
 
         <LinearLayout
@@ -38,8 +43,8 @@
 
             <ImageView
                 android:id="@+id/widget_mark"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:contentDescription="@null"
                 android:scaleType="fitXY"
                 android:src="@drawable/ic_alive_hourglass" />
@@ -54,18 +59,6 @@
                 android:text="@string/widget_stats_eyebrow"
                 android:textColor="@color/alive_ink_secondary"
                 android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1" />
-
-            <ImageView
-                android:id="@+id/widget_character"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:contentDescription="@null"
-                android:scaleType="fitEnd" />
         </LinearLayout>
 
         <ImageView
@@ -90,7 +83,7 @@
         <ImageView
             android:id="@+id/widget_meter"
             android:layout_width="match_parent"
-            android:layout_height="16dp"
+            android:layout_height="20dp"
             android:layout_marginTop="10dp"
             android:background="@drawable/bg_widget_meter"
             android:contentDescription="@null"
@@ -127,5 +120,60 @@
             android:textColor="@color/alive_ink_secondary"
             android:textSize="18sp"
             android:visibility="gone" />
+
+        <!-- Whatever the card has left over belongs to the character: it stands
+             on the bottom edge, and the run it is watching is the line beside
+             it. -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="bottom"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/widget_flame"
+                android:layout_width="20dp"
+                android:layout_height="24dp"
+                android:contentDescription="@null"
+                android:scaleType="fitXY"
+                android:src="@drawable/ic_alive_flame" />
+
+            <TextView
+                android:id="@+id/widget_streak_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:fontFamily="@font/manrope_bold"
+                android:includeFontPadding="false"
+                android:textColor="@color/alive_ink"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/widget_streak_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:fontFamily="@font/manrope_medium"
+                android:includeFontPadding="false"
+                android:textColor="@color/alive_ink_secondary"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:id="@+id/widget_character"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:contentDescription="@null"
+                android:scaleType="fitEnd" />
+        </LinearLayout>
     </LinearLayout>
 </FrameLayout>

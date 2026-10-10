@@ -28,12 +28,12 @@ object AliveWidgetArt {
     private const val FIGURE_MIN_SP = 15f
 
     /** Widest the figure may be: the card's own width minus its padding. */
-    private const val FIGURE_MAX_DP = 210f
+    private const val FIGURE_MAX_DP = 200f
 
     /** The meter is stretched to whatever the card turns out to be, so it is
      * drawn wide and flat: only the seams and the slice edges scale. */
     private const val METER_CANVAS_PX = 1200
-    private const val METER_FILL_DP = 12f
+    private const val METER_FILL_DP = 16f
     private const val METER_SEAM_PX = 10
 
     /**

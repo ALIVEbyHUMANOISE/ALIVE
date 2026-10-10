@@ -20,9 +20,10 @@ import com.projectego.app.ui.UsageChartStates
 /**
  * The statistics dashboard, on the home screen.
  *
- * It reads the day ALIVE already recorded rather than the engine: the widget
- * has no business rolling the day over, setting the lock, or archiving
- * anything, and a screen somebody glances at must not be able to change what it
+ * It reads what ALIVE already recorded - the day's archive and the run the app
+ * already counted - rather than asking the engine: the widget has no business
+ * rolling the day over, setting the lock, or archiving anything, and a screen
+ * somebody glances at must not be able to change what it
  * reports. The trade is that it is never fresher than the last app render -
  * which is why every render also pushes an update here, and why the period
  * below exists as a floor rather than as the plan.
@@ -93,6 +94,15 @@ class AliveStatsWidgetProvider : AppWidgetProvider() {
                     overAllowance = limitMinutes > 0L && totalMinutes >= limitMinutes
                 )
             )
+
+            // The one figure on this card that is not about today, read from the
+            // same preference file the app writes it to - and no flame beside a
+            // run of zero, which would be a lie about the number it stands next
+            // to.
+            val streak = LockStateManager(context).getCurrentStreak()
+            views.setTextViewText(R.id.widget_streak_value, context.getString(R.string.stat_minutes, streak))
+            views.setTextViewText(R.id.widget_streak_label, context.getString(R.string.stat_streak))
+            views.setViewVisibility(R.id.widget_flame, if (streak > 0) View.VISIBLE else View.GONE)
 
             val rowIds = intArrayOf(R.id.widget_row_1, R.id.widget_row_2, R.id.widget_row_3)
             val nameIds = intArrayOf(R.id.widget_name_1, R.id.widget_name_2, R.id.widget_name_3)

@@ -1,24 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The widget's card: the app's surface, small - paper, an ink edge, and the
-     hard offset shadow every other card in ALIVE has. -->
+<!-- The widget's card: the one picture every raised object in ALIVE wears, at
+     home-screen size - a paper face with a bold ink edge and a hard ink shadow
+     behind it, offset to the bottom-right.
+
+     Both layers are rounded and the ink sits at the view's own bounds: the face
+     is the layer that shrinks, so the shadow has one width everywhere it shows
+     and the two never disagree at a corner. An ink block inset from the top-left
+     instead puts a band of a different thickness on each side, which reads as a
+     smudge and not as depth. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:left="4dp"
-        android:top="4dp">
+    <item>
         <shape android:shape="rectangle">
             <solid android:color="@color/alive_ink" />
-            <corners android:radius="14dp" />
+            <corners android:radius="16dp" />
         </shape>
     </item>
     <item
-        android:right="4dp"
-        android:bottom="4dp">
+        android:right="6dp"
+        android:bottom="6dp">
         <shape android:shape="rectangle">
             <solid android:color="@color/alive_paper" />
             <stroke
-                android:width="2dp"
+                android:width="3dp"
                 android:color="@color/alive_ink" />
-            <corners android:radius="14dp" />
+            <corners android:radius="16dp" />
         </shape>
     </item>
 </layer-list>
