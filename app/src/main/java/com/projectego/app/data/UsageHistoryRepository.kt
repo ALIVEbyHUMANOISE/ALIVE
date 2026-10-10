@@ -34,6 +34,19 @@ class UsageHistoryRepository(context: Context) {
 
         /** Length of a `yyyy-MM-dd` key; used to ignore any non-date entry. */
         const val DATE_LENGTH = "yyyy-MM-dd".length
+
+        /**
+         * What ALIVE's accounting believed when the record was written.
+         *
+         * Version 1 charged messaging and study apps; version 2 charges only
+         * what the app actually closes, and started recording the day's whole
+         * screen time. The never-shrink rule below exists to stop the platform
+         * from un-drawing an hour already shown, but a change of rule makes
+         * today's honest reading *smaller* than the record an older rule left -
+         * and without this number the new rule could never replace the old one,
+         * freezing the day at figures ALIVE no longer stands behind.
+         */
+        const val RULE_VERSION = 2
     }
 
     /**
@@ -59,7 +72,9 @@ class UsageHistoryRepository(context: Context) {
         if (date.isBlank() || totalMillis < 0L) return
 
         val storedMillis = storedMillis(date)
-        if (storedMillis != null && totalMillis < storedMillis) return
+        val storedVersion = storedVersion(date) ?: 1
+        val writtenByThisRule = storedVersion >= RULE_VERSION
+        if (storedMillis != null && totalMillis < storedMillis && writtenByThisRule) return
 
         // The screen figure grows on its own schedule: an hour of chatting after
         // the last reading moves it while the entertainment total stands still,
@@ -127,7 +142,7 @@ class UsageHistoryRepository(context: Context) {
                 "$pkg$KEY_VALUE_SEPARATOR$minutes"
             }
         return "$totalMillis$FIELD_SEPARATOR$limitMinutes$FIELD_SEPARATOR$apps" +
-            "$FIELD_SEPARATOR$screenMillis"
+            "$FIELD_SEPARATOR$screenMillis$FIELD_SEPARATOR$RULE_VERSION"
     }
 
     /** Anything unparseable reads as missing rather than as zero, and never throws. */
@@ -136,10 +151,10 @@ class UsageHistoryRepository(context: Context) {
         val fields = raw.split(FIELD_SEPARATOR)
         // Three fields is a day recorded before the screen total existed. It is
         // not a day with no screen time, so that figure stays null rather than 0.
-        if (fields.size != 3 && fields.size != 4) return null
+        if (fields.size < 3 || fields.size > 5) return null
         val totalMillis = fields[0].toLongOrNull() ?: return null
         val limitMinutes = fields[1].toLongOrNull() ?: return null
-        val screenMillis = if (fields.size == 4) fields[3].toLongOrNull() else null
+        val screenMillis = fields.getOrNull(3)?.toLongOrNull()
 
         val perApp = if (fields[2].isBlank()) {
             emptyMap()
@@ -168,6 +183,13 @@ class UsageHistoryRepository(context: Context) {
     /** The stored screen total, or null when the day has none or does not exist. */
     private fun storedScreenMillis(date: String): Long? =
         fieldOf(date, 3)
+
+    /** The rule that wrote the record; one without a version predates them all. */
+    private fun storedVersion(date: String): Int? =
+        prefs.getString(date, null)
+            ?.split(FIELD_SEPARATOR)
+            ?.getOrNull(4)
+            ?.toIntOrNull()
 
     private fun fieldOf(date: String, index: Int): Long? =
         prefs.getString(date, null)

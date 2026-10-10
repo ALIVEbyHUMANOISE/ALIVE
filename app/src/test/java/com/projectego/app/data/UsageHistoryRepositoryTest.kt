@@ -65,6 +65,21 @@ class UsageHistoryRepositoryTest {
     }
 
     @Test
+    fun `a day frozen by an older rule is rewritten rather than kept forever`() {
+        // The first rule charged messaging and study apps, so its total is
+        // bigger than the one ALIVE now stands behind. Only a platform trimming
+        // the same figures mid-day may be refused; a better rule has to be able
+        // to correct the day it is being asked about.
+        context.getSharedPreferences(UsageHistoryRepository.PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putString(today, "12000000|140|com.whatsapp=200").commit()
+
+        record(today, 60L, screenMinutes = 180L)
+
+        assertEquals(60L, repository.day(today)?.totalMinutes)
+        assertEquals(180L, repository.day(today)?.screenMinutes)
+    }
+
+    @Test
     fun `a day never recorded is null and a recorded zero is a day`() {
         assertNull(repository.day("2026-01-01"))
         record("2026-01-02", 0L)
