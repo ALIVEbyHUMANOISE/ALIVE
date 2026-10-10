@@ -49,13 +49,26 @@ class UsageHistoryRepository(context: Context) {
      * called from the accessibility path on every entertainment window change.
      */
     @Synchronized
-    fun recordDay(date: String, totalMillis: Long, limitMinutes: Long, perAppMinutes: Map<String, Long>) {
+    fun recordDay(
+        date: String,
+        totalMillis: Long,
+        limitMinutes: Long,
+        perAppMinutes: Map<String, Long>,
+        screenMillis: Long
+    ) {
         if (date.isBlank() || totalMillis < 0L) return
 
         val storedMillis = storedMillis(date)
         if (storedMillis != null && totalMillis < storedMillis) return
 
-        val serialized = serialize(totalMillis, limitMinutes, perAppMinutes)
+        // The screen figure grows on its own schedule: an hour of chatting after
+        // the last reading moves it while the entertainment total stands still,
+        // and a day whose entertainment was trimmed by the platform keeps the
+        // largest screen figure ALIVE saw for it too.
+        val storedScreen = storedScreenMillis(date)
+        val screen = maxOf(screenMillis, storedScreen ?: 0L)
+
+        val serialized = serialize(totalMillis, limitMinutes, perAppMinutes, screen)
         if (serialized == prefs.getString(date, null)) return
 
         prefs.edit().putString(date, serialized).apply()
@@ -96,7 +109,12 @@ class UsageHistoryRepository(context: Context) {
         prefs.edit().apply { stale.forEach { remove(it) } }.apply()
     }
 
-    private fun serialize(totalMillis: Long, limitMinutes: Long, perAppMinutes: Map<String, Long>): String {
+    private fun serialize(
+        totalMillis: Long,
+        limitMinutes: Long,
+        perAppMinutes: Map<String, Long>,
+        screenMillis: Long
+    ): String {
         // Package names are [A-Za-z0-9_.], so no separator can appear in one;
         // filtered anyway so a hostile or buggy value cannot corrupt the record.
         val apps = perAppMinutes
@@ -108,16 +126,20 @@ class UsageHistoryRepository(context: Context) {
             .joinToString(APP_SEPARATOR.toString()) { (pkg, minutes) ->
                 "$pkg$KEY_VALUE_SEPARATOR$minutes"
             }
-        return "$totalMillis$FIELD_SEPARATOR$limitMinutes$FIELD_SEPARATOR$apps"
+        return "$totalMillis$FIELD_SEPARATOR$limitMinutes$FIELD_SEPARATOR$apps" +
+            "$FIELD_SEPARATOR$screenMillis"
     }
 
     /** Anything unparseable reads as missing rather than as zero, and never throws. */
     private fun parse(date: String, raw: String?): UsageDay? {
         if (raw.isNullOrBlank()) return null
         val fields = raw.split(FIELD_SEPARATOR)
-        if (fields.size != 3) return null
+        // Three fields is a day recorded before the screen total existed. It is
+        // not a day with no screen time, so that figure stays null rather than 0.
+        if (fields.size != 3 && fields.size != 4) return null
         val totalMillis = fields[0].toLongOrNull() ?: return null
         val limitMinutes = fields[1].toLongOrNull() ?: return null
+        val screenMillis = if (fields.size == 4) fields[3].toLongOrNull() else null
 
         val perApp = if (fields[2].isBlank()) {
             emptyMap()
@@ -134,14 +156,22 @@ class UsageHistoryRepository(context: Context) {
             date = date,
             totalMinutes = totalMillis / 60_000L,
             limitMinutes = limitMinutes,
-            perAppMinutes = perApp
+            perAppMinutes = perApp,
+            screenMinutes = screenMillis?.let { it / 60_000L }
         )
     }
 
     /** The raw stored total for a day, or null when there is no usable record. */
     private fun storedMillis(date: String): Long? =
+        fieldOf(date, 0)
+
+    /** The stored screen total, or null when the day has none or does not exist. */
+    private fun storedScreenMillis(date: String): Long? =
+        fieldOf(date, 3)
+
+    private fun fieldOf(date: String, index: Int): Long? =
         prefs.getString(date, null)
             ?.split(FIELD_SEPARATOR)
-            ?.firstOrNull()
+            ?.getOrNull(index)
             ?.toLongOrNull()
 }

@@ -19,6 +19,13 @@ data class UsageReport(
     val totalEntertainmentMillis: Long,
     /** Time ALIVE sees in apps it never blocks. Reported, never charged. */
     val unblockedMinutes: Long,
+    /**
+     * The whole day ALIVE can see: what spent the allowance plus what did not.
+     * The entertainment figure alone can say "0 menit" on a day someone spent
+     * four hours in Word and WhatsApp, and a card that shows only the diet
+     * number is not a picture of their day.
+     */
+    val totalScreenMinutes: Long,
     val limitMinutes: Long,
     val isLimitExceeded: Boolean,
     val remainingMinutes: Long,
@@ -114,6 +121,12 @@ class UsageTracker(private val context: Context) {
         // charge, and they are reported the same way the other two are.
         unblockedMillis += exemptByPackage.values.sum()
 
+        // Every minute ALIVE saw. The two figures above are disjoint by
+        // construction - a minute moved out of the allowance by a focus session
+        // lands here exactly once, on the unblocked side - so adding them is the
+        // whole day rather than a double count.
+        val screenMillis = totalMillis + unblockedMillis
+
         val totalMinutes = totalMillis / 1000 / 60
         val dayType = lockStateManager.getDayType()
         val limitMinutes = lockStateManager.getDailyLimitMinutes()
@@ -173,7 +186,8 @@ class UsageTracker(private val context: Context) {
                 LockStateManager.dayKeyOf(startTime),
                 totalMillis,
                 limitMinutes,
-                details.toMap()
+                details.toMap(),
+                screenMillis
             )
         }
 
@@ -181,6 +195,7 @@ class UsageTracker(private val context: Context) {
             totalEntertainmentMinutes = totalMinutes,
             totalEntertainmentMillis = totalMillis,
             unblockedMinutes = unblockedMillis / 1000 / 60,
+            totalScreenMinutes = screenMillis / 1000 / 60,
             limitMinutes = limitMinutes,
             isLimitExceeded = isExceeded || lockStateManager.isLocked(),
             remainingMinutes = remainingMinutes,

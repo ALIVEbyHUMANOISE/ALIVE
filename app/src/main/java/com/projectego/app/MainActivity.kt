@@ -412,6 +412,7 @@ class MainActivity : AppCompatActivity() {
         state.usedMinutesToday = report.totalEntertainmentMinutes
         state.entertainmentAppDetails = report.entertainmentAppDetails
         state.unblockedMinutes = report.unblockedMinutes
+        state.screenMinutes = report.totalScreenMinutes
         // A preference read with no side effects, done once per render like the
         // guard state: it decides what the Today card says about tomorrow.
         state.questDoneToday = lockStateManager.isQuestCompletedOn(
@@ -2094,6 +2095,8 @@ class MainActivity : AppCompatActivity() {
             // An empty day is named, not omitted: a heading that vanished with it
             // left people wondering whether the feature had broken.
             body.addView(buildAppCard() ?: emptyAppCard())
+            body.addView(ui.vgap(ui.dimens.cardGap))
+            body.addView(screenTotalCard())
         }
     }
 
@@ -2278,6 +2281,33 @@ class MainActivity : AppCompatActivity() {
         )
         block.addView(line)
         return block
+    }
+
+    /**
+     * The day whole, not only the part of it that spends an allowance.
+     *
+     * Every other figure on this screen is entertainment time, and a person who
+     * spent four hours in a document and a chat sees a number smaller than the
+     * day they lived and reads a broken counter. This is the other number, and
+     * it names what the difference between the two is made of.
+     */
+    private fun screenTotalCard(): View {
+        val card = ui.bentoCard(
+            getString(R.string.chart_screen_heading),
+            weight = SurfaceWeight.MINOR
+        )
+        card.addView(ui.lead(Durations.of(this, state.screenMinutes)))
+        card.addView(ui.vgap(ui.dimens.pairGap))
+        card.addView(
+            ui.note(
+                if (state.unblockedMinutes > 0L) {
+                    getString(R.string.chart_screen_of_which, Durations.of(this, state.unblockedMinutes))
+                } else {
+                    getString(R.string.chart_screen_all_charged)
+                }
+            )
+        )
+        return card
     }
 
     /** The days card: bars, what the marks mean, and how much of the range is real. */
@@ -2580,6 +2610,7 @@ class MainActivity : AppCompatActivity() {
                 date = todayKey,
                 totalMinutes = state.usedMinutesToday,
                 limitMinutes = state.dailyLimitMinutes,
+                screenMinutes = state.screenMinutes,
                 perAppMinutes = state.entertainmentAppDetails.toMap()
             )
         }

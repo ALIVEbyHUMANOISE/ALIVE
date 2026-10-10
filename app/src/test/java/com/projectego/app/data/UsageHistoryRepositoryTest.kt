@@ -39,8 +39,13 @@ class UsageHistoryRepositoryTest {
         repository = UsageHistoryRepository(context)
     }
 
-    private fun record(date: String, minutes: Long, limit: Long = 120L, apps: Map<String, Long> = emptyMap()) =
-        repository.recordDay(date, minutes * 60_000L, limit, apps)
+    private fun record(
+        date: String,
+        minutes: Long,
+        limit: Long = 120L,
+        apps: Map<String, Long> = emptyMap(),
+        screenMinutes: Long = minutes
+    ) = repository.recordDay(date, minutes * 60_000L, limit, apps, screenMinutes * 60_000L)
 
     @Test
     fun `a later snapshot replaces the day instead of adding to it`() {
@@ -95,6 +100,44 @@ class UsageHistoryRepositoryTest {
         record(today, 10L, apps = mapOf("com.example.one" to 10L, "com.example.two" to 0L))
 
         assertEquals(setOf("com.example.one"), repository.day(today)?.perAppMinutes?.keys)
+    }
+
+    @Test
+    fun `the day's whole screen figure survives the round trip`() {
+        record(today, 30L, screenMinutes = 150L)
+
+        assertEquals(150L, repository.day(today)?.screenMinutes)
+    }
+
+    @Test
+    fun `time spent outside the allowance grows the day without moving the figure`() {
+        record(today, 30L, screenMinutes = 30L)
+        // An hour of chatting after the last reading: the charged figure has not
+        // moved, so the record must still be rewritten rather than skipped.
+        record(today, 30L, screenMinutes = 90L)
+
+        assertEquals(30L, repository.day(today)?.totalMinutes)
+        assertEquals(90L, repository.day(today)?.screenMinutes)
+    }
+
+    @Test
+    fun `the screen figure never shrinks either`() {
+        record(today, 20L, screenMinutes = 200L)
+        record(today, 20L, screenMinutes = 60L)
+
+        assertEquals(200L, repository.day(today)?.screenMinutes)
+    }
+
+    @Test
+    fun `a day recorded before the screen figure existed says nothing about it`() {
+        context.getSharedPreferences(UsageHistoryRepository.PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putString("2026-05-01", "1800000|120|").commit()
+
+        val legacy = repository.day("2026-05-01")
+        assertNotNull(legacy)
+        assertEquals(30L, legacy?.totalMinutes)
+        // Not zero: a day nobody counted is a gap, not a claim.
+        assertNull(legacy?.screenMinutes)
     }
 
     @Test

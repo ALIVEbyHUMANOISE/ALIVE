@@ -29,6 +29,7 @@ class CriticalAlertPolicyTest {
         totalEntertainmentMinutes = used.coerceAtLeast(0L),
         totalEntertainmentMillis = used * 60_000L,
         unblockedMinutes = 0L,
+        totalScreenMinutes = used.coerceAtLeast(0L),
         limitMinutes = limit,
         isLimitExceeded = remaining <= 0L,
         remainingMinutes = remaining,

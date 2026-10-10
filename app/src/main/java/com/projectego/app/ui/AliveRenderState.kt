@@ -73,6 +73,13 @@ class AliveRenderState {
      */
     var unblockedMinutes: Long = 0L
 
+    /**
+     * The whole day ALIVE can see: the two figures above added together, so the
+     * number that spends the allowance and the number that spends nothing are
+     * never shown as the same thing.
+     */
+    var screenMinutes: Long = 0L
+
     /** Which stretch of days the chart is showing. */
     var chartRangeIndex: Int = 0
 

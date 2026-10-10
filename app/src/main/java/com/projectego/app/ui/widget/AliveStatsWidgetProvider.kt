@@ -114,6 +114,7 @@ class AliveStatsWidgetProvider : AppWidgetProvider() {
             // says which one it is instead of showing an empty card.
             if (day == null) {
                 views.setTextViewText(R.id.widget_allowance, "")
+                views.setViewVisibility(R.id.widget_screen, View.GONE)
                 views.setViewVisibility(R.id.widget_meter, View.GONE)
                 views.setViewVisibility(R.id.widget_empty, View.VISIBLE)
                 rowIds.forEach { views.setViewVisibility(it, View.GONE) }
@@ -136,6 +137,25 @@ class AliveStatsWidgetProvider : AppWidgetProvider() {
             }
             views.setTextViewText(R.id.widget_allowance, allowance)
             views.setContentDescription(R.id.widget_meter, allowance)
+
+            // The day whole, beside the day that costs something: on a card whose
+            // big figure is entertainment time, somebody who worked all afternoon
+            // sees a number far smaller than the hours they actually spent.
+            // A day recorded before this figure existed says nothing rather than
+            // zero, because zero would be a claim about time nobody counted.
+            val screen = day.screenMinutes
+            if (screen == null) {
+                views.setViewVisibility(R.id.widget_screen, View.GONE)
+            } else {
+                views.setViewVisibility(R.id.widget_screen, View.VISIBLE)
+                views.setTextViewText(
+                    R.id.widget_screen,
+                    context.getString(
+                        R.string.widget_stats_screen,
+                        Durations.compact(context, screen)
+                    )
+                )
+            }
 
             // The same slices, in the same colours, in the same order as the rows
             // under them, so the bar and the list are one statement rather than
