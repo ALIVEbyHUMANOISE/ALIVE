@@ -5,6 +5,7 @@ import { SectionAwareness, SectionHero, SectionLoop } from './sections/Story'
 import {
   SectionChoice,
   SectionDownload,
+  SectionGuardian,
   SectionRealization,
   SectionRoom,
   SectionTakeover,
@@ -38,6 +39,7 @@ export default function Site() {
         <SectionRealization />
         <SectionTakeover />
         <SectionChoice />
+        <SectionGuardian />
         <SectionRoom />
         <SectionDownload />
       </main>

@@ -126,8 +126,33 @@ const id = {
     ]
   },
 
+  guardian: {
+    badge: '07 — penjaga',
+    title: ['JANGAN BIARKAN', 'GUARDIAN KELUAR'],
+    lead: 'Dia berdiri di depan pintu cuma selama kamu biarkan.',
+    body:
+      'Selama aksesibilitasnya nyala, Guardian yang menutup app hiburan begitu jatahnya habis. Matikan, dan dia nggak bisa masuk — tapi dia juga nggak pergi. ALIVE tetap bilang, dari tiga tempat.',
+    places: [
+      {
+        name: 'Notifikasi',
+        body: 'Muncul begitu penjaganya mati. Digeser hilang, dia balik lagi.'
+      },
+      {
+        name: 'Kartu di Home',
+        body: 'Nunjukin harimu sudah ditandai atau belum, plus satu tombol buat memulihkan.'
+      },
+      {
+        name: 'Popup di atas app',
+        body: 'Muncul sebentar di atas app hiburan yang baru kamu buka, selama penjaganya masih mati.'
+      }
+    ],
+    honest:
+      'Ini pengingat, bukan kunci: popup-nya bisa ditutup dan Android tetap memberi jalan keluar. Guardian cuma bikin jalan keluarnya kelihatan.',
+    alt: 'Guardian pixel: topeng gelap bertanduk dengan mata amber dan mulut bergigi'
+  },
+
   room: {
-    badge: '07 — ruang',
+    badge: '08 — ruang',
     title: ['SISAKAN', 'RUANG.'],
     lead: 'Menutup satu pintu bukan tujuan. Membuka satu jam iya.',
     body:
@@ -153,7 +178,7 @@ const id = {
   },
 
   download: {
-    badge: '08 — selesai',
+    badge: '09 — selesai',
     title: ['NIKMATI', 'HIDUPMU.'],
     lead: 'Satu unduhan, tanpa akun.',
     file: {
@@ -301,8 +326,33 @@ const en: typeof id = {
     ]
   },
 
+  guardian: {
+    badge: '07 — the guardian',
+    title: ['DON’T LET THE', 'GUARDIAN OUT'],
+    lead: 'It stands in the doorway only for as long as you let it.',
+    body:
+      'While accessibility is on, the Guardian is what closes an entertainment app when its time is up. Switch it off and it cannot get in — but it does not leave either. ALIVE keeps saying so, from three places.',
+    places: [
+      {
+        name: 'The notification',
+        body: 'It appears the moment the guard goes off. Swipe it away and it comes back.'
+      },
+      {
+        name: 'The card on Home',
+        body: 'It says whether today is marked yet, and carries the one button that restores protection.'
+      },
+      {
+        name: 'The popup over the app',
+        body: 'It opens over an entertainment app for a moment, the moment you open one, while the guard is off.'
+      }
+    ],
+    honest:
+      'This is a reminder, not a lock: the popup can be dismissed and Android keeps an exit. The Guardian only makes that exit visible.',
+    alt: 'Pixel Guardian: a dark horned mask with amber eyes and a mouth full of teeth'
+  },
+
   room: {
-    badge: '07 — make room',
+    badge: '08 — make room',
     title: ['LEAVE', 'ROOM.'],
     lead: 'Closing one door was never the point. Opening an hour is.',
     body:
@@ -328,7 +378,7 @@ const en: typeof id = {
   },
 
   download: {
-    badge: '08 — peace',
+    badge: '09 — peace',
     title: ['ENJOY', 'YOUR LIFE.'],
     lead: 'One download, no account.',
     file: {

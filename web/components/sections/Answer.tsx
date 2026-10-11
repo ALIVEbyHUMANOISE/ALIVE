@@ -6,7 +6,7 @@ import PixelSprite from '@/components/PixelSprite'
 import Reveal from '@/components/Reveal'
 import { Accents, HueTile, Pips, RewardChip, Swatch, TabCard, TimeBar } from '@/components/ui'
 import { useCopy } from '@/components/LangProvider'
-import { categories, fills } from '@/lib/hues'
+import { badgeFace, categories, fills } from '@/lib/hues'
 
 /** 04 - the number is not advice; the privacy promise is the reason to trust it. */
 export function SectionRealization() {
@@ -132,7 +132,86 @@ export function SectionChoice() {
   )
 }
 
-/** 07 - the hours it saved have somewhere to go, and a board to go on. */
+/**
+ * 07 - the character that does the closing, and what it does when it is
+ * switched off.
+ *
+ * The one section where the argument is a face rather than a number, so the
+ * poster gets the width and the words sit beside it. It is also the honest
+ * counterweight to the section above: the app cannot stop anyone turning the
+ * guard off, so it says what the Guardian becomes instead - and the note at the
+ * bottom refuses to call a dismissible popup a lock.
+ */
+export function SectionGuardian() {
+  const copy = useCopy()
+
+  return (
+    <section id="guardian" className="border-t-[3px] border-ink px-5 py-16 md:px-12 md:py-24">
+      <div className="mx-auto w-full max-w-5xl">
+        <Reveal className="flex items-center gap-3">
+          {/* The app's own sprite, so the poster below is unmistakably the same
+              character and not an illustration that happens to share a palette. */}
+          <PixelSprite name="guardian_alert" size={32} />
+          <span className={`badge ${badgeFace('red')}`}>{copy.guardian.badge}</span>
+        </Reveal>
+
+        <div className="mt-10 grid items-center gap-8 md:grid-cols-12">
+          <Reveal delay={60} className="md:col-span-6">
+            <Image
+              src="/images/guardian.png"
+              alt={copy.guardian.alt}
+              width={768}
+              height={768}
+              className="mx-auto h-auto w-full max-w-[420px] rounded-card border-[3px] border-ink shadow-raise"
+            />
+          </Reveal>
+
+          <div className="md:col-span-6">
+            <Reveal delay={120}>
+              <h2 className="font-display text-pixel-sm">
+                {copy.guardian.title.map((line) => (
+                  <span key={line} className="block">
+                    {line}
+                  </span>
+                ))}
+              </h2>
+            </Reveal>
+
+            <Reveal delay={160}>
+              <p className="mt-5 font-head text-xl leading-snug">{copy.guardian.lead}</p>
+            </Reveal>
+
+            <Reveal delay={200}>
+              <p className="mt-4 leading-relaxed text-ink-secondary">{copy.guardian.body}</p>
+            </Reveal>
+
+            <div className="mt-6 space-y-3">
+              {copy.guardian.places.map((place, index) => (
+                <Reveal key={place.name} delay={240 + index * 80}>
+                  <article className="card-sm p-4">
+                    <div className="flex items-center gap-3">
+                      {/* One colour for all three: they are not three ideas, they
+                          are the same promise arriving three ways. */}
+                      <Swatch fill={fills.red} />
+                      <h3 className="font-head font-bold">{place.name}</h3>
+                    </div>
+                    <p className="mt-2 text-sm leading-relaxed text-ink-secondary">{place.body}</p>
+                  </article>
+                </Reveal>
+              ))}
+            </div>
+
+            <Reveal delay={500}>
+              <p className="mt-6 text-sm leading-relaxed text-ink-muted">{copy.guardian.honest}</p>
+            </Reveal>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/** 08 - the hours it saved have somewhere to go, and a board to go on. */
 export function SectionRoom() {
   const copy = useCopy()
   const featureFills = [fills.blue, fills.gold, fills.forest, fills.amber]

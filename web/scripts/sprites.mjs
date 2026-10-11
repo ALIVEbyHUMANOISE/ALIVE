@@ -56,7 +56,11 @@ const SPRITES = {
   diamond: 'alive_accent_diamond',
   heart: 'alive_accent_heart',
   invader: 'alive_accent_invader',
-  plus: 'alive_accent_plus'
+  plus: 'alive_accent_plus',
+  guardian_idle: 'ic_guardian_idle',
+  guardian_alert: 'ic_guardian_alert',
+  guardian_recovery: 'ic_guardian_recovery',
+  guardian_restored: 'ic_guardian_restored'
 }
 
 /** `#RGB`, `#RRGGBB` and Android's `#AARRGGBB` all become CSS colours. */
