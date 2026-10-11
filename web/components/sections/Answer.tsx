@@ -72,7 +72,7 @@ export function SectionTakeover() {
     >
       <Reveal>
         <Image
-          src="/images/takeover.png"
+          src={`${basePath}/images/takeover.png`}
           alt={copy.takeover.alt}
           width={992}
           height={1074}
@@ -178,7 +178,7 @@ export function SectionGuardian() {
         <div className="mt-12 grid items-center gap-10 md:grid-cols-12">
           <Reveal delay={60} className="md:col-span-6">
             <Image
-              src="/images/guardian.png"
+              src={`${basePath}/images/guardian.png`}
               alt={copy.guardian.alt}
               width={768}
               height={768}

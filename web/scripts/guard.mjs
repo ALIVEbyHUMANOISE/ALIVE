@@ -132,6 +132,30 @@ if (!apk) {
     seo.push(`out/index.html: never links ${apk}, the file this build was told to hand out`)
   }
 }
+/**
+ * `images.unoptimized` makes next/image write the src it is handed, and basePath
+ * is not part of that - so a hand-written "/images/takeover.png" is requested
+ * from the domain root and 404s on a project page, while looking perfect in
+ * `npm run dev`, which has no folder in front of it. This is how the poster
+ * disappeared without a single build error. Every root-relative asset the built
+ * page names has to live under the folder the site is served from.
+ */
+if (advertised && !absent.includes('index.html')) {
+  const folder = new URL(advertised).pathname.replace(/\/$/, '')
+  if (folder) {
+    const html = readFileSync(join(web, 'out/index.html'), 'utf8')
+    const loose = [
+      ...new Set(
+        [...html.matchAll(/(?:src|href)="(\/[^"]*\.(?:png|jpe?g|svg|webp|gif|ttf|woff2?))"/g)]
+          .map((m) => m[1])
+          .filter((p) => !p.startsWith(`${folder}/`))
+      )
+    ]
+    for (const p of loose) {
+      seo.push(`out/index.html: ${p} points at the domain root instead of ${folder}/ — Pages 404s it`)
+    }
+  }
+}
 
 const problems = [
   ...missing.map(({ name, file }) => `${file}: .${name} is used but the built CSS never defines it`),
