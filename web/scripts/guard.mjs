@@ -93,6 +93,20 @@ const seo = []
 if (!existsSync(join(web, 'out/.nojekyll'))) {
   seo.push('out/: .nojekyll is missing, so Pages will 404 every /_next/ asset')
 }
+/**
+ * Search Console proves ownership with one file at the site root, and its failure
+ * mode is silent: delete it and every build still passes, the site still looks
+ * healthy, and Google simply stops trusting the property. So the file is named
+ * here - and so is the line it has to carry, which catches an edited or truncated
+ * copy too, not just a missing one.
+ */
+const gscFile = 'google716ab3c12cc36f87.html'
+const gscPath = join(web, 'out', gscFile)
+if (!existsSync(gscPath)) {
+  seo.push(`out/: ${gscFile} is missing — Search Console ownership would quietly lapse`)
+} else if (!readFileSync(gscPath, 'utf8').includes(`google-site-verification: ${gscFile}`)) {
+  seo.push(`out/${gscFile}: no longer carries the line Google reads`)
+}
 if (absent.length) {
   seo.push(`out/: ${absent.join(', ')} was never emitted — nobody can be told where the site is`)
 }
