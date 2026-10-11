@@ -148,7 +148,7 @@ const id = {
     ],
     honest:
       'Tidak ada yang tahu persis kapan dia datang. Yang pasti: dia datang kalau kamu melanggar janjimu sendiri.',
-    alt: 'Guardian pixel: topeng gelap bertanduk dengan mata amber dan mulut bergigi'
+    alt: 'Sosok pixel berjubah hitam bertanduk, bermata amber, dengan tongkat berlampu'
   },
 
   room: {
@@ -205,7 +205,8 @@ const id = {
   footer: {
     line: 'ALIVE © 2026',
     sub: 'proyek independen soal atensi',
-    made: 'Dibuat di Android Studio, tanpa backend.'
+    made: 'Dibuat di Android Studio, tanpa backend.',
+    privacy: 'Kebijakan privasi'
   }
 }
 
@@ -348,7 +349,7 @@ const en: typeof id = {
     ],
     honest:
       'Nobody knows exactly when it comes. What is certain: it comes when you break your own promise.',
-    alt: 'Pixel Guardian: a dark horned mask with amber eyes and a mouth full of teeth'
+    alt: 'A pixel figure in a black horned hood with amber eyes, holding a lit staff'
   },
 
   room: {
@@ -405,7 +406,8 @@ const en: typeof id = {
   footer: {
     line: 'ALIVE © 2026',
     sub: 'an independent project about attention',
-    made: 'Built in Android Studio, with no backend.'
+    made: 'Built in Android Studio, with no backend.',
+    privacy: 'Privacy policy'
   }
 }
 

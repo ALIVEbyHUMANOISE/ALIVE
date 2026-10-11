@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
 import './globals.css'
 import { LangProvider } from '@/components/LangProvider'
+import { applicationJsonLd, brand, description, siteUrl } from '@/lib/site'
 
 /**
  * The three faces ALIVE actually uses, shipped from the same files the app
@@ -34,21 +35,45 @@ const bodyRegular = localFont({
 })
 
 export const metadata: Metadata = {
-  title: 'ALIVE — sadari waktumu, kendalikan layarmu',
-  description:
-    'ALIVE menghitung waktu hiburan di HP-mu, menguncinya saat jatah habis, dan memberi ruang untuk fokus. Semuanya tetap di perangkatmu.',
+  /**
+   * Every relative URL below is resolved against this one at build time, which
+   * is what turns "the poster" into an address a crawler or a chat preview can
+   * actually fetch. Set NEXT_PUBLIC_SITE_URL when deploying; see lib/site.ts.
+   */
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: 'ALIVE — sadari waktumu, kendalikan layarmu',
+    template: `%s — ${brand}`
+  },
+  description,
+  /** The address Google stores as this page's own, so a query string or a copy
+   *  on another host cannot split the site's reputation across URLs. */
+  alternates: { canonical: '/' },
   openGraph: {
-    title: 'ALIVE',
+    title: brand,
     description: 'Sadari waktumu. Kendalikan layarmu.',
     type: 'website',
+    url: '/',
+    siteName: brand,
+    locale: 'id_ID',
     // The poster is the whole argument in one picture, so it is also what a
     // shared link shows. Chat apps crop to 1.91:1, hence the padded copy.
-    images: ['/images/og-preview.png']
+    images: [
+      {
+        url: '/images/og-preview.png',
+        width: 1200,
+        height: 630,
+        alt: 'Poster pixel: monster HP bertaring dan bercakar mengangkangi karakter kecil ALIVE, dengan tulisan “Your Phone has Taken over your life”'
+      }
+    ]
   },
   twitter: {
     card: 'summary_large_image',
+    title: brand,
+    description: 'Sadari waktumu. Kendalikan layarmu.',
     images: ['/images/og-preview.png']
-  }
+  },
+  robots: { index: true, follow: true }
 }
 
 export const viewport: Viewport = {
@@ -62,6 +87,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${display.variable} ${head.variable} ${bodyRegular.variable}`}
     >
       <body className="bg-paper font-body text-ink antialiased">
+        {/* Said once, in the vocabulary a search engine reads, next to the
+            human-readable page rather than instead of it. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(applicationJsonLd) }}
+        />
         <LangProvider>{children}</LangProvider>
       </body>
     </html>
