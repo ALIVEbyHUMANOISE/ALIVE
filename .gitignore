@@ -15,6 +15,10 @@
 local.properties
 .kotlin/
 .idea/vcs.xml
+# Which device Studio last deployed to, and the AVD it lives at. Per-machine
+# preference, and the only tracked file that wrote out this laptop's Windows
+# username - never part of anybody's change.
+/.idea/deploymentTargetSelector.xml
 # The Windows Python stub drops its runtime next to the working directory when
 # `python` is run from here. It is a tool byproduct, never part of the app.
 /Python/
