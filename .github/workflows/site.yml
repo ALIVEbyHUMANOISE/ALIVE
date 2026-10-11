@@ -1,0 +1,67 @@
+name: site
+
+# The one deployment path the site has. Nothing else publishes it, so nothing
+# can quietly serve an older copy from a second host.
+#
+# This workflow does NOT build the APK. The signing key lives on the developer's
+# machine and stays out of every CI runner, so a release is assembled locally
+# and uploaded to GitHub Releases by hand. The download button points at
+# `releases/latest/download`, which follows whatever the newest release is - so
+# the site never has to be rebuilt when the app is.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    env:
+      # A GitHub Pages project site is served from under /<repo>/, and the
+      # address a crawler is told has to agree with the prefix Next loads its
+      # own files from. Both are derived from the repository this runs on, so
+      # renaming the repo is a push, not an edit.
+      NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+      NEXT_PUBLIC_APK_URL: https://github.com/${{ github.repository }}/releases/latest/download/alive.apk
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+
+      # `postbuild` runs scripts/guard.mjs: colours that Tailwind deleted, a
+      # sitemap that was never emitted, and a download link that points nowhere
+      # all fail the deploy here instead of on someone's phone.
+      - run: npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

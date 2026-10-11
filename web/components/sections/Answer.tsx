@@ -7,7 +7,7 @@ import Reveal from '@/components/Reveal'
 import { Accents, HueTile, Pips, RewardChip, Swatch, TabCard, TimeBar } from '@/components/ui'
 import { useCopy } from '@/components/LangProvider'
 import { categories, fills } from '@/lib/hues'
-import { contactEmail } from '@/lib/site'
+import { apkUrl, basePath, contactEmail } from '@/lib/site'
 
 /** 04 - the number is not advice; the privacy promise is the reason to trust it. */
 export function SectionRealization() {
@@ -359,7 +359,7 @@ export function SectionDownload() {
             <div className="rule mt-5" />
 
             <div className="mt-6 flex flex-wrap items-center gap-4">
-              <a href="/apk/alive-debug.apk" download className="btn btn-primary">
+              <a href={apkUrl} download className="btn btn-primary">
                 {copy.download.cta}
               </a>
               <span className="text-sm">{copy.download.file.requires}</span>
@@ -415,10 +415,10 @@ export function SiteFooter() {
       <p className="mx-auto mt-4 w-full max-w-5xl text-sm text-ink-muted">{copy.footer.made}</p>
 
       {/* The two links a store listing and a crawler both look for: the policy
-          behind the promise above, and an address a person can write to. The
-          trailing slash is the address the export actually serves. */}
+          behind the promise above, and an address a person can write to. A bare
+          <a> gets no basePath prefix from Next, so the folder is written in. */}
       <div className="mx-auto mt-3 flex w-full max-w-5xl flex-wrap items-center gap-4 text-sm">
-        <a href="/privacy/" className="text-ink-secondary underline">
+        <a href={`${basePath}/privacy/`} className="text-ink-secondary underline">
           {copy.footer.privacy}
         </a>
         <a href={`mailto:${contactEmail}`} className="text-ink-secondary underline">

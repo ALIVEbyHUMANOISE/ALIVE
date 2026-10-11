@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { brand, contactEmail, siteUrl } from '@/lib/site'
+import { basePath, brand, contactEmail } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: 'Kebijakan Privasi',
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     title: 'Kebijakan Privasi — ALIVE',
     description:
       'Tanpa akun, tanpa server, tanpa izin internet. Apa yang disimpan ALIVE, dan bagaimana menghapusnya.',
-    url: `${siteUrl}/privacy/`,
+    url: '/privacy/',
     type: 'website'
   }
 }
@@ -40,7 +40,7 @@ function Block({ label, children }: { label: string; children: React.ReactNode }
 export default function PrivacyPage() {
   return (
     <main className="mx-auto w-full max-w-3xl px-5 py-14 md:py-20">
-      <a href="/" className="text-sm text-ink-secondary underline">
+      <a href={`${basePath}/`} className="text-sm text-ink-secondary underline">
         ← {brand}
       </a>
 

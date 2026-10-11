@@ -6,8 +6,3 @@ dist
 next-env.d.ts
 .DS_Store
 .env*
-
-# The APK the download button serves is a build product, not a source file.
-# `npm run apk` copies it in from app/build/ before a deploy.
-public/apk/*.apk
-public/apk/BUILD.txt

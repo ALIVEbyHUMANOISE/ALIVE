@@ -31,7 +31,7 @@ const id = {
     body:
       'ALIVE menghitung waktu hiburan di layarmu, memberi kamu jatah harian, dan menutup app-nya sendiri saat jatah habis. Bukan untuk menghukum. Supaya yang memutuskan masih kamu, di saat kamu masih mau memutuskan.',
     cta: 'Unduh ALIVE',
-    ctaNote: 'APK build debug · ±7 MB · Android 8 ke atas',
+    ctaNote: 'APK beta · ±5 MB · Android 8 ke atas',
     scroll: 'gulir',
     face: 'Karakter ALIVE melambai'
   },
@@ -182,13 +182,13 @@ const id = {
     title: ['NIKMATI', 'HIDUPMU.'],
     lead: 'Satu unduhan, tanpa akun.',
     file: {
-      name: 'alive-debug.apk',
-      size: '±7 MB',
+      name: 'alive.apk',
+      size: '±5 MB',
       requires: 'Android 8.0 (API 26) ke atas'
     },
     cta: 'Unduh APK',
     honest:
-      'Ini masih build debug: Android akan menanyakan izin “sumber tidak dikenal”, dan belum ada pembaruan otomatis. Versi Play Store sedang disiapkan.',
+      'ALIVE disebar sebagai APK beta lewat GitHub Releases: Android akan menanyakan izin “sumber tidak dikenal” sebelum memasang, dan belum ada pembaruan otomatis — tapi tombol ini selalu menunjuk rilis terbaru. Versi Play Store sedang disiapkan.',
     permissions: {
       title: 'Dua izin yang diminta',
       usage: {
@@ -232,7 +232,7 @@ const en: typeof id = {
     body:
       'ALIVE counts the entertainment time on your screen, gives you a daily allowance, and closes those apps itself when it runs out. Not to punish you — so that the one deciding is still you, while deciding is still something you want to do.',
     cta: 'Download ALIVE',
-    ctaNote: 'Debug APK · ~7 MB · Android 8 and up',
+    ctaNote: 'Beta APK · ~5 MB · Android 8 and up',
     scroll: 'scroll',
     face: 'The ALIVE character waving'
   },
@@ -383,13 +383,13 @@ const en: typeof id = {
     title: ['ENJOY', 'YOUR LIFE.'],
     lead: 'One download, no account.',
     file: {
-      name: 'alive-debug.apk',
-      size: '~7 MB',
+      name: 'alive.apk',
+      size: '~5 MB',
       requires: 'Android 8.0 (API 26) and up'
     },
     cta: 'Download APK',
     honest:
-      'This is still a debug build: Android will ask about unknown sources, and there is no automatic update yet. The Play Store version is on the way.',
+      'ALIVE ships as a beta APK through GitHub Releases: Android will ask about unknown sources before it installs, and there is no automatic update yet — but this button always points at the newest release. The Play Store version is on the way.',
     permissions: {
       title: 'The two permissions it asks for',
       usage: {

@@ -47,7 +47,12 @@ export const metadata: Metadata = {
   },
   description,
   /** The address Google stores as this page's own, so a query string or a copy
-   *  on another host cannot split the site's reputation across URLs. */
+   *  on another host cannot split the site's reputation across URLs.
+   *
+   *  Written without the project-page folder: Next adds `basePath` to metadata
+   *  URLs itself, and writing it here too is what produced `/repo/repo/` in the
+   *  built head. Raw `<a href>` links in the page are the opposite case - those
+   *  get no prefix, so `lib/site.ts` exports one for them. */
   alternates: { canonical: '/' },
   openGraph: {
     title: brand,

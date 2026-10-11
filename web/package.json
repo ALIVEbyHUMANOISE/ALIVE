@@ -8,9 +8,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "sprites": "node scripts/sprites.mjs",
-    "apk": "node scripts/apk.mjs",
     "guard": "node scripts/guard.mjs",
-    "prebuild": "node scripts/apk.mjs",
     "postbuild": "node scripts/guard.mjs"
   },
   "dependencies": {

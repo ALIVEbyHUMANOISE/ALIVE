@@ -67,6 +67,7 @@ const unmapped = [...tokens.matchAll(/--alive-(cat_\w+)/g)]
 const seoFiles = ['robots.txt', 'sitemap.xml', 'index.html']
 const absent = seoFiles.filter((file) => !existsSync(join(web, 'out', file)))
 const advertised = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, '')
+const apk = process.env.NEXT_PUBLIC_APK_URL?.replace(/\/+$/, '')
 
 const seo = []
 if (absent.length) {
@@ -86,6 +87,14 @@ if (!advertised) {
     }
   }
 }
+if (!apk) {
+  seo.push('build: NEXT_PUBLIC_APK_URL is unset, so the download button points at nothing')
+} else if (!absent.includes('index.html')) {
+  const page = readFileSync(join(web, 'out/index.html'), 'utf8')
+  if (!page.includes(apk)) {
+    seo.push(`out/index.html: never links ${apk}, the file this build was told to hand out`)
+  }
+}
 
 const problems = [
   ...missing.map(({ name, file }) => `${file}: .${name} is used but the built CSS never defines it`),
@@ -97,7 +106,7 @@ if (problems.length) {
   console.error(
     'guard: the site lost something between source and build\n' +
       problems.join('\n') +
-      '\n\nfix: NEXT_PUBLIC_SITE_URL=https://<host> npm run build'
+      '\n\nfix: NEXT_PUBLIC_SITE_URL=https://<host> NEXT_PUBLIC_APK_URL=https://<apk> npm run build'
   )
   process.exit(1)
 }

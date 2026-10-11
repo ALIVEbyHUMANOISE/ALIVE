@@ -20,6 +20,27 @@ export const siteUrl = fromEnv ?? 'http://localhost:3001'
 /** True while nothing was set, so the build can say so out loud. */
 export const hostIsPlaceholder = fromEnv === undefined
 
+/**
+ * A GitHub Pages *project* site is served from under `/repo/`, and Next then has
+ * to ask for its own files from under that same folder. The prefix is therefore
+ * read out of the address rather than set separately: one value to get wrong
+ * instead of two that can disagree. `next.config.mjs` derives the same string
+ * from the same variable - it cannot import this file, being plain JS.
+ */
+export const basePath =
+  hostIsPlaceholder || new URL(siteUrl).pathname === '/'
+    ? ''
+    : new URL(siteUrl).pathname.replace(/\/$/, '')
+
+/**
+ * The download itself lives on GitHub Releases, not inside the site's own
+ * folder. Two reasons: an APK rebuilt every week is a new 5 MB blob in the
+ * deploy every week, and a release page is where a beta user can read which
+ * version they are about to install. `latest/download` means this link cannot
+ * go stale - it follows whatever is the newest release.
+ */
+export const apkUrl = process.env.NEXT_PUBLIC_APK_URL
+
 export const brand = 'ALIVE'
 
 /** The same sentence the app's own first screen makes. One place, one wording. */
@@ -51,6 +72,7 @@ export const applicationJsonLd = {
   url: `${siteUrl}/`,
   description,
   image: `${siteUrl}/images/og-preview.png`,
+  downloadUrl: apkUrl,
   applicationCategory: 'LifestyleApplication',
   operatingSystem: 'Android 8.0 (API 26) dan yang lebih baru',
   inLanguage: ['id', 'en'],
