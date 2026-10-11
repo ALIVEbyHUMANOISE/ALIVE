@@ -19,6 +19,9 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.projectego.app", appContext.packageName)
+        // The public identity, not the source package above: this is the string
+        // a store and an installed phone key on, so it is written out in full
+        // here as a tripwire against changing it by accident.
+        assertEquals("com.humanoise.alive", appContext.packageName)
     }
 }

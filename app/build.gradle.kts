@@ -22,6 +22,13 @@ val keystoreProperties = Properties().apply {
 val releaseKeystore = keystoreProperties.getProperty("storeFile")
 
 android {
+    /**
+     * The source package, and it stays behind on purpose: every `import`, every
+     * `R`, and the accessibility component name the system stores are built from
+     * it. The public identity of the app is the `applicationId` below, and the
+     * two are allowed to differ - renaming this one would touch every source
+     * file and change nothing a user sees.
+     */
     namespace = "com.projectego.app"
     compileSdk {
         version = release(37)
@@ -32,7 +39,12 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.projectego.app"
+        /**
+         * The identity every store, every update and every installed phone
+         * remembers. Chosen before the first public APK because it cannot be
+         * changed afterwards without asking every user to uninstall first.
+         */
+        applicationId = "com.humanoise.alive"
         minSdk = 26
         targetSdk = 37
         versionCode = 1
