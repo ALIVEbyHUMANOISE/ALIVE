@@ -1,6 +1,25 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
 }
+
+/**
+ * The release key lives outside the repo, in `keystore.properties` next to the
+ * root build file, because it is a credential: whichever key signs the first
+ * public APK is the only key that can ever sign an update for installs that
+ * already happened. Losing it does not mean rebuilding - it means every phone
+ * that has ALIVE on it has to uninstall it first.
+ *
+ * Without the file the release build still compiles, unsigned. An unsigned APK
+ * cannot be installed or uploaded anywhere, so the mistake surfaces immediately
+ * instead of shipping quietly.
+ */
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+val releaseKeystore = keystoreProperties.getProperty("storeFile")
 
 android {
     namespace = "com.projectego.app"
@@ -22,11 +41,26 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = rootProject.file(releaseKeystore)
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
             optimization {
                 enable = false
             }
+            // Deliberately no debug-key fallback. A release APK signed with the
+            // debug key installs happily, so the mistake would only surface on
+            // the first update, on the user's phone. Unsigned does not install.
+            if (releaseKeystore != null) signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
@@ -44,6 +78,10 @@ android {
             isIncludeAndroidResources = true
         }
     }
+}
+
+if (releaseKeystore == null) {
+    logger.warn("keystore.properties not found: assembleRelease will produce an unsigned APK")
 }
 
 dependencies {

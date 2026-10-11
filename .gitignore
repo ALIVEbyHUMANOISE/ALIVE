@@ -18,3 +18,10 @@ local.properties
 # The Windows Python stub drops its runtime next to the working directory when
 # `python` is run from here. It is a tool byproduct, never part of the app.
 /Python/
+
+# The release key and the file that names its passwords. Both are credentials:
+# this one key signs every version of ALIVE that will ever install over the last,
+# so a copy in the repo is a copy for anyone who ever sees the repo.
+keystore.properties
+*.jks
+*.keystore
