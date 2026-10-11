@@ -78,7 +78,15 @@ export const metadata: Metadata = {
     description: 'Sadari waktumu. Kendalikan layarmu.',
     images: ['/images/og-preview.png']
   },
-  robots: { index: true, follow: true }
+  robots: { index: true, follow: true },
+  /**
+   * Search Console's second method, on Google's own advice: one method means one
+   * deleted file between the site and its verification. This token is not a
+   * secret - it is a public claim printed in the page head, and Google reads it
+   * from there. It sits in the root layout so every page carries it, including
+   * /privacy/, which is rendered on the server rather than in the browser.
+   */
+  verification: { google: 'qq-Vqz-lhScaH9WrWlF1yWhgL9uEEkJsYoquNILlbdQ' }
 }
 
 export const viewport: Viewport = {
