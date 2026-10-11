@@ -39,16 +39,16 @@ jobs:
       # own files from. Both are derived from the repository this runs on, so
       # renaming the repo is a push, not an edit.
       #
-      # The owner is lowercased on purpose: Pages answers on either spelling, so
-      # an uppercase one here would not break the site - it would quietly give
-      # the same pages two hostnames and make the canonical point at the one
-      # nobody types. The repository name keeps its own spelling, because the
-      # path really does follow it.
+      # The account login arrives with its capitals on and there is nothing to do
+      # about that here: the Actions expression language has no case function, and
+      # asking for one (`toLower`) does not fail a step - it fails the whole file,
+      # and the run dies with zero jobs before any log exists. lib/site.ts folds
+      # the host to lowercase instead, which also covers a hand-run build.
       #
       # A custom domain is the one case that needs an edit here: leave this
       # pointing at github.io while the site also answers on its own domain and
       # every page starts declaring a canonical that is not the one people read.
-      NEXT_PUBLIC_SITE_URL: https://${{ toLower(github.repository_owner) }}.github.io/${{ github.event.repository.name }}
+      NEXT_PUBLIC_SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
       NEXT_PUBLIC_APK_URL: https://github.com/${{ github.repository }}/releases/latest/download/alive.apk
     steps:
       - uses: actions/checkout@v4

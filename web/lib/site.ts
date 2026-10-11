@@ -13,7 +13,20 @@
  * this site's canonical address. scripts/guard.mjs stops a production build
  * that forgot to set it.
  */
-const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, '')
+/**
+ * The host of a URL is case-insensitive; its path is not. GitHub hands over the
+ * account login with its capitals intact (`ALIVEbyHUMANOISE`), and Pages answers
+ * on either spelling - so the host is folded to lowercase here and the path is
+ * left exactly as the repository spells it. Doing it in the workflow is not an
+ * option: the Actions expression language has no case function at all.
+ */
+function normalize(raw: string): string {
+  const url = new URL(raw)
+  url.hostname = url.hostname.toLowerCase()
+  return url.href.replace(/\/+$/, '')
+}
+
+const fromEnv = process.env.NEXT_PUBLIC_SITE_URL ? normalize(process.env.NEXT_PUBLIC_SITE_URL) : undefined
 
 export const siteUrl = fromEnv ?? 'http://localhost:3001'
 

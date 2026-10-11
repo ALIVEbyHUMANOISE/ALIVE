@@ -66,7 +66,19 @@ const unmapped = [...tokens.matchAll(/--alive-(cat_\w+)/g)]
 /** The files a crawler reads before it reads a single word of the page. */
 const seoFiles = ['robots.txt', 'sitemap.xml', 'index.html']
 const absent = seoFiles.filter((file) => !existsSync(join(web, 'out', file)))
-const advertised = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, '')
+/**
+ * The same host normalisation lib/site.ts applies, so the address this script
+ * expects is the address the build was allowed to write. GitHub passes the
+ * account login with its capitals on, and the built pages must carry the
+ * lowercase host - if only one of the two normalises, this check would cry wolf.
+ */
+function normalize(raw) {
+  const url = new URL(raw)
+  url.hostname = url.hostname.toLowerCase()
+  return url.href.replace(/\/+$/, '')
+}
+
+const advertised = process.env.NEXT_PUBLIC_SITE_URL ? normalize(process.env.NEXT_PUBLIC_SITE_URL) : undefined
 const apk = process.env.NEXT_PUBLIC_APK_URL?.replace(/\/+$/, '')
 
 const seo = []
