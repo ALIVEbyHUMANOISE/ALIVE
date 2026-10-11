@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ALIVE Guardian, pose: recovery. Guardian, offering a way back.
-     Drawn on the same 16x16 grid as the critter and the pixel marks; regenerate
-     with guardian/generate.mjs rather than editing the paths by hand. -->
+<!-- ALIVE Guardian, pose: recovery. One figure in four lights - the body, the
+     staff and the armour are identical in all four; only the face and the core
+     change. Regenerate with guardian/generate.mjs rather than editing paths. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="48dp"
-    android:height="48dp"
-    android:viewportWidth="16"
-    android:viewportHeight="16">
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
     <path
         android:fillColor="@color/alive_red_short_dark"
-        android:pathData="M1,0h1v1h-1zM3,0h1v1h-1zM12,0h1v1h-1zM14,0h1v1h-1zM1,1h1v1h-1zM4,1h1v1h-1zM11,1h1v1h-1zM14,1h1v1h-1zM1,2h1v1h-1zM4,2h1v1h-1zM11,2h1v1h-1zM14,2h1v1h-1zM2,3h1v1h-1zM5,3h6v1h-6zM13,3h1v1h-1zM3,4h1v1h-1zM12,4h1v1h-1zM2,5h1v1h-1zM13,5h1v1h-1zM2,6h1v1h-1zM13,6h1v1h-1zM2,7h1v1h-1zM4,7h8v1h-8zM13,7h1v1h-1zM2,8h1v1h-1zM13,8h1v1h-1zM2,9h1v1h-1zM13,9h1v1h-1zM2,10h2v1h-2zM12,10h4v1h-4zM1,11h1v1h-1zM2,12h2v1h-2zM15,12h1v1h-1zM3,13h1v1h-1zM6,13h4v1h-4zM12,13h1v1h-1zM15,13h1v1h-1zM3,14h1v1h-1zM6,14h1v1h-1zM9,14h1v1h-1zM12,14h3v1h-3zM2,15h1v1h-1zM6,15h1v1h-1zM9,15h1v1h-1zM13,15h1v1h-1z" />
-    <path
-        android:fillColor="@color/alive_red_short_mid"
-        android:pathData="M2,0h1v1h-1zM13,0h1v1h-1zM2,11h1v1h-1zM13,11h1v1h-1zM13,13h2v1h-2z" />
+        android:pathData="M9,0h1v1h-1zM11,0h3v1h-3zM34,0h3v1h-3zM38,0h1v1h-1zM40,0h1v1h-1zM42,0h1v1h-1zM10,1h1v1h-1zM14,1h1v1h-1zM33,1h1v1h-1zM37,1h1v1h-1zM39,1h1v1h-1zM43,1h1v1h-1zM11,2h1v1h-1zM15,2h2v1h-2zM32,2h1v1h-1zM36,2h1v1h-1zM38,2h1v1h-1zM44,2h1v1h-1zM12,3h1v1h-1zM17,3h15v1h-15zM35,3h1v1h-1zM37,3h1v1h-1zM40,3h1v1h-1zM43,3h1v1h-1zM45,3h1v1h-1zM13,4h1v1h-1zM34,4h1v1h-1zM36,4h1v1h-1zM40,4h1v1h-1zM43,4h1v1h-1zM46,4h1v1h-1zM14,5h1v1h-1zM33,5h1v1h-1zM37,5h1v1h-1zM40,5h1v1h-1zM43,5h1v1h-1zM45,5h1v1h-1zM15,6h1v1h-1zM32,6h1v1h-1zM38,6h1v1h-1zM44,6h1v1h-1zM14,7h1v1h-1zM33,7h1v1h-1zM39,7h1v1h-1zM43,7h1v1h-1zM13,8h1v1h-1zM34,8h1v1h-1zM40,8h1v1h-1zM43,8h1v1h-1zM12,9h1v1h-1zM35,9h1v1h-1zM40,9h1v1h-1zM43,9h1v1h-1zM11,10h1v1h-1zM36,10h1v1h-1zM40,10h1v1h-1zM43,10h1v1h-1zM11,11h1v1h-1zM36,11h1v1h-1zM40,11h1v1h-1zM43,11h1v1h-1zM11,12h1v1h-1zM18,12h5v1h-5zM25,12h5v1h-5zM36,12h1v1h-1zM40,12h1v1h-1zM43,12h1v1h-1zM11,13h1v1h-1zM36,13h1v1h-1zM40,13h1v1h-1zM43,13h1v1h-1zM11,14h1v1h-1zM37,14h1v1h-1zM40,14h1v1h-1zM43,14h1v1h-1zM10,15h1v1h-1zM37,15h1v1h-1zM40,15h1v1h-1zM43,15h1v1h-1zM10,16h1v1h-1zM37,16h1v1h-1zM40,16h1v1h-1zM43,16h1v1h-1zM10,17h1v1h-1zM37,17h1v1h-1zM40,17h1v1h-1zM43,17h1v1h-1zM10,18h1v1h-1zM37,18h1v1h-1zM40,18h1v1h-1zM43,18h1v1h-1zM11,19h3v1h-3zM34,19h3v1h-3zM40,19h1v1h-1zM43,19h1v1h-1zM12,20h1v1h-1zM35,20h1v1h-1zM40,20h1v1h-1zM43,20h1v1h-1zM12,21h1v1h-1zM35,21h1v1h-1zM40,21h1v1h-1zM43,21h1v1h-1zM11,22h1v1h-1zM36,22h1v1h-1zM40,22h1v1h-1zM43,22h1v1h-1zM11,23h1v1h-1zM36,23h1v1h-1zM40,23h1v1h-1zM43,23h1v1h-1zM10,24h1v1h-1zM20,24h8v1h-8zM37,24h2v1h-2zM40,24h1v1h-1zM43,24h1v1h-1zM4,25h6v1h-6zM20,25h9v1h-9zM39,25h2v1h-2zM43,25h1v1h-1zM3,26h13v1h-13zM19,26h3v1h-3zM26,26h3v1h-3zM44,26h1v1h-1zM3,27h13v1h-13zM19,27h3v1h-3zM26,27h3v1h-3zM44,27h1v1h-1zM3,28h13v1h-13zM20,28h2v1h-2zM26,28h2v1h-2zM44,28h1v1h-1zM3,29h1v1h-1zM20,29h2v1h-2zM26,29h2v1h-2zM44,29h1v1h-1zM3,30h1v1h-1zM20,30h8v1h-8zM44,30h1v1h-1zM3,31h1v1h-1zM20,31h8v1h-8zM44,31h1v1h-1zM3,32h1v1h-1zM44,32h1v1h-1zM3,33h1v1h-1zM44,33h1v1h-1zM3,34h1v1h-1zM44,34h1v1h-1zM3,35h1v1h-1zM44,35h1v1h-1zM3,36h1v1h-1zM44,36h1v1h-1zM3,37h1v1h-1zM44,37h1v1h-1zM3,38h1v1h-1zM44,38h1v1h-1zM3,39h1v1h-1zM44,39h1v1h-1zM3,40h1v1h-1zM44,40h1v1h-1zM3,41h1v1h-1zM44,41h1v1h-1zM3,42h1v1h-1zM44,42h1v1h-1zM3,43h1v1h-1zM44,43h1v1h-1zM4,44h1v1h-1zM43,44h1v1h-1zM4,45h1v1h-1zM43,45h1v1h-1zM4,46h1v1h-1zM17,46h6v1h-6zM25,46h6v1h-6zM43,46h1v1h-1zM5,47h38v1h-38z" />
     <path
         android:fillColor="@color/alive_ink"
-        android:pathData="M2,1h2v1h-2zM12,1h2v1h-2zM2,2h2v1h-2zM12,2h2v1h-2zM3,3h2v1h-2zM11,3h2v1h-2zM4,4h8v1h-8zM3,5h10v1h-10zM3,6h1v1h-1zM6,6h4v1h-4zM12,6h1v1h-1zM3,7h1v1h-1zM12,7h1v1h-1zM3,8h10v1h-10zM3,9h10v1h-10zM4,10h8v1h-8zM3,11h10v1h-10zM4,12h8v1h-8zM4,13h2v1h-2zM10,13h2v1h-2zM4,14h2v1h-2zM10,14h2v1h-2z" />
+        android:pathData="M10,0h1v1h-1zM37,0h1v1h-1zM11,1h3v1h-3zM34,1h3v1h-3zM12,2h3v1h-3zM33,2h3v1h-3zM13,3h4v1h-4zM32,3h3v1h-3zM14,4h20v1h-20zM15,5h18v1h-18zM16,6h16v1h-16zM15,7h18v1h-18zM14,8h20v1h-20zM41,8h2v1h-2zM13,9h22v1h-22zM41,9h2v1h-2zM12,10h7v1h-7zM23,10h2v1h-2zM29,10h7v1h-7zM41,10h2v1h-2zM12,11h7v1h-7zM23,11h2v1h-2zM29,11h7v1h-7zM41,11h2v1h-2zM12,12h6v1h-6zM23,12h2v1h-2zM30,12h6v1h-6zM41,12h2v1h-2zM12,13h24v1h-24zM41,13h2v1h-2zM12,14h25v1h-25zM41,14h2v1h-2zM11,15h26v1h-26zM41,15h2v1h-2zM11,16h26v1h-26zM41,16h2v1h-2zM11,17h26v1h-26zM41,17h2v1h-2zM11,18h26v1h-26zM41,18h2v1h-2zM14,19h20v1h-20zM41,19h2v1h-2zM13,20h22v1h-22zM41,20h2v1h-2zM13,21h22v1h-22zM41,21h2v1h-2zM12,22h24v1h-24zM41,22h2v1h-2zM12,23h24v1h-24zM41,23h2v1h-2zM11,24h4v1h-4zM16,24h4v1h-4zM28,24h4v1h-4zM33,24h4v1h-4zM41,24h2v1h-2zM16,25h4v1h-4zM29,25h3v1h-3zM41,25h2v1h-2zM16,26h3v1h-3zM29,26h3v1h-3zM16,27h3v1h-3zM23,27h2v1h-2zM29,27h3v1h-3zM16,28h4v1h-4zM23,28h2v1h-2zM28,28h4v1h-4zM16,29h4v1h-4zM28,29h4v1h-4zM16,30h4v1h-4zM28,30h4v1h-4zM16,31h4v1h-4zM28,31h4v1h-4zM16,32h16v1h-16zM17,33h15v1h-15zM17,34h14v1h-14zM17,35h14v1h-14zM17,36h14v1h-14zM17,37h14v1h-14zM17,38h14v1h-14zM17,39h14v1h-14zM17,40h14v1h-14zM17,41h14v1h-14zM17,42h14v1h-14zM11,43h26v1h-26zM5,44h38v1h-38zM5,45h38v1h-38zM5,46h12v1h-12zM23,46h2v1h-2zM31,46h12v1h-12z" />
+    <path
+        android:fillColor="@color/alive_red_short_mid"
+        android:pathData="M41,0h1v1h-1zM40,1h3v1h-3zM39,2h5v1h-5zM38,3h2v1h-2zM44,3h1v1h-1zM37,4h3v1h-3zM44,4h2v1h-2zM38,5h2v1h-2zM44,5h1v1h-1zM39,6h5v1h-5zM40,7h3v1h-3zM22,26h4v1h-4zM22,27h1v1h-1zM25,27h1v1h-1zM22,28h1v1h-1zM25,28h1v1h-1zM22,29h4v1h-4zM9,33h3v1h-3zM9,34h3v1h-3zM9,35h3v1h-3z" />
     <path
         android:fillColor="@color/alive_amber_action"
-        android:pathData="M4,6h2v1h-2zM10,6h2v1h-2z" />
+        android:pathData="M41,3h2v1h-2zM41,4h2v1h-2zM41,5h2v1h-2zM19,10h4v1h-4zM25,10h4v1h-4zM19,11h4v1h-4zM25,11h4v1h-4z" />
     <path
         android:fillColor="@color/alive_warm_gray"
-        android:pathData="M14,11h2v1h-2zM12,12h3v1h-3zM3,15h3v1h-3zM10,15h3v1h-3z" />
+        android:pathData="M15,24h1v1h-1zM32,24h1v1h-1zM10,25h6v1h-6zM32,25h7v1h-7zM32,26h12v1h-12zM32,27h12v1h-12zM32,28h12v1h-12zM4,29h12v1h-12zM32,29h12v1h-12zM4,30h12v1h-12zM32,30h12v1h-12zM4,31h12v1h-12zM32,31h12v1h-12zM4,32h12v1h-12zM32,32h12v1h-12zM4,33h5v1h-5zM12,33h5v1h-5zM32,33h12v1h-12zM4,34h5v1h-5zM12,34h5v1h-5zM31,34h13v1h-13zM4,35h5v1h-5zM12,35h5v1h-5zM31,35h13v1h-13zM4,36h13v1h-13zM31,36h13v1h-13zM4,37h13v1h-13zM31,37h13v1h-13zM4,38h13v1h-13zM31,38h13v1h-13zM4,39h13v1h-13zM31,39h13v1h-13zM4,40h13v1h-13zM31,40h13v1h-13zM4,41h13v1h-13zM31,41h13v1h-13zM4,42h13v1h-13zM31,42h13v1h-13zM4,43h7v1h-7zM37,43h7v1h-7z" />
 </vector>

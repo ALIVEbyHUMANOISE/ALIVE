@@ -710,7 +710,10 @@ class MainActivity : AppCompatActivity() {
         line.addView(
             ui.mark(
                 Guardian.spriteFor(state),
-                ui.dimens.characterLarge,
+                // The figure is 48 cells tall, so it gets more room than a face
+                // sprite would: below about a hundred dp the cloak stops reading
+                // as a cloak.
+                ui.dimens.dp(104),
                 getString(Guardian.descriptionFor(state))
             )
         )

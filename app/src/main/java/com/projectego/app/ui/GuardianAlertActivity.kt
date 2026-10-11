@@ -56,7 +56,10 @@ class GuardianAlertActivity : AppCompatActivity() {
         card.addView(
             ui.mark(
                 Guardian.spriteFor(state),
-                ui.dimens.characterLarge,
+                // Twice the size a face sprite gets. The Guardian is 48 cells now
+                // and this plate is the one screen where it is the subject rather
+                // than a mood beside a sentence.
+                ui.dimens.dp(176),
                 getString(Guardian.descriptionFor(state))
             )
         )

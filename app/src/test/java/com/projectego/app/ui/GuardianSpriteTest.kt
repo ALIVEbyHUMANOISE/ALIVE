@@ -76,24 +76,29 @@ class GuardianSpriteTest {
 
         poses.forEach { (name, id) ->
             val body = cells(id, R.color.alive_ink)
+            // The rim counts as ground too: an accent nested inside another
+            // accent - the amber core inside the staff's crimson head - is held
+            // by the drawing, not floating in the air, and the test that says
+            // "attached to ink only" would fail a figure that is perfectly well
+            // put together.
+            val anchors = body + cells(id, R.color.alive_red_short_dark)
+
             accents.forEach { (label, colour) ->
                 val cluster = cells(id, colour)
                 if (cluster.isEmpty()) return@forEach
 
-                // Every accent cluster - the eyes, the visor, the shield - has to
-                // touch the body, or it is decoration sitting in mid-air.
                 val seen = mutableSetOf<Pair<Int, Int>>()
                 val queue = ArrayDeque(listOf(cluster.first()))
                 seen += cluster.first()
-                var touchesBody = false
+                var anchored = false
                 while (queue.isNotEmpty()) {
                     val (x, y) = queue.remove()
                     listOf(x + 1 to y, x - 1 to y, x to y + 1, x to y - 1).forEach { step ->
-                        if (step in body) touchesBody = true
+                        if (step in anchors) anchored = true
                         if (step in cluster && seen.add(step)) queue.add(step)
                     }
                 }
-                assertTrue("$name: $label is not attached to the body", touchesBody)
+                assertTrue("$name: $label is not attached to the figure", anchored)
             }
         }
     }
