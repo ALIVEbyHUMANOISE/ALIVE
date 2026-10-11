@@ -387,22 +387,59 @@ class AliveComponents(private val context: Context) {
         }
 
     /**
-     * A face with an ink edge and a hard ink shadow to its bottom-right - the one
-     * picture every raised object in this app wears, shared by cards, tiles and
-     * chips so a 10sp tag and a whole card are unmistakably the same kind of thing.
+     * A face with an edge and a hard shadow to its bottom-right - the one picture
+     * every raised object in this app wears, shared by cards, tiles and chips so a
+     * 10sp tag and a whole card are unmistakably the same kind of thing.
      *
      * Both layers are rounded, not just the face: a square shadow behind a round
      * card shows up as two black corners, which is the first thing the eye catches.
+     *
+     * [rim] is ink everywhere except on Guardian's plate, which is itself ink and
+     * needs a rim it can be seen against. Changing the colour changes the stroke
+     * too, because an edge drawn in a colour the shadow is not reads as a mistake.
      */
-    private fun framed(@ColorInt face: Int, edge: Int, shadow: Int, radius: Float): Drawable {
-        val ink = GradientDrawable().apply {
-            setColor(palette.ink)
+    private fun framed(
+        @ColorInt face: Int,
+        edge: Int,
+        shadow: Int,
+        radius: Float,
+        @ColorInt rim: Int = palette.ink
+    ): Drawable {
+        val under = GradientDrawable().apply {
+            setColor(rim)
             cornerRadius = radius
         }
-        // The face covers the ink layer everywhere but bottom-right, which is
+        val panel = GradientDrawable().apply {
+            setColor(face)
+            setStroke(edge, rim)
+            cornerRadius = radius
+        }
+        // The face covers the under-layer everywhere but bottom-right, which is
         // what leaves a hard shadow rather than a blurred one.
-        return LayerDrawable(arrayOf(ink, outline(edge, radius, face))).apply {
+        return LayerDrawable(arrayOf(under, panel)).apply {
             setLayerInset(1, 0, 0, shadow, shadow)
+        }
+    }
+
+    /**
+     * A raised plate whose rim and shadow are given with its face.
+     *
+     * The default pair is ink on ink, which disappears on the one surface the app
+     * has that is itself ink: the plate Guardian stands on while the watch is off.
+     * So this variant takes the rim as well - the same object, dressed to be seen
+     * in the dark, exactly the way the poster is framed.
+     */
+    fun rimmedBlock(
+        @ColorInt face: Int,
+        @ColorInt rim: Int,
+        weight: SurfaceWeight = SurfaceWeight.MAJOR
+    ): LinearLayout {
+        val edge = if (weight == SurfaceWeight.MAJOR) dimens.borderBold else dimens.borderButton
+        val shadow = if (weight == SurfaceWeight.MAJOR) dimens.shadow else dimens.shadowMinor
+        val inset = dimens.cardInset
+        return column().apply {
+            background = framed(face, edge, shadow, dimens.radiusCard.toFloat(), rim)
+            setPadding(edge + inset, edge + inset, edge + shadow + inset, edge + shadow + inset)
         }
     }
 

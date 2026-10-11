@@ -34,104 +34,113 @@ const TOKEN = {
   C: { colour: '@color/alive_red_short_mid', hex: '#D9553F' },
   A: { colour: '@color/alive_amber_action', hex: '#F7C948' },
   M: { colour: '@color/alive_warm_gray', hex: '#D8D2C7' },
+  P: { colour: '@color/alive_paper', hex: '#F5F1E8' },
 };
 
 /**
- * Idle: standing watch. Narrow neck between a pointed helm and wide pauldrons,
- * eyes open but flat. Nothing is wrong yet - this is the pose of something that
- * is simply there, which is what makes the other three read as changes.
+ * Idle: standing watch. Three-pronged horns, and a mouth you can see into -
+ * the sprite is the same character as the poster now, at a sixteenth of the
+ * size: the app's guardian stopped being a toy the day it got a legend.
  */
 const IDLE = [
-  '................',
-  '................',
-  '.....#....#.....',
-  '.....######.....',
+  '..C..........C..',
+  '..##........##..',
+  '..##........##..',
+  '...##......##...',
   '....########....',
-  '.....#A##A#.....',
-  '.....#DDDD#.....',
-  '.......##.......',
+  '...##########...',
+  '...#AA####AA#...',
+  '...#DDDDDDDD#...',
+  '...#P#P##P#P#...',
+  '...#P#P##P#P#...',
+  '....########....',
   '..C##########C..',
-  '...###MMMM###...',
   '....########....',
   '....########....',
-  '....##....##....',
   '....##....##....',
   '...MMM....MMM...',
-  '................',
 ];
 
 /**
- * Alert: it has noticed. The eyes widen into burning bars, the visor shuts, and
- * two sparks break over the horns. Same body, unmistakably a different face.
+ * Alert: it has noticed. The eyes open into bars, the lip lights up, and two
+ * sparks break over the horns. Same body, unmistakably a different face.
  */
 const ALERT = [
-  '................',
-  '.....CC..CC.....',
-  '.....#....#.....',
-  '.....######.....',
+  '..CC........CC..',
+  '..##........##..',
+  '..##........##..',
+  '...##......##...',
   '....########....',
-  '.....AA##AA.....',
-  '.....DDDDDD.....',
-  '.......##.......',
+  '...##########...',
+  '...#AAA##AAA#...',
+  '...#CCCCCCCC#...',
+  '...#P#P##P#P#...',
+  '...#P#P##P#P#...',
+  '....########....',
   '..C##########C..',
-  '...###MMMM###...',
   '....########....',
   '....########....',
-  '....##....##....',
   '....##....##....',
   '...MMM....MMM...',
-  '................',
 ];
 
 /**
- * Recovery: the whole figure sits one row lower and plants its feet wide, with
- * one arm out and the shield held between the user and the thing they are
- * avoiding. A Guardian offering a way back stands low and open; it does not
- * loom.
+ * Recovery: the mouth shut, and a shield held out at its side. A guardian
+ * offering a way back does not grin - so this is the one pose with no fangs.
  */
 const RECOVERY = [
-  '................',
-  '................',
-  '................',
-  '.....#....#.....',
-  '.....######.....',
-  '....########....',
-  '.....#A##A#.....',
-  '.....#DDDD#.....',
-  '.......##.......',
-  '..C#########MM..',
-  '...###MMMM##MM..',
-  '....########MM..',
-  '....########.C..',
+  '..C..........C..',
+  '..##........##..',
+  '..##........##..',
   '...##......##...',
+  '....########....',
+  '...##########...',
+  '...#AA####AA#...',
+  '...#DDDDDDDD#...',
+  '...##########...',
+  '...##########...',
+  '....########....',
+  '..C##########CMM',
+  '....########MMM.',
+  '....##....##.CC.',
+  '....##....##....',
   '...MMM....MMM...',
-  '................',
 ];
 
 /**
- * Restored: upright, both eyes lit, the horns and the core burning. Same stance
- * as idle, because a watch that is back on is not a different watch.
+ * Restored: on watch again with the core burning and the eyes narrowed back to
+ * slits, because a watch that is back on is not a watch that is excited.
  */
 const RESTORED = [
-  '................',
-  '................',
-  '.....C....C.....',
-  '.....######.....',
+  '..C..........C..',
+  '..##........##..',
+  '..##........##..',
+  '...##......##...',
   '....########....',
-  '.....AA##AA.....',
-  '.....#DDDD#.....',
-  '.......##.......',
+  '...##########...',
+  '...#A######A#...',
+  '...#DDDDDDDD#...',
+  '...#P#P##P#P#...',
+  '...#P#P##P#P#...',
+  '....########....',
   '..C##########C..',
-  '...###MMMM###...',
-  '.....##CC##.....',
+  '....###CC###....',
   '....########....',
-  '....##....##....',
   '....##....##....',
   '...MMM....MMM...',
-  '................',
 ];
 
 const POSES = { idle: IDLE, alert: ALERT, recovery: RECOVERY, restored: RESTORED };
+
+// A row that is a character short is a sprite with a bite taken out of it, and
+// it fails silently: the vector just draws less. Refuse to write one.
+for (const [name, rows] of Object.entries(POSES)) {
+  rows.forEach((row, y) => {
+    if (row.length !== 16) {
+      throw new Error(`${name} row ${y} is ${row.length} cells, not 16: "${row}"`);
+    }
+  });
+}
 
 /** One `<path>` per colour: every maximal horizontal run becomes a rectangle. */
 function pathsOf(rows) {

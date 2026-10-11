@@ -70,7 +70,8 @@ class GuardianSpriteTest {
             "crimson" to R.color.alive_red_short_dark,
             "crimson bright" to R.color.alive_red_short_mid,
             "amber eyes" to R.color.alive_amber_action,
-            "metal" to R.color.alive_warm_gray
+            "metal" to R.color.alive_warm_gray,
+            "paper teeth" to R.color.alive_paper
         )
 
         poses.forEach { (name, id) ->
@@ -115,6 +116,27 @@ class GuardianSpriteTest {
             val ratio = contrast(helmet, ground)
             assertTrue("charcoal on $name = $ratio", ratio >= 8.0)
         }
+    }
+
+    @Test
+    fun `the guardian reads on the dark plate it now stands on`() {
+        val ink = colour(R.color.alive_ink)
+        val rim = colour(R.color.alive_red_short_dark)
+        val eyes = colour(R.color.alive_amber_action)
+
+        // The popup and the Home card are ink now, so the figure has to be
+        // visible against ink - and it is the crimson rim that does that work,
+        // which is why it may not be a shade away from the body.
+        assertTrue(
+            "crimson rim on ink = ${contrast(rim, ink)}",
+            contrast(rim, ink) >= 1.3
+        )
+
+        // The eyes are the only thing allowed to be brighter than the rim.
+        assertTrue(
+            "amber eyes on ink = ${contrast(eyes, ink)}",
+            contrast(eyes, ink) >= 4.5
+        )
     }
 
     @Test

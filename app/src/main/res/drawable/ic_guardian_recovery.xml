@@ -8,18 +8,18 @@
     android:viewportWidth="16"
     android:viewportHeight="16">
     <path
+        android:fillColor="@color/alive_red_short_mid"
+        android:pathData="M2,0h1v1h-1zM13,0h1v1h-1zM2,11h1v1h-1zM13,11h1v1h-1zM13,13h2v1h-2z" />
+    <path
         android:fillColor="@color/alive_ink"
-        android:pathData="M5,3h1v1h-1zM10,3h1v1h-1zM5,4h6v1h-6zM4,5h8v1h-8zM5,6h1v1h-1zM7,6h2v1h-2zM10,6h1v1h-1zM5,7h1v1h-1zM10,7h1v1h-1zM7,8h2v1h-2zM3,9h9v1h-9zM3,10h3v1h-3zM10,10h2v1h-2zM4,11h8v1h-8zM4,12h8v1h-8zM3,13h2v1h-2zM11,13h2v1h-2z" />
+        android:pathData="M2,1h2v1h-2zM12,1h2v1h-2zM2,2h2v1h-2zM12,2h2v1h-2zM3,3h2v1h-2zM11,3h2v1h-2zM4,4h8v1h-8zM3,5h10v1h-10zM3,6h1v1h-1zM6,6h4v1h-4zM12,6h1v1h-1zM3,7h1v1h-1zM12,7h1v1h-1zM3,8h10v1h-10zM3,9h10v1h-10zM4,10h8v1h-8zM3,11h10v1h-10zM4,12h8v1h-8zM4,13h2v1h-2zM10,13h2v1h-2zM4,14h2v1h-2zM10,14h2v1h-2z" />
     <path
         android:fillColor="@color/alive_amber_action"
-        android:pathData="M6,6h1v1h-1zM9,6h1v1h-1z" />
+        android:pathData="M4,6h2v1h-2zM10,6h2v1h-2z" />
     <path
         android:fillColor="@color/alive_red_short_dark"
-        android:pathData="M6,7h4v1h-4z" />
-    <path
-        android:fillColor="@color/alive_red_short_mid"
-        android:pathData="M2,9h1v1h-1zM13,12h1v1h-1z" />
+        android:pathData="M4,7h8v1h-8z" />
     <path
         android:fillColor="@color/alive_warm_gray"
-        android:pathData="M12,9h2v1h-2zM6,10h4v1h-4zM12,10h2v1h-2zM12,11h2v1h-2zM3,14h3v1h-3zM10,14h3v1h-3z" />
+        android:pathData="M14,11h2v1h-2zM12,12h3v1h-3zM3,15h3v1h-3zM10,15h3v1h-3z" />
 </vector>

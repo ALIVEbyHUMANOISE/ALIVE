@@ -43,8 +43,15 @@ class GuardianAlertActivity : AppCompatActivity() {
             return
         }
 
+        // The one dark surface in the app. Every other card ALIVE draws is paper,
+        // so the night the Guardian arrives is unmistakable before a word of it is
+        // read - and the window dims further than the critical note does, because
+        // this one is a scene rather than a note.
+        window.attributes = window.attributes.apply { dimAmount = 0.62f }
+
         val ui = AliveComponents(this)
-        val card = ui.notice()
+        val card = Guardian.plate(ui)
+        val paper = ui.palette.paper
 
         card.addView(
             ui.mark(
@@ -55,18 +62,18 @@ class GuardianAlertActivity : AppCompatActivity() {
         )
         card.addView(ui.vgap(ui.dimens.lineGap))
 
-        card.addView(ui.sectionHeader(getString(R.string.guardian_name)))
+        card.addView(Guardian.inCrimson(ui.sectionHeader(getString(R.string.guardian_name)), ui))
         card.addView(ui.vgap(ui.dimens.lineGap))
 
-        card.addView(ui.headline(getString(Guardian.headlineFor(state))))
+        card.addView(Guardian.inPaper(ui.headline(getString(Guardian.headlineFor(state))), ui))
         card.addView(ui.vgap(ui.dimens.lineGap))
-        card.addView(ui.body(getString(Guardian.bodyFor(state))))
+        card.addView(Guardian.inPaper(ui.body(getString(Guardian.bodyFor(state))), ui))
 
         card.addView(ui.vgap(ui.dimens.groupGap))
-        card.addView(ui.note(getString(Guardian.noteFor(state))))
+        card.addView(Guardian.inPaper(ui.note(getString(Guardian.noteFor(state))), ui))
 
-        // The one action worth taking, in the colour ALIVE keeps for the thing
-        // you are being asked to do - and a way out that costs nothing, because a
+        // The one action worth taking, in the amber ALIVE keeps for the thing you
+        // are being asked to do - and a way out that costs nothing, because a
         // reminder you cannot dismiss is a lock, and this is not one.
         card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(
@@ -89,6 +96,9 @@ class GuardianAlertActivity : AppCompatActivity() {
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 )
+                // Left as the app's own quiet button - a white chip with ink type.
+                // On a dark plate that is the clearest thing on the card, which is
+                // exactly right for the way out.
                 setOnClickListener { finish() }
             }
         )

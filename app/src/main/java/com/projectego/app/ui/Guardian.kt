@@ -3,6 +3,9 @@ package com.projectego.app.ui
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.view.View
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.appcompat.content.res.AppCompatResources
@@ -99,6 +102,42 @@ object Guardian {
         GuardianState.DEGRADED -> R.string.cd_guardian_alert
         GuardianState.RECOVERY_REQUIRED -> R.string.cd_guardian_recovery
         GuardianState.RESTORED -> R.string.cd_guardian_restored
+    }
+
+    /**
+     * The plate a broken watch stands on.
+     *
+     * Ink face, deep crimson rim and shadow - because the app's own ink-on-ink
+     * edge vanishes on the one surface that is itself ink. This is the single
+     * place in ALIVE where a raised card is not paper, and it is the same plate
+     * the site hangs the poster on, so the app and the legend are visibly one
+     * object.
+     */
+    fun plate(ui: AliveComponents, weight: SurfaceWeight = SurfaceWeight.MAJOR): LinearLayout =
+        ui.rimmedBlock(ui.palette.ink, ui.palette.shortDark, weight)
+
+    /**
+     * Paper type on that plate.
+     *
+     * Every ink token - heading, body, even the "muted" tone - is invisible on
+     * ink, and the app has no light secondary, so on this one surface every word
+     * is written in the same paper and separated by size instead of by weight of
+     * grey. Legibility first: nothing here is allowed to be decorative.
+     */
+    fun <T : TextView> inPaper(text: T, ui: AliveComponents): T =
+        text.apply { setTextColor(ui.palette.paper) }
+
+    /** The eyebrow: crimson's pale end, which is the one tint that holds on ink. */
+    fun <T : TextView> inCrimson(text: T, ui: AliveComponents): T =
+        text.apply { setTextColor(ui.palette.shortPale) }
+
+    /** A rule for a surface that is not paper: an ink rule would draw nothing here. */
+    fun rule(context: Context, ui: AliveComponents): View = View(context).apply {
+        layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            ui.dimens.borderBold
+        )
+        setBackgroundColor(ui.palette.shortDark)
     }
 
     /**

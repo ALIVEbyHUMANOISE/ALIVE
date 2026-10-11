@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Bundle
 import android.net.Uri
 import android.provider.Settings
+import android.widget.TextView
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -680,14 +681,25 @@ class MainActivity : AppCompatActivity() {
      */
     private fun renderGuardianCard(state: GuardianState) {
         val whole = state == GuardianState.RESTORED
-        // A tinted card, and the tint is the documented meaning of this pale: a
-        // closed door is a pale surface with an ink edge, never a red alarm.
-        val card = ui.tintedBlock(
-            if (whole) ui.palette.softForest else ui.palette.shortPale,
-            weight = if (homeMajor == HomeMajor.GUARD) SurfaceWeight.MAJOR else SurfaceWeight.MINOR
-        )
+        val weight = if (homeMajor == HomeMajor.GUARD) SurfaceWeight.MAJOR else SurfaceWeight.MINOR
 
-        card.addView(ui.sectionHeader(getString(R.string.guardian_name)))
+        // While the watch is broken this is the one card in ALIVE that is not
+        // paper: an ink plate with a crimson rim, the same object the site hangs
+        // its poster on. Restored keeps the app's calm surface, because a watch
+        // that is whole again has nothing left to be loud about.
+        val card = if (whole) {
+            ui.tintedBlock(ui.palette.softForest, weight)
+        } else {
+            Guardian.plate(ui, weight)
+        }
+
+        // On the dark plate every ink token is invisible, so each line is asked
+        // for its paper twin - except the eyebrow, which wears the crimson pale
+        // the role keeps for exactly this surface.
+        fun read(text: TextView): TextView = if (whole) text else Guardian.inPaper(text, ui)
+        fun eyebrow(text: TextView): TextView = if (whole) text else Guardian.inCrimson(text, ui)
+
+        card.addView(eyebrow(ui.sectionHeader(getString(R.string.guardian_name))))
         card.addView(ui.vgap(ui.dimens.lineGap))
 
         // The figure used to sit above three grey paragraphs of the same size,
@@ -706,26 +718,26 @@ class MainActivity : AppCompatActivity() {
         line.addView(
             ui.weighted(
                 ui.column().apply {
-                    addView(ui.headline(getString(Guardian.headlineFor(state))))
+                    addView(read(ui.headline(getString(Guardian.headlineFor(state)))))
                     addView(ui.vgap(ui.dimens.pairGap))
-                    addView(ui.body(getString(Guardian.bodyFor(state))))
+                    addView(read(ui.body(getString(Guardian.bodyFor(state)))))
                 }
             )
         )
         card.addView(line)
 
         card.addView(ui.vgap(ui.dimens.groupGap))
-        card.addView(ui.rowRule())
+        card.addView(if (whole) ui.rowRule() else Guardian.rule(this, ui))
         card.addView(ui.vgap(ui.dimens.lineGap))
 
         // The brief's second action, answered where the question is asked: while
         // the watch is off, the card says why it is on screen at all - and the
         // answer is the same fact the app has always told.
         if (!whole) {
-            card.addView(ui.meta(getString(R.string.guardian_why)))
+            card.addView(eyebrow(ui.meta(getString(R.string.guardian_why))))
             card.addView(ui.vgap(ui.dimens.pairGap))
         }
-        card.addView(ui.note(getString(Guardian.noteFor(state))))
+        card.addView(read(ui.note(getString(Guardian.noteFor(state)))))
 
         Guardian.actionFor(state)?.let { action ->
             card.addView(ui.vgap(ui.dimens.groupGap))
@@ -747,7 +759,7 @@ class MainActivity : AppCompatActivity() {
         // can be shown is not worth asking for on its own screen.
         if (!whole && !PermissionChecks.canDrawOverlays(this)) {
             card.addView(ui.vgap(ui.dimens.groupGap))
-            card.addView(ui.note(getString(R.string.permissions_overlay_why)))
+            card.addView(read(ui.note(getString(R.string.permissions_overlay_why))))
             card.addView(ui.vgap(ui.dimens.lineGap))
             card.addView(
                 ui.quiet(getString(R.string.permissions_overlay_action)).apply {
