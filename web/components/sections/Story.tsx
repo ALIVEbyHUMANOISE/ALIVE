@@ -5,7 +5,7 @@ import Panel from '@/components/Panel'
 import PixelSprite from '@/components/PixelSprite'
 import Reveal from '@/components/Reveal'
 import { useCopy } from '@/components/LangProvider'
-import { face } from '@/lib/tones'
+import { face, rowFace } from '@/lib/tones'
 
 /** 01 - the front door: what the app is, and the download. */
 export function SectionHero() {
@@ -77,7 +77,7 @@ export function SectionLoop() {
       <div className="grid gap-5 md:grid-cols-3">
         {copy.loop.items.map((item, index) => (
           <Reveal key={item.name} delay={index * 80}>
-            <article className={`card h-full p-5 ${face('red')}`}>
+            <article className={`card h-full p-5 ${rowFace(index)}`}>
               <h3 className="font-head text-lg font-bold">{item.name}</h3>
               <div className="rule mt-3" />
               <p className="mt-3 leading-relaxed text-ink-secondary">{item.body}</p>
@@ -127,7 +127,7 @@ export function SectionAwareness() {
         <div className="space-y-4 md:col-span-6">
           {copy.awareness.facts.map((fact, index) => (
             <Reveal key={fact.name} delay={index * 80}>
-              <article className={`card-sm p-4 ${face('gold')}`}>
+              <article className={`card-sm p-4 ${rowFace(index + 1)}`}>
                 <h3 className="font-head font-bold">{fact.name}</h3>
                 <p className="mt-1 text-ink-secondary">{fact.body}</p>
               </article>

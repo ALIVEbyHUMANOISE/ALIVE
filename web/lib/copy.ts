@@ -90,10 +90,6 @@ const id = {
     lead: 'Waktu hiburan bukan waktu luang. Itu jam yang nggak balik.',
     body:
       'Sekali kamu lihat angkanya, kamu nggak bisa pura-pura tidak tahu. Dari situ pilihan mulai ada.',
-    poster: {
-      alt: 'Poster pixel: HP besar bermuka monster dengan tangan panjang menggenggam di atas karakter pink kecil',
-      caption: 'Yang pegang kendali sekarang bukan kamu.'
-    },
     privacy: {
       title: 'Semua yang ALIVE tahu tetap di sini.',
       body:
@@ -102,8 +98,14 @@ const id = {
     }
   },
 
+  takeover: {
+    alt: 'Poster pixel: HP raksasa bermuka monster dengan tangan panjang menjulur ke karakter pink kecil di bawahnya',
+    line: 'Yang pegang kendali sekarang bukan kamu.',
+    note: 'Ini yang ALIVE lihat setiap hari. Bukan buat nakut-nakutin — supaya kelihatan.'
+  },
+
   choice: {
-    badge: '05 — pilihan',
+    badge: '06 — pilihan',
     title: ['INI BUKAN', 'SALAH HP-MU.'],
     lead: 'Kamu nggak lemah, dan layarnya nggak jahat.',
     body:
@@ -125,7 +127,7 @@ const id = {
   },
 
   room: {
-    badge: '06 — ruang',
+    badge: '07 — ruang',
     title: ['SISAKAN', 'RUANG.'],
     lead: 'Menutup satu pintu bukan tujuan. Membuka satu jam iya.',
     body:
@@ -151,7 +153,7 @@ const id = {
   },
 
   download: {
-    badge: '07 — selesai',
+    badge: '08 — selesai',
     title: ['NIKMATI', 'HIDUPMU.'],
     lead: 'Satu unduhan, tanpa akun.',
     file: {
@@ -263,10 +265,6 @@ const en: typeof id = {
     lead: 'Entertainment time is not free time. It is hours that do not come back.',
     body:
       'Once you have seen the number you cannot unsee it. That is where a choice starts to exist.',
-    poster: {
-      alt: 'Pixel poster: a large grinning phone with a monster face and long hands reaching down over a small pink character',
-      caption: 'The one holding control right now is not you.'
-    },
     privacy: {
       title: 'Everything ALIVE knows stays here.',
       body:
@@ -275,8 +273,14 @@ const en: typeof id = {
     }
   },
 
+  takeover: {
+    alt: 'Pixel poster: a giant phone with a monster face and long hands reaching down at a small pink character',
+    line: 'The one holding control right now is not you.',
+    note: 'This is what ALIVE sees every day. Not to frighten you — so that it can be seen.'
+  },
+
   choice: {
-    badge: '05 — choice',
+    badge: '06 — choice',
     title: ['IT WAS NEVER', 'THE PHONE’S FAULT.'],
     lead: 'You are not weak, and the screen is not evil.',
     body:
@@ -298,7 +302,7 @@ const en: typeof id = {
   },
 
   room: {
-    badge: '06 — make room',
+    badge: '07 — make room',
     title: ['LEAVE', 'ROOM.'],
     lead: 'Closing one door was never the point. Opening an hour is.',
     body:
@@ -324,7 +328,7 @@ const en: typeof id = {
   },
 
   download: {
-    badge: '07 — peace',
+    badge: '08 — peace',
     title: ['ENJOY', 'YOUR LIFE.'],
     lead: 'One download, no account.',
     file: {

@@ -2,12 +2,20 @@
 
 import Header from './Header'
 import { SectionAwareness, SectionHero, SectionLoop } from './sections/Story'
-import { SectionChoice, SectionDownload, SectionRealization, SectionRoom, SiteFooter } from './sections/Answer'
+import {
+  SectionChoice,
+  SectionDownload,
+  SectionRealization,
+  SectionRoom,
+  SectionTakeover,
+  SiteFooter
+} from './sections/Answer'
 import { useCopy } from './LangProvider'
 
 /**
  * The whole page, in the app's order of speaking: the day, what eats it, the
- * number that proves it, the choice, the room that opens up, and the download.
+ * number that proves it, the picture of who is driving, the choice, the room that
+ * opens up, and the download.
  */
 export default function Site() {
   const copy = useCopy()
@@ -28,6 +36,7 @@ export default function Site() {
         <SectionLoop />
         <SectionAwareness />
         <SectionRealization />
+        <SectionTakeover />
         <SectionChoice />
         <SectionRoom />
         <SectionDownload />

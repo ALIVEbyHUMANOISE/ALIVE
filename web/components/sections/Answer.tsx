@@ -5,7 +5,7 @@ import Panel from '@/components/Panel'
 import PixelSprite from '@/components/PixelSprite'
 import Reveal from '@/components/Reveal'
 import { useCopy } from '@/components/LangProvider'
-import { face } from '@/lib/tones'
+import { face, rowFace } from '@/lib/tones'
 import type { SpriteName } from '@/lib/sprites'
 
 /** 04 - the number is not advice; the privacy promise is the reason to trust it. */
@@ -22,50 +22,66 @@ export function SectionRealization() {
       body={copy.realization.body}
       face="confused"
     >
-      <div className="grid items-start gap-6 md:grid-cols-12">
-        <Reveal className="md:col-span-6">
-          <figure className="card overflow-hidden">
-            <Image
-              src="/images/takeover.png"
-              alt={copy.realization.poster.alt}
-              width={992}
-              height={1074}
-              className="block h-auto w-full"
-            />
-            <figcaption
-              className={`border-t-[3px] border-ink px-4 py-3 font-head text-sm md:text-base ${face(
-                'forest'
-              )}`}
-            >
-              {copy.realization.poster.caption}
-            </figcaption>
-          </figure>
-        </Reveal>
+      <Reveal>
+        <article className={`card p-6 md:p-8 ${face('forest')}`}>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <h3 className="font-display text-pixel-sm">{copy.realization.privacy.title}</h3>
+            <PixelSprite name="shield" size={44} />
+          </div>
 
-        <Reveal delay={120} className="md:col-span-6">
-          <article className={`card h-full p-6 ${face('forest')}`}>
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <h3 className="font-display text-pixel-sm">{copy.realization.privacy.title}</h3>
-              <PixelSprite name="shield" size={44} />
-            </div>
+          <div className="rule mt-5" />
 
-            <div className="rule mt-5" />
+          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-ink-secondary">
+            {copy.realization.privacy.body}
+          </p>
 
-            <p className="mt-5 max-w-2xl text-lg leading-relaxed text-ink-secondary">
-              {copy.realization.privacy.body}
-            </p>
-
-            <div className="mt-6 flex flex-wrap gap-2">
-              {copy.realization.privacy.marks.map((mark) => (
-                <span key={mark} className="badge">
-                  {mark}
-                </span>
-              ))}
-            </div>
-          </article>
-        </Reveal>
-      </div>
+          <div className="mt-6 flex flex-wrap gap-2">
+            {copy.realization.privacy.marks.map((mark) => (
+              <span key={mark} className="badge">
+                {mark}
+              </span>
+            ))}
+          </div>
+        </article>
+      </Reveal>
     </Panel>
+  )
+}
+
+/**
+ * 05 - the poster, at the size of the argument.
+ *
+ * It gets a screen to itself because that is what the picture is for: you scroll
+ * past a card, you do not scroll past a face leaning over you. Nothing is
+ * cropped, either - the lettering is half the sentence, so the art is *fitted* to
+ * the viewport rather than filled across it, and the ink frame keeps it inside
+ * the same object language as every other card.
+ */
+export function SectionTakeover() {
+  const copy = useCopy()
+
+  return (
+    <section
+      id="takeover"
+      className="flex min-h-[100svh] flex-col items-center justify-center gap-9 border-t-[3px] border-ink px-5 py-14 md:px-12"
+    >
+      <Reveal>
+        <Image
+          src="/images/takeover.png"
+          alt={copy.takeover.alt}
+          width={992}
+          height={1074}
+          className="h-auto max-h-[68svh] w-auto max-w-[88vw] rounded-card border-[3px] border-ink shadow-raise"
+        />
+      </Reveal>
+
+      <Reveal delay={120} className="px-2 text-center">
+        <p className="font-display text-pixel-sm">{copy.takeover.line}</p>
+        <p className="mx-auto mt-4 max-w-xl leading-relaxed text-ink-secondary">
+          {copy.takeover.note}
+        </p>
+      </Reveal>
+    </section>
   )
 }
 
@@ -124,7 +140,7 @@ export function SectionRoom() {
       <div className="grid gap-5 md:grid-cols-2">
         {copy.room.features.map((feature, index) => (
           <Reveal key={feature.name} delay={index * 80}>
-            <article className={`card h-full p-5 ${face('blue')}`}>
+            <article className={`card h-full p-5 ${rowFace(index + 2)}`}>
               <div className="flex items-center gap-3">
                 <PixelSprite name={marks[index]} size={28} />
                 <h3 className="font-head text-lg font-bold">{feature.name}</h3>
