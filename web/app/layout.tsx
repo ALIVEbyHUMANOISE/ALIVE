@@ -40,7 +40,14 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'ALIVE',
     description: 'Sadari waktumu. Kendalikan layarmu.',
-    type: 'website'
+    type: 'website',
+    // The poster is the whole argument in one picture, so it is also what a
+    // shared link shows. Chat apps crop to 1.91:1, hence the padded copy.
+    images: ['/images/og-preview.png']
+  },
+  twitter: {
+    card: 'summary_large_image',
+    images: ['/images/og-preview.png']
   }
 }
 

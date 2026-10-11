@@ -8,7 +8,14 @@ const nextConfig = {
    * runtime that is not there.
    */
   output: 'export',
-  trailingSlash: true
+  trailingSlash: true,
+  /**
+   * A static export has no server to resize images on, and the one picture on
+   * this page is already delivered at the size it is shown. Turning the
+   * optimiser off keeps the build honest instead of silently emitting a broken
+   * /_next/image URL.
+   */
+  images: { unoptimized: true }
 }
 
 export default nextConfig

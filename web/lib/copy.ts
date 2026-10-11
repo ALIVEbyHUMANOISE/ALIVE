@@ -90,6 +90,10 @@ const id = {
     lead: 'Waktu hiburan bukan waktu luang. Itu jam yang nggak balik.',
     body:
       'Sekali kamu lihat angkanya, kamu nggak bisa pura-pura tidak tahu. Dari situ pilihan mulai ada.',
+    poster: {
+      alt: 'Poster pixel: HP besar bermuka monster dengan tangan panjang menggenggam di atas karakter pink kecil',
+      caption: 'Yang pegang kendali sekarang bukan kamu.'
+    },
     privacy: {
       title: 'Semua yang ALIVE tahu tetap di sini.',
       body:
@@ -259,6 +263,10 @@ const en: typeof id = {
     lead: 'Entertainment time is not free time. It is hours that do not come back.',
     body:
       'Once you have seen the number you cannot unsee it. That is where a choice starts to exist.',
+    poster: {
+      alt: 'Pixel poster: a large grinning phone with a monster face and long hands reaching down over a small pink character',
+      caption: 'The one holding control right now is not you.'
+    },
     privacy: {
       title: 'Everything ALIVE knows stays here.',
       body:

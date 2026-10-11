@@ -1,5 +1,6 @@
 import PixelSprite from './PixelSprite'
 import Reveal from './Reveal'
+import { face as toneFace, type Tone } from '@/lib/tones'
 import type { SpriteName } from '@/lib/sprites'
 
 /**
@@ -7,11 +8,14 @@ import type { SpriteName } from '@/lib/sprites'
  *
  * Panels are separated by a full-bleed ink rule rather than by fade gradients or
  * sticky theatre: the app draws its sections the same way, and a page that reads
- * as a stack of cards is the whole brand.
+ * as a stack of cards is the whole brand. The beat's accent arrives here once, so
+ * its badge and its cards can never disagree about what colour this part of the
+ * page is.
  */
 export default function Panel({
   id,
   badge,
+  tone,
   title,
   lead,
   body,
@@ -21,6 +25,7 @@ export default function Panel({
 }: {
   id: string
   badge: string
+  tone: Tone
   title: string | string[]
   lead?: string
   body?: string
@@ -34,7 +39,7 @@ export default function Panel({
     <section id={id} className="border-t-[3px] border-ink px-5 py-16 md:px-12 md:py-24">
       <div className="mx-auto w-full max-w-5xl">
         <Reveal>
-          <span className="badge">{badge}</span>
+          <span className={`badge ${toneFace(tone)}`}>{badge}</span>
         </Reveal>
 
         <div className="mt-6 flex items-start justify-between gap-6">

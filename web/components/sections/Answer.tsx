@@ -1,9 +1,11 @@
 'use client'
 
+import Image from 'next/image'
 import Panel from '@/components/Panel'
 import PixelSprite from '@/components/PixelSprite'
 import Reveal from '@/components/Reveal'
 import { useCopy } from '@/components/LangProvider'
+import { face } from '@/lib/tones'
 import type { SpriteName } from '@/lib/sprites'
 
 /** 04 - the number is not advice; the privacy promise is the reason to trust it. */
@@ -14,45 +16,71 @@ export function SectionRealization() {
     <Panel
       id="realization"
       badge={copy.realization.badge}
+      tone="forest"
       title={copy.realization.title}
       lead={copy.realization.lead}
       body={copy.realization.body}
       face="confused"
     >
-      <Reveal>
-        <article className="card p-6 md:p-8">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <h3 className="font-display text-pixel-sm">{copy.realization.privacy.title}</h3>
-            <PixelSprite name="shield" size={44} />
-          </div>
+      <div className="grid items-start gap-6 md:grid-cols-12">
+        <Reveal className="md:col-span-6">
+          <figure className="card overflow-hidden">
+            <Image
+              src="/images/takeover.png"
+              alt={copy.realization.poster.alt}
+              width={992}
+              height={1074}
+              className="block h-auto w-full"
+            />
+            <figcaption
+              className={`border-t-[3px] border-ink px-4 py-3 font-head text-sm md:text-base ${face(
+                'forest'
+              )}`}
+            >
+              {copy.realization.poster.caption}
+            </figcaption>
+          </figure>
+        </Reveal>
 
-          <div className="rule mt-5" />
+        <Reveal delay={120} className="md:col-span-6">
+          <article className={`card h-full p-6 ${face('forest')}`}>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <h3 className="font-display text-pixel-sm">{copy.realization.privacy.title}</h3>
+              <PixelSprite name="shield" size={44} />
+            </div>
 
-          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-ink-secondary">
-            {copy.realization.privacy.body}
-          </p>
+            <div className="rule mt-5" />
 
-          <div className="mt-6 flex flex-wrap gap-2">
-            {copy.realization.privacy.marks.map((mark) => (
-              <span key={mark} className="badge">
-                {mark}
-              </span>
-            ))}
-          </div>
-        </article>
-      </Reveal>
+            <p className="mt-5 max-w-2xl text-lg leading-relaxed text-ink-secondary">
+              {copy.realization.privacy.body}
+            </p>
+
+            <div className="mt-6 flex flex-wrap gap-2">
+              {copy.realization.privacy.marks.map((mark) => (
+                <span key={mark} className="badge">
+                  {mark}
+                </span>
+              ))}
+            </div>
+          </article>
+        </Reveal>
+      </div>
     </Panel>
   )
 }
 
-/** 05 - what actually happens when the allowance runs out. */
+/** 05 - what actually happens when the allowance runs out. Each step wears the
+ * colour the app gives that state, because the three are three different facts:
+ * a warning, a loss, and a day that is allowed to be quiet. */
 export function SectionChoice() {
   const copy = useCopy()
+  const stepTones = ['gold', 'red', 'forest'] as const
 
   return (
     <Panel
       id="choice"
       badge={copy.choice.badge}
+      tone="gold"
       title={copy.choice.title}
       lead={copy.choice.lead}
       body={copy.choice.body}
@@ -61,7 +89,7 @@ export function SectionChoice() {
       <div className="grid gap-5 md:grid-cols-3">
         {copy.choice.steps.map((step, index) => (
           <Reveal key={step.name} delay={index * 80}>
-            <article className="card h-full p-5">
+            <article className={`card h-full p-5 ${face(stepTones[index % stepTones.length])}`}>
               <div className="flex items-center justify-between gap-3">
                 <h3 className="font-head text-lg font-bold">{step.name}</h3>
                 <span className="font-display text-pixel-xs text-ink-muted">
@@ -78,7 +106,7 @@ export function SectionChoice() {
   )
 }
 
-/** 06 - the hours it saves have somewhere to go. */
+/** 06 - the hours it saves have somewhere to go. Blue: what was worked for. */
 export function SectionRoom() {
   const copy = useCopy()
   const marks: SpriteName[] = ['laptop', 'target', 'chart', 'hourglass']
@@ -87,6 +115,7 @@ export function SectionRoom() {
     <Panel
       id="room"
       badge={copy.room.badge}
+      tone="blue"
       title={copy.room.title}
       lead={copy.room.lead}
       body={copy.room.body}
@@ -95,7 +124,7 @@ export function SectionRoom() {
       <div className="grid gap-5 md:grid-cols-2">
         {copy.room.features.map((feature, index) => (
           <Reveal key={feature.name} delay={index * 80}>
-            <article className="card h-full p-5">
+            <article className={`card h-full p-5 ${face('blue')}`}>
               <div className="flex items-center gap-3">
                 <PixelSprite name={marks[index]} size={28} />
                 <h3 className="font-head text-lg font-bold">{feature.name}</h3>
@@ -110,7 +139,8 @@ export function SectionRoom() {
   )
 }
 
-/** 07 - the download, said honestly. */
+/** 07 - the download, said honestly. The two cards stay white: on this page the
+ * offer itself is the news, and news is the only thing allowed to be white. */
 export function SectionDownload() {
   const copy = useCopy()
 
@@ -118,6 +148,7 @@ export function SectionDownload() {
     <Panel
       id="download"
       badge={copy.download.badge}
+      tone="pink"
       title={copy.download.title}
       lead={copy.download.lead}
       face="alive"

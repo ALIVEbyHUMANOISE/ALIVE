@@ -5,6 +5,7 @@ import Panel from '@/components/Panel'
 import PixelSprite from '@/components/PixelSprite'
 import Reveal from '@/components/Reveal'
 import { useCopy } from '@/components/LangProvider'
+import { face } from '@/lib/tones'
 
 /** 01 - the front door: what the app is, and the download. */
 export function SectionHero() {
@@ -15,7 +16,7 @@ export function SectionHero() {
       <div className="mx-auto grid w-full max-w-5xl items-center gap-10 md:grid-cols-12">
         <div className="md:col-span-7">
           <Reveal>
-            <span className="badge">{copy.hero.badge}</span>
+            <span className={`badge ${face('pink')}`}>{copy.hero.badge}</span>
           </Reveal>
 
           <Reveal delay={60}>
@@ -60,7 +61,7 @@ export function SectionHero() {
   )
 }
 
-/** 02 - the loop, as three cards rather than three bullet points. */
+/** 02 - three things that run out, in the colour that means running out. */
 export function SectionLoop() {
   const copy = useCopy()
 
@@ -68,6 +69,7 @@ export function SectionLoop() {
     <Panel
       id="loop"
       badge={copy.loop.badge}
+      tone="red"
       title={copy.loop.title}
       lead={copy.loop.lead}
       face="unaware"
@@ -75,7 +77,7 @@ export function SectionLoop() {
       <div className="grid gap-5 md:grid-cols-3">
         {copy.loop.items.map((item, index) => (
           <Reveal key={item.name} delay={index * 80}>
-            <article className="card h-full p-5">
+            <article className={`card h-full p-5 ${face('red')}`}>
               <h3 className="font-head text-lg font-bold">{item.name}</h3>
               <div className="rule mt-3" />
               <p className="mt-3 leading-relaxed text-ink-secondary">{item.body}</p>
@@ -91,12 +93,19 @@ export function SectionLoop() {
   )
 }
 
-/** 03 - one real day, shown as the widget shows it. */
+/** 03 - one real day, shown as the widget shows it. Gold: what the app hands out. */
 export function SectionAwareness() {
   const copy = useCopy()
 
   return (
-    <Panel id="awareness" badge={copy.awareness.badge} title={copy.awareness.title} lead={copy.awareness.lead} face="thinking">
+    <Panel
+      id="awareness"
+      badge={copy.awareness.badge}
+      tone="gold"
+      title={copy.awareness.title}
+      lead={copy.awareness.lead}
+      face="thinking"
+    >
       <Reveal>
         <p className="max-w-2xl text-lg leading-relaxed text-ink-secondary">
           {copy.awareness.body}
@@ -118,7 +127,7 @@ export function SectionAwareness() {
         <div className="space-y-4 md:col-span-6">
           {copy.awareness.facts.map((fact, index) => (
             <Reveal key={fact.name} delay={index * 80}>
-              <article className="card-sm p-4">
+              <article className={`card-sm p-4 ${face('gold')}`}>
                 <h3 className="font-head font-bold">{fact.name}</h3>
                 <p className="mt-1 text-ink-secondary">{fact.body}</p>
               </article>
