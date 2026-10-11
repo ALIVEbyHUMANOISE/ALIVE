@@ -142,6 +142,30 @@ for (const [name, rows] of Object.entries(POSES)) {
   });
 }
 
+// ---------- RIM ----------
+// One cell of deep crimson around every silhouette.
+//
+// This is not decoration, it is the difference between a character and a hole.
+// The app's Guardian surfaces are ink now, so a charcoal figure on them is
+// invisible apart from its eyes and teeth - which is exactly what the first
+// build of this looked like on a phone: a few stray pixels where a guardian
+// should have been. The outline is what makes the shape exist in the dark.
+for (const rows of Object.values(POSES)) {
+  const filled = (x, y) => x >= 0 && x < 16 && y >= 0 && y < 16 && rows[y][x] !== '.';
+  const rim = [];
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      if (filled(x, y)) continue;
+      if (filled(x + 1, y) || filled(x - 1, y) || filled(x, y + 1) || filled(x, y - 1)) {
+        rim.push([x, y]);
+      }
+    }
+  }
+  rim.forEach(([x, y]) => {
+    rows[y] = `${rows[y].slice(0, x)}D${rows[y].slice(x + 1)}`;
+  });
+}
+
 /** One `<path>` per colour: every maximal horizontal run becomes a rectangle. */
 function pathsOf(rows) {
   const byColour = new Map();

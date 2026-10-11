@@ -91,14 +91,15 @@ class GuardianAlertActivity : AppCompatActivity() {
         )
         card.addView(ui.vgap(ui.dimens.lineGap))
         card.addView(
-            ui.quiet(getString(R.string.guardian_later)).apply {
+            // A paper chip with an ink edge, not the app's flat "quiet" button:
+            // that one is transparent until it is pressed, and a transparent
+            // button on an ink plate is a button nobody can find. The way out has
+            // to be the clearest thing here.
+            ui.secondary(getString(R.string.guardian_later)).apply {
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 )
-                // Left as the app's own quiet button - a white chip with ink type.
-                // On a dark plate that is the clearest thing on the card, which is
-                // exactly right for the way out.
                 setOnClickListener { finish() }
             }
         )

@@ -762,7 +762,9 @@ class MainActivity : AppCompatActivity() {
             card.addView(read(ui.note(getString(R.string.permissions_overlay_why))))
             card.addView(ui.vgap(ui.dimens.lineGap))
             card.addView(
-                ui.quiet(getString(R.string.permissions_overlay_action)).apply {
+                // Paper, not the flat quiet button: on this plate a transparent
+                // button is an invisible one.
+                ui.secondary(getString(R.string.permissions_overlay_action)).apply {
                     layoutParams = LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT
