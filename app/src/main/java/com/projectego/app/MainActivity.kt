@@ -8,6 +8,7 @@ import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.Build
 import android.os.Bundle
+import android.net.Uri
 import android.provider.Settings
 import android.view.Gravity
 import android.view.View
@@ -741,11 +742,45 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
+        // The grant that lets Guardian appear over an entertainment app at all.
+        // Asked for here, next to the recovery action, because a popup nobody
+        // can be shown is not worth asking for on its own screen.
+        if (!whole && !PermissionChecks.canDrawOverlays(this)) {
+            card.addView(ui.vgap(ui.dimens.groupGap))
+            card.addView(ui.note(getString(R.string.permissions_overlay_why)))
+            card.addView(ui.vgap(ui.dimens.lineGap))
+            card.addView(
+                ui.quiet(getString(R.string.permissions_overlay_action)).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    setOnClickListener { askForOverlay() }
+                }
+            )
+        }
+
         statusContainer.addView(card)
     }
 
     private fun characterDescription(face: AliveFace): String =
         getString(AliveStates.faceDescription(face))
+
+    /**
+     * The overlay grant, asked for on its own system screen.
+     *
+     * Android has no runtime dialog for this one - it is a switch in a list - so
+     * the app sends the user straight to ALIVE's row in it rather than dropping
+     * them at the top of the list to hunt.
+     */
+    private fun askForOverlay() {
+        startActivity(
+            Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            )
+        )
+    }
 
     /**
      * What ALIVE cannot see, and how to let it.

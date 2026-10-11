@@ -452,7 +452,10 @@
     <string name="guardian_note_off">ALIVE tidak bisa tahu kamu yang mematikannya atau ponsel yang melakukannya demi baterai. Selama mati, tidak ada yang menjaga jatahmu.</string>
     <string name="guardian_note_whole">Tandanya tetap ada di hari ini, dan runtunanmu aman.</string>
     <string name="guardian_action_restore">Pulihkan penjagaan</string>
+    <string name="guardian_later">Nanti</string>
     <string name="guardian_why">Kenapa aku lihat ini?</string>
+    <string name="permissions_overlay_why">Satu izin lagi, cuma buat Guardian: "tampilkan di atas aplikasi lain". Itu yang bikin popup pemulihannya bisa muncul di atas app hiburan - sebentar saja, selama penjaganya mati - dan itu satu-satunya hal yang pernah ALIVE gambar di atas app lain.</string>
+    <string name="permissions_overlay_action">Izinkan tampil di atas app lain</string>
     <string name="guard_profile_line">Hari ini punya bagian tanpa penjaga.</string>
     <string name="permissions_accessibility_why">Aksesibilitas adalah cara ALIVE menutup aplikasi saat waktunya habis. Tanpanya tidak ada yang tertutup, dan hari itu ditandai tanpa penjaga.</string>
 

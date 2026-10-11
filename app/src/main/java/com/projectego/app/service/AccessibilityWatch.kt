@@ -1,16 +1,19 @@
 package com.projectego.app.service
 
 import android.app.AlarmManager
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.projectego.app.MainActivity
 import com.projectego.app.R
 import com.projectego.app.data.LockStateManager
 import com.projectego.app.ui.Guardian
+import com.projectego.app.ui.PermissionChecks
 
 /**
  * The one notification ALIVE posts, and the only reason it has a notification
@@ -56,7 +59,31 @@ object AccessibilityWatch {
         } else {
             post(context)
             scheduleRepeat(context)
+            // The watch only runs when there is something to watch for: it needs
+            // the log to say an entertainment app came forward, and the user's
+            // "display over other apps" grant for the popup to be allowed to open
+            // at all. Without that grant Guardian still speaks - in the shade and
+            // on Home - it just cannot tap anyone on the shoulder.
+            if (PermissionChecks.canDrawOverlays(context)) startWatch(context)
         }
+    }
+
+    /**
+     * The popup watcher. Starting it is safe from here: ALIVE is on screen when
+     * this runs, and a foreground service started by an app that holds the
+     * overlay permission is exempt from the background-start restriction anyway.
+     */
+    private fun startWatch(context: Context) {
+        val intent = Intent(context, GuardianWatchService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
+        }
+    }
+
+    private fun stopWatch(context: Context) {
+        context.stopService(Intent(context, GuardianWatchService::class.java))
     }
 
     /**
@@ -75,18 +102,21 @@ object AccessibilityWatch {
     }
 
     fun post(context: Context) {
+        ensureChannel(context)
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.createNotificationChannel(
-            NotificationChannel(
-                CHANNEL_ID,
-                context.getString(R.string.guardian_channel_name),
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = context.getString(R.string.guardian_channel_description)
-            }
-        )
+        manager.notify(NOTIFICATION_ID, notification(context))
+    }
 
-        // Guardian speaks here in the pose its state calls for, and the state is
+    /**
+     * The one note, built in one place.
+     *
+     * The shade shows it, and [GuardianWatchService] promotes that same note to
+     * the foreground service's own by handing it the same id - so there is never
+     * a second ALIVE card in the shade, and the nag and the running watch are one
+     * statement rather than two.
+     */
+    fun notification(context: Context): Notification {
+        // Guardian speaks in the pose its state calls for, and the state is
         // decided by the same facts the app shows: protection off, and whether a
         // day over the limit already went unguarded. Read, never written - this
         // path must not be able to roll a day over or touch the lock.
@@ -99,7 +129,7 @@ object AccessibilityWatch {
         val headline = context.getString(Guardian.headlineFor(state))
         val body = context.getString(Guardian.bodyFor(state))
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        return NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_alive_hourglass)
             .setLargeIcon(Guardian.bitmap(context, state))
             .setContentTitle(headline)
@@ -119,17 +149,30 @@ object AccessibilityWatch {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .build()
-
-        manager.notify(NOTIFICATION_ID, notification)
     }
 
-    /** The guard is back: the nag has nothing left to say. */
+    private fun ensureChannel(context: Context) {
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_ID,
+                context.getString(R.string.guardian_channel_name),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = context.getString(R.string.guardian_channel_description)
+            }
+        )
+    }
+
+    /** The guard is back: the nag has nothing left to say, and nothing left to watch. */
     fun clear(context: Context) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.cancel(NOTIFICATION_ID)
 
         val alarm = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarm.cancel(checkIntent(context))
+
+        stopWatch(context)
     }
 
     fun scheduleRepeat(context: Context) {

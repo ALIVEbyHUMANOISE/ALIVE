@@ -479,7 +479,10 @@
     <string name="guardian_note_off">ALIVE can\'t tell whether you turned it off or the phone did to save battery. While it is off, nothing is holding the allowance for you.</string>
     <string name="guardian_note_whole">The mark stays on today, and the streak is intact.</string>
     <string name="guardian_action_restore">Restore protection</string>
+    <string name="guardian_later">Not now</string>
     <string name="guardian_why">Why am I seeing this?</string>
+    <string name="permissions_overlay_why">One more grant, only for Guardian: "display over other apps". It is what lets the recovery popup appear over an entertainment app - for a moment, while the guard is off - and it is the only thing ALIVE ever draws over anything.</string>
+    <string name="permissions_overlay_action">Allow display over other apps</string>
     <string name="guard_profile_line">Today had a stretch with the guard off.</string>
     <string name="permissions_accessibility_why">Accessibility is how ALIVE closes an app when its time is up. Without it nothing is closed, and the day is marked as unguarded.</string>
 

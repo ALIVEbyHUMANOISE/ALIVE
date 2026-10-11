@@ -37,6 +37,16 @@ object PermissionChecks {
         return mode == AppOpsManager.MODE_ALLOWED
     }
 
+    /**
+     * "Display over other apps".
+     *
+     * Only Guardian asks for it, and only for the moments the guard is off: it is
+     * what lets the recovery popup appear over an entertainment app, and it is
+     * also the grant that lets ALIVE start that popup from the background at all.
+     * Nothing else in the app draws over anything.
+     */
+    fun canDrawOverlays(context: Context): Boolean = Settings.canDrawOverlays(context)
+
     fun isAccessibilityServiceEnabled(context: Context): Boolean {
         val expectedServiceName =
             "${context.packageName}/${EgoAccessibilityService::class.java.canonicalName}"

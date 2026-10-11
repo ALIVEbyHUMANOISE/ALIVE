@@ -8,6 +8,7 @@ import android.content.Intent
 import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
 import com.projectego.app.ui.PermissionChecks
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -16,6 +17,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowSettings
 
 /**
  * The guard's one notification, and the two promises it makes.
@@ -100,5 +102,31 @@ class AccessibilityWatchTest {
         setServiceEnabled(true)
         syncWithTheSetting()
         assertTrue("the repeat outlived the guard it was nagging about", alarms.scheduledAlarms.isEmpty())
+    }
+
+    @Test
+    fun `the watch that taps the shoulder runs only when the guard is off and the grant is there`() {
+        val application = ApplicationProvider.getApplicationContext<android.app.Application>()
+
+        // Off, but the user has not granted "display over other apps": the popup
+        // could not be shown anyway, so nothing is started to look for it.
+        ShadowSettings.setCanDrawOverlays(false)
+        setServiceEnabled(false)
+        syncWithTheSetting()
+        assertNull("nothing to watch without the grant", shadowOf(application).nextStartedService)
+
+        ShadowSettings.setCanDrawOverlays(true)
+        syncWithTheSetting()
+        assertEquals(
+            GuardianWatchService::class.java.name,
+            shadowOf(application).nextStartedService?.component?.className
+        )
+
+        setServiceEnabled(true)
+        syncWithTheSetting()
+        assertEquals(
+            GuardianWatchService::class.java.name,
+            shadowOf(application).nextStoppedService?.component?.className
+        )
     }
 }

@@ -14,6 +14,17 @@
          the guard is back on (API 33+ runtime permission). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Guardian's recovery popup draws over whatever app is open, which is the
+         one thing no app can do without this grant. Asked for with a plain
+         sentence, and used only while the guard is off. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <!-- The watch that looks for an entertainment app while the guard is off. A
+         foreground service is required: Android does not let a background process
+         read the usage log. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
     <!-- Names for the apps the chart counts. Without these declarations Android
          11+ hides every other package's label, and the chart falls back to a
          fragment of the package name ("Trill" instead of "TikTok"). Must stay
@@ -113,6 +124,26 @@
             <meta-data
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <!-- Guardian's popup: the recovery note, over whatever app is open. -->
+        <activity
+            android:name=".ui.GuardianAlertActivity"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@style/Theme.ALIVE.GuardianAlert" />
+
+        <!-- The watch behind that popup. It runs only while the guard is off. -->
+        <service
+            android:name=".service.GuardianWatchService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Watches the usage log for entertainment apps while screen-time protection is off, so Guardian can offer to restore it." />
         </service>
 
         <!-- The home-screen widget. Exported must be true: the launcher runs in

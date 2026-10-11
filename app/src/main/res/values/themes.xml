@@ -67,4 +67,10 @@
         <item name="android:windowMinWidthMinor">86%</item>
         <item name="android:windowAnimationStyle">@null</item>
     </style>
+
+    <!-- Guardian's recovery popup. The same window as the critical note on
+         purpose - a floating card, centred, dimming the app underneath without
+         stopping it - because the two are the same kind of interruption and
+         should not arrive looking like two different apps. -->
+    <style name="Theme.ALIVE.GuardianAlert" parent="Theme.ALIVE.CriticalAlert" />
 </resources>
