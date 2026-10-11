@@ -413,17 +413,29 @@
     <string name="chart_apps_folded">%1$d smaller ones</string>
     <string name="chart_apps_none">No app minutes for today yet.</string>
     <string name="chart_apps_none_support">ALIVE writes down only what it sees, so a day it saw nothing in stays a day with nothing in it.</string>
-    <string name="chart_apps_unblocked">%1$s in apps ALIVE never blocks.</string>
-    <string name="chart_unblocked_eyebrow">Doesn\'t spend the allowance</string>
-    <string name="chart_screen_heading">Total screen time</string>
-    <string name="chart_screen_of_which">%1$s of it spent nothing.</string>
-    <string name="chart_screen_all_charged">All of it spent the allowance.</string>
+
+    <!-- ============ THE THREE LENSES ============
+
+         One card, three views of the same day. The buttons are short because
+         three tiles share a phone's width; the sentence under each ring is what
+         actually names the lens, so a short label is never the only thing
+         saying which one is on screen. -->
+    <string name="chart_bucket_tab_entertainment">Entertainment</string>
+    <string name="chart_bucket_tab_unblocked">Free</string>
+    <string name="chart_bucket_tab_total">Total</string>
+    <string name="chart_bucket_entertainment">The apps ALIVE closes when the entertainment time is up. These are the minutes that spend the allowance.</string>
+    <string name="chart_bucket_unblocked">Chat, work, and the apps a focus session approved. ALIVE never closes these, so they never spend the allowance.</string>
+    <string name="chart_bucket_total">Everything ALIVE saw today, whether it spent the allowance or not.</string>
+    <string name="chart_bucket_empty">Nothing here yet today.</string>
 
     <string name="widget_stats_label">Statistics</string>
-    <string name="widget_stats_description">Today\'s entertainment time, and where it went.</string>
+    <string name="widget_stats_description">Today\'s screen time, and where it went.</string>
     <string name="widget_stats_eyebrow">Today</string>
+    <!-- Used when the big figure is the screen total rather than entertainment
+         minutes: the label moves with the figure, so the picture and its caption
+         never disagree about which number is being shown. -->
+    <string name="widget_stats_eyebrow_screen">Screen total</string>
     <string name="widget_stats_of_allowance">%1$d%% of the allowance</string>
-    <string name="widget_stats_screen">%1$s screen</string>
     <string name="widget_stats_no_allowance">No allowance today</string>
     <string name="widget_stats_streak">%1$d days in a row</string>
     <string name="widget_stats_empty">Open ALIVE once and this fills itself in.</string>
@@ -435,28 +447,54 @@
 
     <!-- ============ CRITICAL ALERT ============
 
-         A note, not an alarm: no red, no threat, no claim about what happened
-         inside an app. The figure is always the real remaining minutes. -->
+         Two phases, one intent. The first five seconds are a red field that
+         cannot be tapped away; then the quiet note that was always here. Neither
+         phase claims anything about what happened inside an app, the figure is
+         always the real remaining minutes, and the countdown is printed so the
+         hold is never a trap - the red states the same fact the text does. -->
     <string name="chart_alert_eyebrow">Today\'s time</string>
     <string name="alert_minutes_left">%1$d minutes of entertainment left today.</string>
     <string name="alert_support">Nothing is about to close. This is just where the number is.</string>
+    <string name="alert_warning_eyebrow">Warning</string>
+    <string name="alert_warning_body">Your entertainment allowance is nearly gone.</string>
+    <string name="alert_warning_countdown">seconds to go</string>
 
-    <!-- ============ GUARD GAP ============
+    <!-- ============ GUARDIAN ============
 
-         The service that closes apps can be turned off, and Android will not let
-         an app prevent that. So the price is charged inside ALIVE instead: the
-         day is marked, the mark is visible until a quest pays for it, and the
-         copy never claims to know who flipped the switch. -->
-    <string name="guard_off_heading">ALIVE isn\'t watching</string>
-    <string name="guard_off_body">The service that closes apps is off, so nothing is being closed right now.</string>
-    <string name="guard_repair_needed">Turn it back on and finish one quest. Until then today is not a kept day.</string>
-    <string name="guard_back_heading">The guard is back on</string>
-    <string name="guard_back_body">Nothing is being missed any more. Today still shows as unguarded, because that stretch happened.</string>
-    <string name="guard_repair_done">The mark stays on today. The streak is intact.</string>
-    <string name="guard_who_turned_it_off">ALIVE can\'t tell whether you turned it off or the phone did to save battery.</string>
-    <string name="guard_enable_action">Turn the guard back on</string>
+         Guardian is the name and the face of the guard state, not a second set of
+         rules. The service that closes apps can be turned off and Android will not
+         let an app prevent that, so the price is charged inside ALIVE instead: the
+         day is marked, the mark is visible until a quest pays for it, and the copy
+         never claims to know who flipped the switch - nor that Guardian could have
+         stopped it. -->
+    <string name="guardian_name">Guardian</string>
+    <string name="guardian_active_heading">The watch is on</string>
+    <string name="guardian_active_body">Accessibility is on, so entertainment apps are closed when their time is up.</string>
+    <string name="guardian_degraded_heading">Guardian has lost its footing</string>
+    <string name="guardian_degraded_body">Accessibility for ALIVE was switched off, so nothing is being closed. Nothing is marked today yet - turn it back on and it stays that way.</string>
+    <string name="guardian_recovery_heading">Today needs restoring</string>
+    <string name="guardian_recovery_body">The watch is off and the entertainment allowance was spent anyway. Turn it back on, then finish one quest: the mark clears and the chain holds.</string>
+    <string name="guardian_restored_heading">The watch is restored</string>
+    <string name="guardian_restored_body">Nothing is being missed any more. Today still shows as having had an unguarded stretch, because that stretch happened.</string>
+    <string name="guardian_note_off">ALIVE can\'t tell whether you turned it off or the phone did to save battery. While it is off, nothing is holding the allowance for you.</string>
+    <string name="guardian_note_whole">The mark stays on today, and the streak is intact.</string>
+    <string name="guardian_action_restore">Restore protection</string>
+    <string name="guardian_why">Why am I seeing this?</string>
     <string name="guard_profile_line">Today had a stretch with the guard off.</string>
     <string name="permissions_accessibility_why">Accessibility is how ALIVE closes an app when its time is up. Without it nothing is closed, and the day is marked as unguarded.</string>
+
+    <!-- Spoken descriptions: the character never carries the state on its own. -->
+    <string name="cd_guardian_idle">Guardian standing watch. Protection is on.</string>
+    <string name="cd_guardian_alert">Guardian alert. Protection is off, and nothing is marked yet.</string>
+    <string name="cd_guardian_recovery">Guardian offering a way back. Today is marked.</string>
+    <string name="cd_guardian_restored">Guardian back on watch. Protection is restored.</string>
+
+    <!-- The one notification, and what it promises: not "you cannot remove
+         this" - Android 13 hands that back to the user - but "it comes back
+         while the guard is off, and it stops when the guard is on". -->
+    <string name="guardian_channel_name">Guardian</string>
+    <string name="guardian_channel_description">Says protection is off, until it is back on.</string>
+    <string name="permissions_notifications_why">ALIVE also asks to post a notification. It has one job: to keep saying the guard is off while the app is closed, and to stop the moment it is on.</string>
 
     <!-- ============ DEV PANEL ============
 

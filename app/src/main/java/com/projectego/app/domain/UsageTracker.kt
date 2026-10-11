@@ -34,7 +34,14 @@ data class UsageReport(
     val dayType: DayType,
     val currentStreak: Int,
     val timeBank: TimeBank,
-    val entertainmentAppDetails: List<Pair<String, Long>> // PackageName -> Minutes
+    val entertainmentAppDetails: List<Pair<String, Long>>, // PackageName -> Minutes
+    /**
+     * The apps the allowance is never spent on, by name: everything ALIVE does
+     * not block, plus the minutes a focus session swallowed. The same shape as
+     * [entertainmentAppDetails] so one chart can swap between the two - and the
+     * two together are one day, which is what the third view shows.
+     */
+    val unblockedAppDetails: List<Pair<String, Long>>
 )
 
 class UsageTracker(private val context: Context) {
@@ -70,6 +77,7 @@ class UsageTracker(private val context: Context) {
         var totalMillis = 0L
         var unblockedMillis = 0L
         val details = mutableListOf<Pair<String, Long>>()
+        val unblockedDetails = mutableListOf<Pair<String, Long>>()
 
         // Minutes today's focus sessions swallowed, per package. Computed first
         // because the loop below charges whatever is left over.
@@ -108,8 +116,13 @@ class UsageTracker(private val context: Context) {
                         // meant two hours of chatting spent the entertainment
                         // allowance and then locked the apps that were only
                         // ever entertainment.
-                        AppCategory.TRACKED, AppCategory.WORK ->
+                        AppCategory.TRACKED, AppCategory.WORK -> {
                             unblockedMillis += stat.totalTimeInForeground
+                            val minutes = stat.totalTimeInForeground / 1000 / 60
+                            if (minutes > 0) {
+                                unblockedDetails.add(Pair(stat.packageName, minutes))
+                            }
+                        }
 
                         else -> Unit
                     }
@@ -118,8 +131,17 @@ class UsageTracker(private val context: Context) {
         }
 
         // The focus-swallowed minutes are the third kind of time that does not
-        // charge, and they are reported the same way the other two are.
+        // charge, and they are reported the same way the other two are. They
+        // belong to entertainment packages, so a package can honestly appear on
+        // both sides of the day - and the total view adds the two rows together
+        // rather than letting one of them win.
         unblockedMillis += exemptByPackage.values.sum()
+        exemptByPackage.forEach { (packageName, millis) ->
+            val minutes = millis / 1000 / 60
+            if (minutes > 0) {
+                unblockedDetails.add(Pair(packageName, minutes))
+            }
+        }
 
         // Every minute ALIVE saw. The two figures above are disjoint by
         // construction - a minute moved out of the allowance by a focus session
@@ -204,7 +226,8 @@ class UsageTracker(private val context: Context) {
             dayType = dayType,
             currentStreak = lockStateManager.getCurrentStreak(),
             timeBank = timeBank,
-            entertainmentAppDetails = details.sortedByDescending { it.second }
+            entertainmentAppDetails = details.sortedByDescending { it.second },
+            unblockedAppDetails = unblockedDetails.sortedByDescending { it.second }
         )
     }
 

@@ -45,6 +45,7 @@ import com.projectego.app.domain.PhysicalQuestVerifier
 import com.projectego.app.domain.QuestStartCoordinator
 import com.projectego.app.domain.QuestVerificationCoordinator
 import com.projectego.app.domain.UsageReport
+import com.projectego.app.domain.UsageBuckets
 import com.projectego.app.domain.UsageTracker
 import com.projectego.app.model.DayType
 import com.projectego.app.model.FocusActivityType
@@ -53,6 +54,7 @@ import com.projectego.app.model.PhysicalQuestRequirement
 import com.projectego.app.model.Quest
 import com.projectego.app.model.QuestAttempt
 import com.projectego.app.model.QuestAttemptState
+import com.projectego.app.service.AccessibilityWatch
 import com.projectego.app.model.QuestStatus
 import com.projectego.app.model.TimeStatus
 import com.projectego.app.model.UsageDay
@@ -72,6 +74,8 @@ import com.projectego.app.ui.ChartRange
 import com.projectego.app.ui.DayBar
 import com.projectego.app.ui.DayBarKind
 import com.projectego.app.ui.Durations
+import com.projectego.app.ui.Guardian
+import com.projectego.app.ui.GuardianState
 import com.projectego.app.ui.HomeAction
 import com.projectego.app.ui.PermissionChecks
 import com.projectego.app.ui.PixelMarks
@@ -110,6 +114,7 @@ class MainActivity : AppCompatActivity() {
         // The only runtime permission this app ever asks for; nothing else
         // uses onRequestPermissionsResult, so the code cannot collide.
         const val REQUEST_CODE_ACTIVITY_RECOGNITION = 1001
+        const val REQUEST_CODE_NOTIFICATIONS = 1002
     }
 
     private lateinit var usageTracker: UsageTracker
@@ -166,6 +171,10 @@ class MainActivity : AppCompatActivity() {
     // dialog. Only one quest can start at a time, so one slot is enough.
     private var pendingPhysicalQuestId: String? = null
     private var activityRecognitionDenied = false
+
+    // One ask per process. A dialog that returns on every resume is a nag about
+    // the thing that is supposed to nag.
+    private var notificationAsked = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -241,6 +250,8 @@ class MainActivity : AppCompatActivity() {
         navBar.select(AliveNavBar.Index.HOME, animate = false)
         showTab(0)
 
+        ensureNotificationPermission()
+
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (state.isPanelOpen) {
@@ -305,6 +316,34 @@ class MainActivity : AppCompatActivity() {
 
     private fun isAccessibilityServiceEnabled(): Boolean =
         PermissionChecks.isAccessibilityServiceEnabled(this)
+
+    /**
+     * Asks once for the right to post the guard's notification, and only where
+     * the platform requires it.
+     *
+     * It is asked for up front rather than at the moment it is needed, because
+     * the moment it is needed is the moment the user is inside Settings turning
+     * the guard off - and by then ALIVE is not on screen to ask. A refused
+     * permission costs nothing that was promised: the guard card still says the
+     * same thing in the app, and the notification is only the channel that
+     * reaches outside it.
+     */
+    private fun ensureNotificationPermission() {
+        if (!notificationPermissionNeeded()) return
+        if (notificationAsked) return
+        notificationAsked = true
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+            REQUEST_CODE_NOTIFICATIONS
+        )
+    }
+
+    /** Below 13 the platform grants this at install time, so there is nothing to ask. */
+    private fun notificationPermissionNeeded(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
 
     // ------------------------------------------------------------------
     // SHELL
@@ -418,6 +457,7 @@ class MainActivity : AppCompatActivity() {
         state.dailyLimitMinutes = report.limitMinutes
         state.usedMinutesToday = report.totalEntertainmentMinutes
         state.entertainmentAppDetails = report.entertainmentAppDetails
+        state.unblockedAppDetails = report.unblockedAppDetails
         state.unblockedMinutes = report.unblockedMinutes
         state.screenMinutes = report.totalScreenMinutes
         // A preference read with no side effects, done once per render like the
@@ -444,12 +484,22 @@ class MainActivity : AppCompatActivity() {
 
         renderHeader(signals)
 
-        if (state.guardGapOpen || state.guardGapRepairedToday) {
-            renderGuardCard()
+        // Guardian is the face of the guard state, so it is on screen whenever
+        // the guard is not simply fine - including the case the old card never
+        // showed: protection off on a day that owes nothing yet.
+        val guardian = Guardian.stateOf(
+            protectionOff = guardMissing,
+            gapOpen = state.guardGapOpen,
+            repairedToday = state.guardGapRepairedToday
+        )
+        if (guardian != GuardianState.ACTIVE) {
+            renderGuardianCard(guardian)
         }
 
         if (usageMissing || guardMissing) {
-            renderPermissionsNotice(usageMissing, guardMissing)
+            // The accessibility half belongs to the Guardian card while that card
+            // is up: one permission, one place to turn it back on.
+            renderPermissionsNotice(usageMissing, guardMissing && guardian == GuardianState.ACTIVE)
         }
 
         renderTodayCard(report, signals)
@@ -594,8 +644,9 @@ class MainActivity : AppCompatActivity() {
     private fun evaluateGuardState(report: UsageReport) {
         val today = LockStateManager.dayKeyOf(System.currentTimeMillis())
         val owedEnforcement = report.isLimitExceeded || report.dayType == DayType.ZERO_ENTERTAINMENT_DAY
+        val guardOn = isAccessibilityServiceEnabled()
 
-        if (!isAccessibilityServiceEnabled()) {
+        if (!guardOn) {
             if (owedEnforcement) lockStateManager.markGuardGap(today, report.timeBank.earnedMinutes)
         } else {
             lockStateManager.repairGuardGapIfEarned(report.timeBank.earnedMinutes)
@@ -603,10 +654,16 @@ class MainActivity : AppCompatActivity() {
 
         state.guardGapOpen = lockStateManager.isGuardGapOpenOn(today)
         state.guardGapRepairedToday = !state.guardGapOpen && lockStateManager.unguardedDay() == today
+
+        // The app is on screen and the answer is in hand, so this is where the
+        // notification is brought in line: either it starts - and keeps asking
+        // from outside the app - or it finally stops.
+        AccessibilityWatch.sync(this, guardOn)
     }
 
     /**
-     * The one card that speaks before the numbers do.
+     * The one card that speaks before the numbers do: Guardian, in the pose its
+     * state calls for.
      *
      * It states what is no longer true (nothing is being closed), what it costs
      * (today is marked, and an unrepaired mark is not a kept day), and how to
@@ -614,41 +671,43 @@ class MainActivity : AppCompatActivity() {
      * that ALIVE cannot tell who turned the service off, because a phone that
      * kills services to save battery is a real possibility and a false accusation
      * here would cost more trust than the mark ever recovers.
+     *
+     * The character and the sentence are one statement: someone who cannot read
+     * the card still sees which of the four states the watch is in, and someone
+     * who reads it gets the same answer in words. That is the app's oldest rule -
+     * colour and shape are never the only signal - applied to a character.
      */
-    private fun renderGuardCard() {
-        val repaired = !state.guardGapOpen
+    private fun renderGuardianCard(state: GuardianState) {
+        val whole = state == GuardianState.RESTORED
         // A tinted card, and the tint is the documented meaning of this pale: a
         // closed door is a pale surface with an ink edge, never a red alarm.
         val card = ui.tintedBlock(
-            if (repaired) ui.palette.softForest else ui.palette.shortPale,
+            if (whole) ui.palette.softForest else ui.palette.shortPale,
             weight = if (homeMajor == HomeMajor.GUARD) SurfaceWeight.MAJOR else SurfaceWeight.MINOR
         )
+
+        card.addView(ui.sectionHeader(getString(R.string.guardian_name)))
+        card.addView(ui.vgap(ui.dimens.lineGap))
 
         // The figure used to sit above three grey paragraphs of the same size,
         // which is how the most important sentence on the screen ended up looking
         // like fine print. Now the figure and the headline share a line, and the
-        // rest is separated by what it is for. Static on purpose: a gap asks
-        // "who turned this off?", a repaired guard is just ALIVE at ease.
-        val guardFace = if (repaired) AliveFace.NORMAL else AliveFace.CONFUSED
+        // rest is separated by what it is for.
         val line = ui.row()
         line.addView(
-            ui.iconTile(
-                ui.palette.white,
-                AliveStates.faceSpriteFor(guardFace),
-                ui.dimens.character
-            ).apply { contentDescription = getString(AliveStates.faceDescription(guardFace)) }
+            ui.mark(
+                Guardian.spriteFor(state),
+                ui.dimens.characterLarge,
+                getString(Guardian.descriptionFor(state))
+            )
         )
         line.addView(ui.hgap(ui.dimens.m))
         line.addView(
             ui.weighted(
                 ui.column().apply {
-                    addView(
-                        ui.headline(
-                            getString(if (repaired) R.string.guard_back_heading else R.string.guard_off_heading)
-                        )
-                    )
+                    addView(ui.headline(getString(Guardian.headlineFor(state))))
                     addView(ui.vgap(ui.dimens.pairGap))
-                    addView(ui.body(getString(if (repaired) R.string.guard_back_body else R.string.guard_off_body)))
+                    addView(ui.body(getString(Guardian.bodyFor(state))))
                 }
             )
         )
@@ -657,16 +716,20 @@ class MainActivity : AppCompatActivity() {
         card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(ui.rowRule())
         card.addView(ui.vgap(ui.dimens.lineGap))
-        card.addView(
-            ui.body(getString(if (repaired) R.string.guard_repair_done else R.string.guard_repair_needed))
-        )
-        card.addView(ui.vgap(ui.dimens.lineGap))
-        card.addView(ui.note(getString(R.string.guard_who_turned_it_off)))
 
-        if (!repaired) {
+        // The brief's second action, answered where the question is asked: while
+        // the watch is off, the card says why it is on screen at all - and the
+        // answer is the same fact the app has always told.
+        if (!whole) {
+            card.addView(ui.meta(getString(R.string.guardian_why)))
+            card.addView(ui.vgap(ui.dimens.pairGap))
+        }
+        card.addView(ui.note(getString(Guardian.noteFor(state))))
+
+        Guardian.actionFor(state)?.let { action ->
             card.addView(ui.vgap(ui.dimens.groupGap))
             card.addView(
-                ui.secondary(getString(R.string.guard_enable_action)).apply {
+                ui.secondary(getString(action)).apply {
                     layoutParams = LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT
@@ -716,6 +779,13 @@ class MainActivity : AppCompatActivity() {
             // wary of and the one they can walk away from - at a price.
             card.addView(ui.note(getString(R.string.permissions_accessibility_why)))
             card.addView(ui.vgap(ui.dimens.lineGap))
+            if (notificationPermissionNeeded()) {
+                // The second ask, said before the system dialog does: the number
+                // in the status bar is how ALIVE keeps saying the guard is off
+                // once the app is closed again.
+                card.addView(ui.note(getString(R.string.permissions_notifications_why)))
+                card.addView(ui.vgap(ui.dimens.lineGap))
+            }
             card.addView(
                 ui.secondary(getString(R.string.permissions_accessibility_action)).apply {
                     layoutParams = LinearLayout.LayoutParams(
@@ -2098,14 +2168,14 @@ class MainActivity : AppCompatActivity() {
 
         // Per-app time is only ever stated for today. It is stored for other
         // days, but a month of package names reads as surveillance, which is
-        // not what ALIVE claims to do.
+        // not what ALIVE claims to do. The card carries all three views of the
+        // day - charged, never charged, and the two together - behind its own
+        // three buttons, so none of them needs a card of its own.
         if (range == ChartRange.TODAY) {
             body.addView(ui.vgap(ui.dimens.cardGap))
             // An empty day is named, not omitted: a heading that vanished with it
             // left people wondering whether the feature had broken.
             body.addView(buildAppCard() ?: emptyAppCard())
-            body.addView(ui.vgap(ui.dimens.cardGap))
-            body.addView(screenTotalCard())
         }
     }
 
@@ -2256,46 +2326,7 @@ class MainActivity : AppCompatActivity() {
         card.addView(ui.body(getString(R.string.chart_apps_none)))
         card.addView(ui.vgap(ui.dimens.lineGap))
         card.addView(ui.note(getString(R.string.chart_apps_none_support)))
-        unblockedNote()?.let {
-            card.addView(ui.vgap(ui.dimens.lineGap))
-            card.addView(it)
-        }
         return card
-    }
-
-    /**
-     * What was seen in apps ALIVE never blocks, or null on a day there was none.
-     *
-     * A tinted block with a shield, not a grey line: this is the one number on
-     * the card that is good news, and buried in the same grey as the note under
-     * it, "43 menit ... nggak motong jatah" read like a footnote about the
-     * numbers rather than an answer about his allowance.
-     */
-    private fun unblockedNote(): View? {
-        if (state.unblockedMinutes <= 0L) return null
-
-        val block = ui.tintedBlock(ui.palette.softForest)
-        val line = ui.row()
-        line.addView(ui.iconTile(ui.palette.white, R.drawable.ic_pixel_shield, ui.dimens.character))
-        line.addView(ui.hgap(ui.dimens.m))
-        line.addView(
-            ui.weighted(
-                ui.column().apply {
-                    addView(ui.sectionHeader(getString(R.string.chart_unblocked_eyebrow)))
-                    addView(ui.vgap(ui.dimens.pairGap))
-                    addView(
-                        ui.body(
-                            getString(
-                                R.string.chart_apps_unblocked,
-                                Durations.of(this@MainActivity, state.unblockedMinutes)
-                            )
-                        )
-                    )
-                }
-            )
-        )
-        block.addView(line)
-        return block
     }
 
     /**
@@ -2311,39 +2342,6 @@ class MainActivity : AppCompatActivity() {
         ChartRange.TODAY -> ui.palette.pinkSoft
         ChartRange.LAST_7_DAYS -> ui.palette.rewardMid
         ChartRange.THIS_MONTH -> ui.palette.softForest
-    }
-
-    /**
-     * The day whole, not only the part of it that spends an allowance.
-     *
-     * Every other figure on this screen is entertainment time, and a person who
-     * spent four hours in a document and a chat sees a number smaller than the
-     * day they lived and reads a broken counter. This is the other number, and
-     * it names what the difference between the two is made of.
-     */
-    private fun screenTotalCard(): View {
-        // The critter's own rose. This is the whole day rather than the part of
-        // it that costs something, and it is the one figure on the screen that
-        // nobody is being warned about or rewarded for.
-        val card = ui.tintedBlock(ui.palette.pinkSoft).apply {
-            addView(ui.cardTitle(getString(R.string.chart_screen_heading)))
-        }
-        card.addView(ui.lead(Durations.of(this, state.screenMinutes)))
-        card.addView(ui.vgap(ui.dimens.pairGap))
-        card.addView(
-            // A caption's usual secondary ink is 3.9:1 on the critter's pink, so
-            // on a saturated face the sentence is written in full ink. The blue
-            // banner keeps the secondary tone; `AlivePaletteTest` measures which
-            // face may carry which.
-            ui.note(
-                if (state.unblockedMinutes > 0L) {
-                    getString(R.string.chart_screen_of_which, Durations.of(this, state.unblockedMinutes))
-                } else {
-                    getString(R.string.chart_screen_all_charged)
-                }
-            ).apply { setTextColor(ui.palette.ink) }
-        )
-        return card
     }
 
     /** The days card: bars, what the marks mean, and how much of the range is real. */
@@ -2521,33 +2519,100 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Today's time by app: a ring, and the legend that names every slice.
+     * Today's time by app, seen through one of three lenses.
      *
-     * Null when the device reported no entertainment apps - the caller then
+     * One ring and one legend per lens, and the three lenses are the same day
+     * counted three ways: what the allowance was spent on, what it never touched,
+     * and the two added together. The tab names are short on purpose, and the
+     * sentence under each ring is what names the lens - a short label beside a
+     * picture is read, a long one is skipped.
+     *
+     * Null when the device reported nothing at all, for any lens: the caller then
      * prints [emptyAppCard], because the honest answer to "where did today go" is
      * "nowhere that ALIVE could see", not a silent absence.
-     *
-     * The number in the middle of the ring is the day's total, not the sum of
-     * the slices that fit: it used to be measured after the cut-off, so a fifth
-     * app made the ring disagree with the `Used` tile on the card above it.
-     * Whatever is left over becomes one hatched slice that says so out loud.
      */
     private fun buildAppCard(): LinearLayout? {
+        val anyRows = state.entertainmentAppDetails.any { it.second > 0L } ||
+            state.unblockedAppDetails.any { it.second > 0L }
+        if (anyRows.not()) return null
+
+        val card = ui.bentoCard(getString(R.string.chart_apps_heading))
+        val body = ui.column()
+        card.addView(
+            bucketSwitch {
+                // Redrawn in place, so choosing a lens never jumps the scroll.
+                renderBucket(body)
+            }
+        )
+        card.addView(ui.vgap(ui.dimens.groupGap))
+        card.addView(body)
+        renderBucket(body)
+
+        card.addView(ui.vgap(ui.dimens.lineGap))
+        // A fallback label is still printed as a label, so this says where the
+        // names come from instead of pretending every one of them resolved.
+        card.addView(ui.note(getString(R.string.chart_labels_note)))
+        return card
+    }
+
+    /** The three lenses as one row of tiles, sized to fit side by side. */
+    private fun bucketSwitch(onChange: () -> Unit): RadioGroup = RadioGroup(this).apply {
+        orientation = RadioGroup.HORIZONTAL
+        val buckets = UsageBuckets.Bucket.values()
+        buckets.forEachIndexed { index, bucket ->
+            addView(
+                ui.tileOption(getString(bucketTabLabel(bucket)), 0, bucketHue(bucket)).apply {
+                    id = CHART_BUCKET_ID_BASE + index
+                    isChecked = index == state.chartBucketIndex
+                    layoutParams = RadioGroup.LayoutParams(
+                        0,
+                        RadioGroup.LayoutParams.WRAP_CONTENT,
+                        1f
+                    ).apply {
+                        if (index > 0) marginStart = ui.dimens.pairGap
+                    }
+                }
+            )
+        }
+        setOnCheckedChangeListener { _, checkedId ->
+            state.chartBucketIndex =
+                (checkedId - CHART_BUCKET_ID_BASE).coerceIn(0, buckets.size - 1)
+            onChange()
+        }
+    }
+
+    /**
+     * One lens: the ring, the rows under it, and the sentence that names it.
+     *
+     * The number in the middle is that lens' own total, not the sum of the slices
+     * that fit: it used to be measured after the cut-off, so a fifth app made the
+     * ring disagree with the tile above it. Whatever is left over becomes one
+     * hatched slice that says so out loud.
+     */
+    private fun renderBucket(body: LinearLayout) {
+        body.removeAllViews()
+
+        val bucket = UsageBuckets.Bucket.values()
+            .getOrNull(state.chartBucketIndex) ?: UsageBuckets.Bucket.ENTERTAINMENT
         // Sorted before it is cut off. The card claims the four biggest, and
         // "whatever order the device happened to return" is not the four biggest.
-        val recorded = state.entertainmentAppDetails
+        val rows = UsageBuckets
+            .rows(state.entertainmentAppDetails, state.unblockedAppDetails, bucket)
             .filter { it.second > 0L }
             .sortedByDescending { it.second }
-        if (recorded.isEmpty()) return null
 
-        val total = recorded.sumOf { it.second }
-        val shown = recorded.take(AliveSeries.MAX_SLICES)
-        val foldedCount = recorded.size - shown.size
+        if (rows.isEmpty()) {
+            body.addView(ui.body(getString(R.string.chart_bucket_empty)))
+            return
+        }
+
+        val total = rows.sumOf { it.second }
+        val shown = rows.take(AliveSeries.MAX_SLICES)
+        val foldedCount = rows.size - shown.size
         val foldedMinutes = total - shown.sumOf { it.second }
 
         val series = AliveSeries.donut.map { ContextCompat.getColor(this, it) }
         val aggregateColor = ContextCompat.getColor(this, AliveSeries.aggregate)
-        val card = ui.bentoCard(getString(R.string.chart_apps_heading))
 
         val slices = shown.mapIndexed { index, entry ->
             BrutalistDonut.Slice(
@@ -2581,9 +2646,9 @@ class MainActivity : AppCompatActivity() {
             minutesText = { minutes -> Durations.compact(this@MainActivity, minutes) }
             setData(slices, total)
         }
-        card.addView(donut)
+        body.addView(donut)
 
-        card.addView(ui.vgap(ui.dimens.groupGap))
+        body.addView(ui.vgap(ui.dimens.groupGap))
         slices.forEachIndexed { index, slice ->
             val row = ui.row().apply {
                 setPadding(0, ui.dimens.lineGap, 0, ui.dimens.lineGap)
@@ -2619,19 +2684,43 @@ class MainActivity : AppCompatActivity() {
             )
             row.addView(ui.hgap(ui.dimens.m))
             row.addView(ui.meta(Durations.of(this, slice.minutes)))
-            card.addView(row)
+            body.addView(row)
         }
 
-        unblockedNote()?.let {
-            card.addView(ui.vgap(ui.dimens.lineGap))
-            card.addView(it)
-        }
+        body.addView(ui.vgap(ui.dimens.lineGap))
+        body.addView(ui.note(getString(bucketNote(bucket))))
+    }
 
-        card.addView(ui.vgap(ui.dimens.lineGap))
-        // A fallback label is still printed as a label, so this says where the
-        // names come from instead of pretending every one of them resolved.
-        card.addView(ui.note(getString(R.string.chart_labels_note)))
-        return card
+    /**
+     * What each lens is, in one sentence.
+     *
+     * The buttons say "Bebas" and "Total" and nothing else - they are three tiles
+     * on a phone, and a tile that has to explain itself has already failed. The
+     * explanation lives here, under the picture it belongs to.
+     */
+    private fun bucketNote(bucket: UsageBuckets.Bucket): Int = when (bucket) {
+        UsageBuckets.Bucket.ENTERTAINMENT -> R.string.chart_bucket_entertainment
+        UsageBuckets.Bucket.UNBLOCKED -> R.string.chart_bucket_unblocked
+        UsageBuckets.Bucket.TOTAL -> R.string.chart_bucket_total
+    }
+
+    private fun bucketTabLabel(bucket: UsageBuckets.Bucket): Int = when (bucket) {
+        UsageBuckets.Bucket.ENTERTAINMENT -> R.string.chart_bucket_tab_entertainment
+        UsageBuckets.Bucket.UNBLOCKED -> R.string.chart_bucket_tab_unblocked
+        UsageBuckets.Bucket.TOTAL -> R.string.chart_bucket_tab_total
+    }
+
+    /**
+     * The colour a chosen lens wears, on the same rule as [rangeHue]: three
+     * buttons that all turn the same blue say "something is selected" and nothing
+     * else. The charged day wears the pale of the colour that runs out, the free
+     * one the blue the app means by work, and the day whole the soft forest a day
+     * that has settled wears - all three measured to hold ink.
+     */
+    private fun bucketHue(bucket: UsageBuckets.Bucket): Int = when (bucket) {
+        UsageBuckets.Bucket.ENTERTAINMENT -> ui.palette.shortPale
+        UsageBuckets.Bucket.UNBLOCKED -> ui.palette.workSoft
+        UsageBuckets.Bucket.TOTAL -> ui.palette.softForest
     }
 
     /**
@@ -3036,6 +3125,9 @@ class MainActivity : AppCompatActivity() {
 
 /** Kept clear of the focus form's 100/200 offsets, which are also view ids. */
 private const val CHART_RANGE_ID_BASE = 300
+
+/** The today card's three lenses. Same synthetic-id contract, its own offset. */
+private const val CHART_BUCKET_ID_BASE = 400
 
 /** The language row's two options. Same synthetic-id contract as the pickers. */
 private const val LANGUAGE_ID_BASE = 500

@@ -44,6 +44,19 @@ class AliveStatsWidgetProvider : AppWidgetProvider() {
 
         private const val ROWS = 3
 
+        /**
+         * The big number, and the word above it.
+         *
+         * The two travel together because they say one thing: the figure is the
+         * day's screen total now, and a day recorded before that total existed
+         * falls back to its entertainment minutes - with the label falling back
+         * to match. A number under the wrong word is the one mistake a glanceable
+         * card cannot afford.
+         */
+        internal fun figureFor(totalMinutes: Long, screenMinutes: Long?): Pair<Long, Int> =
+            if (screenMinutes == null) totalMinutes to R.string.widget_stats_eyebrow
+            else screenMinutes to R.string.widget_stats_eyebrow_screen
+
         /** Redraws every placed widget. Called after each app render. */
         fun refresh(context: Context) {
             val manager = AppWidgetManager.getInstance(context) ?: return
@@ -63,6 +76,13 @@ class AliveStatsWidgetProvider : AppWidgetProvider() {
             val totalMinutes = day?.totalMinutes ?: 0L
             val limitMinutes = day?.limitMinutes ?: 0L
 
+            // A day recorded before the screen total existed says nothing rather
+            // than zero, because zero would be a claim about time nobody counted.
+            // On such a day the figure falls back to the entertainment minutes and
+            // the label above it falls back with it - the picture and its caption
+            // never disagree about which number is being shown.
+            val screen = day?.screenMinutes
+
             // Where the eye lands first: everything below is only true if this
             // is. Tapping it goes to the panel the number came from.
             views.setOnClickPendingIntent(R.id.widget_root, openStats(context))
@@ -73,7 +93,13 @@ class AliveStatsWidgetProvider : AppWidgetProvider() {
                 .sortedByDescending { it.value }
                 .take(ROWS)
 
-            val figure = Durations.of(context, totalMinutes)
+            val (figureMinutes, figureLabel) = figureFor(totalMinutes, screen)
+            views.setTextViewText(R.id.widget_eyebrow, context.getString(figureLabel))
+
+            // The big figure is the whole day now, not only the part that costs
+            // something: the widget is glanced at, and the number someone wants
+            // from a glance is how long they have been on the phone.
+            val figure = Durations.of(context, figureMinutes)
             views.setImageViewBitmap(
                 R.id.widget_figure,
                 AliveWidgetArt.figure(
@@ -114,7 +140,6 @@ class AliveStatsWidgetProvider : AppWidgetProvider() {
             // says which one it is instead of showing an empty card.
             if (day == null) {
                 views.setTextViewText(R.id.widget_allowance, "")
-                views.setViewVisibility(R.id.widget_screen, View.GONE)
                 views.setViewVisibility(R.id.widget_meter, View.GONE)
                 views.setViewVisibility(R.id.widget_empty, View.VISIBLE)
                 rowIds.forEach { views.setViewVisibility(it, View.GONE) }
@@ -126,7 +151,10 @@ class AliveStatsWidgetProvider : AppWidgetProvider() {
 
             // The bar stops at a full allowance and no further, while this line
             // states the real share - which can be past a hundred, and that is
-            // worth seeing.
+            // worth seeing. It is the allowance's sentence, not the figure's: the
+            // big number above is the whole screen, and the two are labelled apart
+            // on purpose, because "4j58" over "126% of the allowance" would read
+            // as one wrong claim instead of two true ones.
             val allowance = if (limitMinutes > 0L) {
                 context.getString(
                     R.string.widget_stats_of_allowance,
@@ -137,25 +165,6 @@ class AliveStatsWidgetProvider : AppWidgetProvider() {
             }
             views.setTextViewText(R.id.widget_allowance, allowance)
             views.setContentDescription(R.id.widget_meter, allowance)
-
-            // The day whole, beside the day that costs something: on a card whose
-            // big figure is entertainment time, somebody who worked all afternoon
-            // sees a number far smaller than the hours they actually spent.
-            // A day recorded before this figure existed says nothing rather than
-            // zero, because zero would be a claim about time nobody counted.
-            val screen = day.screenMinutes
-            if (screen == null) {
-                views.setViewVisibility(R.id.widget_screen, View.GONE)
-            } else {
-                views.setViewVisibility(R.id.widget_screen, View.VISIBLE)
-                views.setTextViewText(
-                    R.id.widget_screen,
-                    context.getString(
-                        R.string.widget_stats_screen,
-                        Durations.compact(context, screen)
-                    )
-                )
-            }
 
             // The same slices, in the same colours, in the same order as the rows
             // under them, so the bar and the list are one statement rather than

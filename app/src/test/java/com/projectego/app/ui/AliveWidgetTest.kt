@@ -14,6 +14,7 @@ import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
 import androidx.test.core.app.ApplicationProvider
 import com.projectego.app.R
+import com.projectego.app.ui.widget.AliveStatsWidgetProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -91,6 +92,23 @@ class AliveWidgetTest {
                 solidColorOf(chip),
             )
         }
+    }
+
+    @Test
+    fun `the big figure and the word above it always agree`() {
+        // A day with a screen total: the number is the whole day, and it says so.
+        assertEquals(
+            254L to R.string.widget_stats_eyebrow_screen,
+            AliveStatsWidgetProvider.figureFor(totalMinutes = 145L, screenMinutes = 254L)
+        )
+
+        // A day recorded before that total existed has no screen figure to show.
+        // The number falls back to entertainment minutes, so the label must fall
+        // back with it - a total's word over a diet's number is a lie at a glance.
+        assertEquals(
+            145L to R.string.widget_stats_eyebrow,
+            AliveStatsWidgetProvider.figureFor(totalMinutes = 145L, screenMinutes = null)
+        )
     }
 
     private fun solidColorOf(chip: Int): Int =

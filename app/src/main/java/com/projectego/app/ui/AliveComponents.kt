@@ -876,8 +876,14 @@ class AliveComponents(private val context: Context) {
         return mark
     }
 
-    /** The device decides, not us: "remove animated transitions" stops all of this. */
-    private val animationsAllowed: Boolean
+    /**
+     * The device decides, not us: "remove animated transitions" stops all of this.
+     *
+     * Public because the critical warning pulses its field in an Activity of its
+     * own - the one surface with no AliveComponents to ask - and a second copy of
+     * one accessibility rule is a second copy that can drift.
+     */
+    val animationsAllowed: Boolean
         get() = Settings.Global.getFloat(
             context.contentResolver,
             Settings.Global.ANIMATOR_DURATION_SCALE,

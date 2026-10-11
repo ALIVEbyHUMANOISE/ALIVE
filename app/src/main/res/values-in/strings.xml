@@ -386,17 +386,29 @@
     <string name="chart_apps_folded">%1$d lainnya lebih kecil</string>
     <string name="chart_apps_none">Belum ada menit aplikasi untuk hari ini.</string>
     <string name="chart_apps_none_support">ALIVE mencatat hanya yang dilihatnya, jadi hari yang tidak terlihat apa pun tetap hari tanpa catatan.</string>
-    <string name="chart_apps_unblocked">%1$s di app yang ALIVE nggak blokir.</string>
-    <string name="chart_unblocked_eyebrow">Nggak motong jatah</string>
-    <string name="chart_screen_heading">Total layar</string>
-    <string name="chart_screen_of_which">%1$s di antaranya nggak motong apa-apa.</string>
-    <string name="chart_screen_all_charged">Semuanya motong jatah hari ini.</string>
+
+    <!-- ============ TIGA SUDUT PANDANG ============
+
+         Satu kartu, tiga tampilan dari hari yang sama. Tombolnya pendek karena
+         tiga kotak harus muat selebar HP; kalimat di bawah tiap cincin itulah
+         yang menyebut sudut pandangnya, jadi label pendek tidak pernah jadi
+         satu-satunya penanda. -->
+    <string name="chart_bucket_tab_entertainment">Hiburan</string>
+    <string name="chart_bucket_tab_unblocked">Bebas</string>
+    <string name="chart_bucket_tab_total">Total</string>
+    <string name="chart_bucket_entertainment">App yang ALIVE tutup kalau waktu hiburannya habis. Menit-menit inilah yang memotong jatah.</string>
+    <string name="chart_bucket_unblocked">Chat, kerja, dan app yang disetujui sesi fokus. ALIVE nggak pernah menutup ini, jadi jatahnya nggak pernah terpakai.</string>
+    <string name="chart_bucket_total">Semua yang ALIVE lihat hari ini, motong jatah atau nggak.</string>
+    <string name="chart_bucket_empty">Hari ini belum ada apa-apa di bagian ini.</string>
 
     <string name="widget_stats_label">Statistik</string>
-    <string name="widget_stats_description">Pemakaian hiburan hari ini dan ke mana perginya.</string>
+    <string name="widget_stats_description">Pemakaian layar hari ini dan ke mana perginya.</string>
     <string name="widget_stats_eyebrow">Hari ini</string>
+    <!-- Dipakai saat angka besarnya total layar, bukan menit hiburan: labelnya
+         ikut berganti supaya gambar dan keterangannya tidak pernah beda soal
+         angka mana yang sedang ditampilkan. -->
+    <string name="widget_stats_eyebrow_screen">Total layar</string>
     <string name="widget_stats_of_allowance">%1$d%% dari jatah</string>
-    <string name="widget_stats_screen">%1$s layar</string>
     <string name="widget_stats_no_allowance">Hari ini tanpa jatah</string>
     <string name="widget_stats_streak">%1$d hari beruntun</string>
     <string name="widget_stats_empty">Buka ALIVE sekali, ini terisi sendiri.</string>
@@ -406,20 +418,54 @@
     <string name="chart_partial">Hanya hari yang ALIVE lihat yang dihitung. Tidak ada yang ditebak.</string>
     <string name="chart_complete">Semua hari di rentang ini tercatat.</string>
 
-    <!-- ============ CATATAN WAKTU KRITIS ============ -->
+    <!-- ============ CATATAN WAKTU KRITIS ============
+
+         Dua fase, satu maksud. Lima detik pertama lapangan merah yang tidak bisa
+         ditepis; habis itu catatan tenang yang dari dulu ada di sini. Dua-duanya
+         tidak mengklaim apa pun soal isi app-nya, angkanya selalu sisa menit
+         sungguhan, dan hitungan detiknya ditulis - jadi tahanannya bukan jebakan.
+         Merahnya menyatakan fakta yang sama dengan teksnya. -->
     <string name="chart_alert_eyebrow">Waktu hari ini</string>
     <string name="alert_minutes_left">Tersisa %1$d menit hiburan hari ini.</string>
     <string name="alert_support">Tidak ada yang akan ditutup. Ini hanya posisi angkanya.</string>
+    <string name="alert_warning_eyebrow">Peringatan</string>
+    <string name="alert_warning_body">Jatah hiburanmu hampir habis.</string>
+    <string name="alert_warning_countdown">detik lagi</string>
 
-    <!-- ============ CELAH PENJAGA ============ -->
-    <string name="guard_off_heading">ALIVE tidak sedang melihat</string>
-    <string name="guard_off_body">Layanan yang menutup aplikasi sedang mati, jadi tidak ada yang ditutup sekarang.</string>
-    <string name="guard_repair_needed">Nyalakan lagi dan selesaikan satu misi. Sampai saat itu, hari ini bukan hari yang terjaga.</string>
-    <string name="guard_back_heading">Penjaga sudah aktif lagi</string>
-    <string name="guard_back_body">Tidak ada yang terlewat lagi. Hari ini tetap tercatat tanpa penjaga, karena bagian itu memang terjadi.</string>
-    <string name="guard_repair_done">Tandanya tetap ada di hari ini. Runtunanmu aman.</string>
-    <string name="guard_who_turned_it_off">ALIVE tidak bisa tahu kamu yang mematikannya atau ponsel yang melakukannya demi baterai.</string>
-    <string name="guard_enable_action">Nyalakan lagi penjaganya</string>
+    <!-- ============ GUARDIAN ============
+
+         Guardian itu nama dan wajah dari state penjaga - bukan aturan kedua.
+         Layanan yang menutup aplikasi bisa dimatikan dan Android nggak
+         mengizinkan app mencegahnya, jadi harganya dibayar di dalam ALIVE:
+         harinya ditandai, tandanya kelihatan sampai ada misi yang membayarnya,
+         dan salinannya nggak pernah mengaku tahu siapa yang mematikannya - dan
+         nggak pernah mengaku Guardian bisa mencegahnya. -->
+    <string name="guardian_name">Guardian</string>
+    <string name="guardian_active_heading">Penjagaan nyala</string>
+    <string name="guardian_active_body">Aksesibilitasnya nyala, jadi app hiburan ditutup saat waktunya habis.</string>
+    <string name="guardian_degraded_heading">Guardian kehilangan pijakan</string>
+    <string name="guardian_degraded_body">Aksesibilitas ALIVE dimatikan, jadi belum ada yang ditutup. Hari ini juga belum ditandai - nyalakan lagi supaya tetap begitu.</string>
+    <string name="guardian_recovery_heading">Hari ini butuh dipulihkan</string>
+    <string name="guardian_recovery_body">Penjaganya mati dan jatah hiburannya sudah kelewat. Nyalakan lagi, lalu selesaikan satu misi: tandanya hilang dan runtunanmu aman.</string>
+    <string name="guardian_restored_heading">Penjagaan sudah pulih</string>
+    <string name="guardian_restored_body">Tidak ada yang terlewat lagi. Hari ini tetap tercatat pernah punya bagian tanpa penjaga, karena bagian itu memang terjadi.</string>
+    <string name="guardian_note_off">ALIVE tidak bisa tahu kamu yang mematikannya atau ponsel yang melakukannya demi baterai. Selama mati, tidak ada yang menjaga jatahmu.</string>
+    <string name="guardian_note_whole">Tandanya tetap ada di hari ini, dan runtunanmu aman.</string>
+    <string name="guardian_action_restore">Pulihkan penjagaan</string>
+    <string name="guardian_why">Kenapa aku lihat ini?</string>
     <string name="guard_profile_line">Hari ini punya bagian tanpa penjaga.</string>
     <string name="permissions_accessibility_why">Aksesibilitas adalah cara ALIVE menutup aplikasi saat waktunya habis. Tanpanya tidak ada yang tertutup, dan hari itu ditandai tanpa penjaga.</string>
+
+    <!-- Deskripsi suara: karakternya nggak pernah jadi satu-satunya pembawa state. -->
+    <string name="cd_guardian_idle">Guardian sedang berjaga. Penjagaan nyala.</string>
+    <string name="cd_guardian_alert">Guardian waspada. Penjagaan mati, dan belum ada yang ditandai.</string>
+    <string name="cd_guardian_recovery">Guardian menawarkan jalan kembali. Hari ini ditandai.</string>
+    <string name="cd_guardian_restored">Guardian kembali berjaga. Penjagaan sudah pulih.</string>
+
+    <!-- Satu-satunya notifikasi, dan yang dijanjikannya: bukan "ini tidak bisa
+         kamu hapus" - Android 13 menyerahkan itu ke pengguna - tapi "dia datang
+         lagi selama penjaganya mati, dan berhenti begitu penjaganya nyala". -->
+    <string name="guardian_channel_name">Guardian</string>
+    <string name="guardian_channel_description">Bilang penjagaan mati, sampai nyala lagi.</string>
+    <string name="permissions_notifications_why">ALIVE juga minta izin notifikasi. Kerjanya cuma satu: terus bilang penjaganya mati saat app-nya ditutup, lalu berhenti begitu dinyalakan.</string>
 </resources>

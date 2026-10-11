@@ -38,7 +38,8 @@ class CriticalAlertPolicyTest {
         dayType = dayType,
         currentStreak = 0,
         timeBank = TimeBank(earnedMinutes = 0L, spentMinutes = 0L),
-        entertainmentAppDetails = emptyList()
+        entertainmentAppDetails = emptyList(),
+        unblockedAppDetails = emptyList()
     )
 
     private fun shows(report: UsageReport, focusActive: Boolean = false) =

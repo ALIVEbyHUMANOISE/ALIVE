@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ALIVE Guardian, pose: idle. Guardian, standing watch.
+     Drawn on the same 16x16 grid as the critter and the pixel marks; regenerate
+     with guardian/generate.mjs rather than editing the paths by hand. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="@color/alive_ink"
+        android:pathData="M5,2h1v1h-1zM10,2h1v1h-1zM5,3h6v1h-6zM4,4h8v1h-8zM5,5h1v1h-1zM7,5h2v1h-2zM10,5h1v1h-1zM5,6h1v1h-1zM10,6h1v1h-1zM7,7h2v1h-2zM3,8h10v1h-10zM3,9h3v1h-3zM10,9h3v1h-3zM4,10h8v1h-8zM4,11h8v1h-8zM4,12h2v1h-2zM10,12h2v1h-2zM4,13h2v1h-2zM10,13h2v1h-2z" />
+    <path
+        android:fillColor="@color/alive_amber_action"
+        android:pathData="M6,5h1v1h-1zM9,5h1v1h-1z" />
+    <path
+        android:fillColor="@color/alive_red_short_dark"
+        android:pathData="M6,6h4v1h-4z" />
+    <path
+        android:fillColor="@color/alive_red_short_mid"
+        android:pathData="M2,8h1v1h-1zM13,8h1v1h-1z" />
+    <path
+        android:fillColor="@color/alive_warm_gray"
+        android:pathData="M6,9h4v1h-4zM3,14h3v1h-3zM10,14h3v1h-3z" />
+</vector>

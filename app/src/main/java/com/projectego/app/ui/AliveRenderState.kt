@@ -67,6 +67,13 @@ class AliveRenderState {
     var entertainmentAppDetails: List<Pair<String, Long>> = emptyList()
 
     /**
+     * Today's per-app minutes for the apps the allowance is never spent on, and
+     * the same shape as the list above - which is what lets one card show three
+     * views of one day by swapping which list it draws.
+     */
+    var unblockedAppDetails: List<Pair<String, Long>> = emptyList()
+
+    /**
      * Time today in apps ALIVE never blocks, in minutes. Reported to the person
      * and charged to nobody: the allowance is entertainment time, and a chat is
      * not entertainment just because it happened on a screen.
@@ -82,6 +89,13 @@ class AliveRenderState {
 
     /** Which stretch of days the chart is showing. */
     var chartRangeIndex: Int = 0
+
+    /**
+     * Which lens the today card draws: the allowance, the apps the allowance
+     * never touched, or the whole day. An index rather than three booleans, and
+     * it stays put while the panel is re-rendered - same as the range.
+     */
+    var chartBucketIndex: Int = 0
 
     /**
      * Today's counted usage, hour by hour - a fresh read taken when the chart is

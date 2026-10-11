@@ -177,6 +177,21 @@ class EgoAccessibilityService : AccessibilityService() {
         startActivity(lockIntent)
     }
 
+    /**
+     * The guard just went away - switched off by the user, or unbound by the
+     * system; from inside here the two are the same event.
+     *
+     * Nothing can be enforced while this service is off, so the only thing left
+     * to do is to say so and keep saying it. The decision is not made here: the
+     * secure setting may not have settled this instant, and a nag that fires on a
+     * service that was only re-bound would be a false alarm. [AccessibilityWatch]
+     * looks again in a moment, and the repeating alarm takes it from there.
+     */
+    override fun onUnbind(intent: Intent?): Boolean {
+        AccessibilityWatch.verifySoon(this)
+        return super.onUnbind(intent)
+    }
+
     override fun onInterrupt() {
         // Required callback
     }
