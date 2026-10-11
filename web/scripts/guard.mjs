@@ -66,6 +66,7 @@ const unmapped = [...tokens.matchAll(/--alive-(cat_\w+)/g)]
 /** The files a crawler reads before it reads a single word of the page. */
 const seoFiles = ['robots.txt', 'sitemap.xml', 'index.html']
 const absent = seoFiles.filter((file) => !existsSync(join(web, 'out', file)))
+
 /**
  * The same host normalisation lib/site.ts applies, so the address this script
  * expects is the address the build was allowed to write. GitHub passes the
@@ -82,6 +83,16 @@ const advertised = process.env.NEXT_PUBLIC_SITE_URL ? normalize(process.env.NEXT
 const apk = process.env.NEXT_PUBLIC_APK_URL?.replace(/\/+$/, '')
 
 const seo = []
+/**
+ * GitHub Pages drops every path that starts with an underscore unless the export
+ * carries a `.nojekyll` marker - which for this site means the whole `/_next/`
+ * folder: the stylesheet, the scripts, the fonts. The page still returns 200 and
+ * the sitemap still reads perfectly; it is simply unstyled and inert. Every other
+ * check here passes that failure, so it needs its own.
+ */
+if (!existsSync(join(web, 'out/.nojekyll'))) {
+  seo.push('out/: .nojekyll is missing, so Pages will 404 every /_next/ asset')
+}
 if (absent.length) {
   seo.push(`out/: ${absent.join(', ')} was never emitted — nobody can be told where the site is`)
 }
