@@ -129,25 +129,25 @@ const id = {
   guardian: {
     badge: '07 — penjaga',
     title: ['JANGAN BIARKAN', 'GUARDIAN KELUAR'],
-    lead: 'Dia berdiri di depan pintu cuma selama kamu biarkan.',
+    lead: 'Selama kamu jaga janjimu sendiri, kamu nggak akan pernah lihat dia.',
     body:
-      'Selama aksesibilitasnya nyala, Guardian yang menutup app hiburan begitu jatahnya habis. Matikan, dan dia nggak bisa masuk — tapi dia juga nggak pergi. ALIVE tetap bilang, dari tiga tempat.',
+      'Orang-orang yang memakai ALIVE punya satu cerita yang sama. Kalau harimu lepas dari batas yang kamu tetapkan sendiri, ada yang datang. Nggak marah, nggak menghukum — dia cuma berdiri di situ sampai kamu kembali.',
     places: [
       {
-        name: 'Notifikasi',
-        body: 'Muncul begitu penjaganya mati. Digeser hilang, dia balik lagi.'
+        name: 'Tanda pertama',
+        body: 'Sebuah notifikasi yang datang dan nggak mau pergi.'
       },
       {
-        name: 'Kartu di Home',
-        body: 'Nunjukin harimu sudah ditandai atau belum, plus satu tombol buat memulihkan.'
+        name: 'Tanda kedua',
+        body: 'Satu kartu di halaman utama, dengan satu tombol untuk kembali ke jalur.'
       },
       {
-        name: 'Popup di atas app',
-        body: 'Muncul sebentar di atas app hiburan yang baru kamu buka, selama penjaganya masih mati.'
+        name: 'Tanda ketiga',
+        body: 'Sosok yang berdiri sebentar di tengah layar, di atas apa pun yang sedang kamu buka.'
       }
     ],
     honest:
-      'Ini pengingat, bukan kunci: popup-nya bisa ditutup dan Android tetap memberi jalan keluar. Guardian cuma bikin jalan keluarnya kelihatan.',
+      'Tidak ada yang tahu persis kapan dia datang. Yang pasti: dia datang kalau kamu melanggar janjimu sendiri.',
     alt: 'Guardian pixel: topeng gelap bertanduk dengan mata amber dan mulut bergigi'
   },
 
@@ -329,25 +329,25 @@ const en: typeof id = {
   guardian: {
     badge: '07 — the guardian',
     title: ['DON’T LET THE', 'GUARDIAN OUT'],
-    lead: 'It stands in the doorway only for as long as you let it.',
+    lead: 'As long as you keep your own promise, you will never see it.',
     body:
-      'While accessibility is on, the Guardian is what closes an entertainment app when its time is up. Switch it off and it cannot get in — but it does not leave either. ALIVE keeps saying so, from three places.',
+      'Everyone who uses ALIVE tells the same story. When your day slips past the limit you set for yourself, something arrives. Not angry, not punishing — it simply stands there until you come back.',
     places: [
       {
-        name: 'The notification',
-        body: 'It appears the moment the guard goes off. Swipe it away and it comes back.'
+        name: 'The first sign',
+        body: 'A notification that arrives and will not leave.'
       },
       {
-        name: 'The card on Home',
-        body: 'It says whether today is marked yet, and carries the one button that restores protection.'
+        name: 'The second sign',
+        body: 'A card on the home screen, with one button to get back on the line.'
       },
       {
-        name: 'The popup over the app',
-        body: 'It opens over an entertainment app for a moment, the moment you open one, while the guard is off.'
+        name: 'The third sign',
+        body: 'A figure that stands in the middle of the screen for a moment, over whatever you have open.'
       }
     ],
     honest:
-      'This is a reminder, not a lock: the popup can be dismissed and Android keeps an exit. The Guardian only makes that exit visible.',
+      'Nobody knows exactly when it comes. What is certain: it comes when you break your own promise.',
     alt: 'Pixel Guardian: a dark horned mask with amber eyes and a mouth full of teeth'
   },
 

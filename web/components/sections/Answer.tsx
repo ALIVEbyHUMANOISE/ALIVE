@@ -133,14 +133,17 @@ export function SectionChoice() {
 }
 
 /**
- * 07 - the character that does the closing, and what it does when it is
- * switched off.
+ * 07 - the Guardian, told the way ALIVE tells it: as a legend.
  *
- * The one section where the argument is a face rather than a number, so the
- * poster gets the width and the words sit beside it. It is also the honest
- * counterweight to the section above: the app cannot stop anyone turning the
- * guard off, so it says what the Guardian becomes instead - and the note at the
- * bottom refuses to call a dismissible popup a lock.
+ * The page says what happens when it appears and nothing about what makes it
+ * appear. That is deliberate and it is not an omission: the mechanism is an
+ * internal detail, and publishing it would hand out a map of where the
+ * protection can be switched off - which is a thing the app cannot prevent and
+ * has no reason to advertise. What a reader needs is the rule and the
+ * consequence, and those are the two things this section states plainly.
+ *
+ * It is still honest about the character: no lock, no punishment, no power it
+ * does not have - only a figure that arrives and stands there until you go back.
  */
 export function SectionGuardian() {
   const copy = useCopy()
