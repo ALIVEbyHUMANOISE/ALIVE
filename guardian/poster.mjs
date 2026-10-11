@@ -1,16 +1,17 @@
 /**
- * The Guardian, at the size of a poster.
+ * The Guardian, at the size of a poster - and at the size of a myth.
  *
- * The sprite that stands on the Home card is 16x16 and says "here, watching".
- * This is the same character at 48x48, drawn for the one section of the site
- * where the argument is not "here is a number" but "this is what is standing
- * between you and the thing you are avoiding". Same palette as the sprite - the
- * app's own tokens, no new colour - with the metal dropped and the crimson
- * pushed, because a poster has room for fear that a 16px face does not.
+ * Two things make this different from the sprite that stands on the Home card:
+ * the figure is cropped close (a face filling the frame is a face you cannot
+ * look away from), and every edge of it is rimmed in deep crimson, so the
+ * silhouette reads even on the ink ground the site mounts it on. The sprite
+ * disappears into that ground; this one burns out of it.
+ *
+ * Drawn on a 48x48 grid from the same five tokens as everything else, with a
+ * transparent ground - no sixth colour, and no gradient anywhere, because the
+ * whole language the app speaks is flat shapes with hard edges.
  *
  *   node guardian/poster.mjs
- *
- * Writes the PNG the site serves, plus a copy beside this file for review.
  */
 import { writeFileSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
@@ -22,11 +23,10 @@ const site = join(here, '../web/public/images/guardian.png');
 
 const PALETTE = {
   '#': '#1D1D1B', // charcoal body
-  D: '#9E2F22', // deep crimson
-  C: '#D9553F', // lit crimson
+  D: '#9E2F22', // deep crimson: the rim, the sockets, the shadow
+  C: '#D9553F', // lit crimson: cracks and the inner lip
   A: '#F7C948', // amber: the eyes, and only the eyes
-  P: '#F5F1E8', // paper: teeth and the light behind them
-  M: '#D8D2C7', // metal
+  P: '#F5F1E8', // paper: teeth
 };
 
 const W = 48;
@@ -36,9 +36,6 @@ const grid = Array.from({ length: H }, () => Array(W).fill('.'));
 const set = (x, y, colour) => {
   if (x >= 0 && x < W && y >= 0 && y < H) grid[y][x] = colour;
 };
-
-/** The same shape on both sides of the centre line: a guardian is symmetrical. */
-const both = (x) => [x, W - 1 - x];
 
 const rect = (x0, y0, x1, y1, colour) => {
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) set(x, y, colour);
@@ -53,69 +50,88 @@ const poly = (points, colour) => {
       const [x1, y1] = points[i];
       const [x2, y2] = points[(i + 1) % points.length];
       if (y1 === y2) continue;
-      if ((y >= Math.min(y1, y2)) && (y < Math.max(y1, y2))) {
+      if (y >= Math.min(y1, y2) && y < Math.max(y1, y2)) {
         crossings.push(x1 + ((y - y1) * (x2 - x1)) / (y2 - y1));
       }
     }
     crossings.sort((a, b) => a - b);
     for (let i = 0; i + 1 < crossings.length; i += 2) {
-      for (let x = Math.round(crossings[i]); x <= Math.round(crossings[i + 1]); x++) {
-        set(x, y, colour);
-      }
+      for (let x = Math.round(crossings[i]); x <= Math.round(crossings[i + 1]); x++) set(x, y, colour);
     }
   }
 };
 
-/** A shape and its mirror image, described once. */
+/** Every shape here is drawn once and mirrored: a guardian is symmetrical. */
 const polyBoth = (points, colour) => {
   poly(points, colour);
   poly(points.map(([x, y]) => [W - 1 - x, y]), colour);
 };
 
 // ---------- HORNS ----------
-// Crooked, thick at the base, tapering past the frame: the silhouette does the
-// scaring before any detail is read.
-polyBoth([[12, 15], [9, 5], [6, 1], [11, 1], [15, 6], [17, 15]], '#');
-polyBoth([[9, 9], [7, 3], [8, 2], [12, 8], [13, 14], [10, 14]], 'D');
+// Three prongs a side, sweeping past the frame. The first draft was two smooth
+// horns and read as a costume; jagged reads as a thing. The charcoal carries the
+// mass and the crimson is a line inside it, because a horn that is mostly red
+// stops being a horn.
+polyBoth([[13, 18], [11, 8], [5, 0], [9, 0], [13, 6], [16, 12]], '#');
+polyBoth([[15, 14], [17, 4], [14, 0], [19, 0], [21, 9], [19, 15]], '#');
+polyBoth([[19, 12], [24, 2], [23, 0], [28, 0], [26, 11], [23, 14]], '#');
+polyBoth([[14, 16], [13, 9], [15, 8], [17, 13], [17, 17], [15, 17]], 'D');
 
 // ---------- HEAD ----------
-// A broad skull: flat top, tapering jaw, corners cut so it reads as a mask.
-polyBoth([[15, 12], [32, 12], [35, 15], [35, 27], [31, 36], [16, 36], [12, 27], [12, 15]], '#');
-// One thin brow. It was three rows thick once and the face read as a stack of
-// bands rather than as a face.
-rect(13, 17, 34, 18, 'D');
+// Filling the frame: twelve cells of forehead above the brow, a jaw that
+// narrows to nothing, corners cut so it reads as a mask rather than a ball.
+polyBoth([[11, 17], [17, 14], [31, 14], [37, 17], [37, 32], [33, 41], [15, 41], [11, 32]], '#');
+
+// ---------- BROW AND SOCKETS ----------
+// A thin line above each eye instead of one band across the face. The band made
+// a wide red bar with eyes underneath it; the line makes a black face with two
+// things burning in it, which is the whole trick.
+polyBoth([[13, 22], [22, 23], [22, 24], [13, 23]], 'D');
+polyBoth([[12, 20], [14, 18], [16, 22], [13, 24]], 'D');
 
 // ---------- EYES ----------
-// Two narrow slits with four cells of skull between them. Crooked, and the
-// brightest thing in the picture by a wide margin - which is the whole reason
-// the amber is reserved for eyes everywhere else in the app.
-polyBoth([[14, 20], [21, 21], [21, 23], [15, 23]], 'A');
-polyBoth([[15, 23], [21, 23], [21, 24], [15, 24]], 'C');
-polyBoth([[13, 19], [16, 19], [16, 20], [13, 20]], 'C');
+// Long, narrow, and tapering at the inner end: they meet nothing in the middle,
+// so the stare is aimed rather than blank.
+polyBoth([[14, 25], [22, 25], [22, 27], [14, 27]], 'A');
+polyBoth([[13, 24], [15, 24], [15, 26], [13, 26]], 'C');
 
 // ---------- MAW ----------
-// Pointed teeth hanging into a dark mouth. Rectangle teeth merged into one pale
-// block at this size, and the pale block then out-shouted the eyes - the one
-// thing in the picture that is allowed to be the brightest.
-rect(15, 26, 32, 26, 'C');
-rect(15, 27, 32, 33, 'D');
-[16, 20, 24, 28].forEach((x) => poly([[x, 27], [x + 3, 27], [x + 1, 32]], 'P'));
-// The lower lip, so the mouth ends on a line instead of fading into the chin.
-rect(15, 34, 32, 35, '#');
-polyBoth([[15, 34], [16, 34], [16, 35], [15, 35]], 'C');
+// A black cavity with fangs hanging into it and one tusk at each corner. The
+// interior stays ink: a mouth lit up in red is a carved pumpkin, a mouth you
+// cannot see into is worse.
+rect(12, 33, 35, 40, '#');
+rect(12, 33, 35, 33, 'D');
+[17, 21, 25, 29].forEach((x) => poly([[x, 34], [x + 2, 34], [x + 1, 37]], 'P'));
+polyBoth([[13, 34], [16, 34], [15, 40]], 'P');
 
 // ---------- CHEST AND CLAWS ----------
-// The bottom of the frame is his: shoulders that run off both edges, claws
-// hooked over the paper.
-polyBoth([[6, 48], [10, 37], [15, 35], [33, 35], [38, 37], [42, 48]], '#');
-polyBoth([[9, 41], [14, 41], [14, 43], [9, 43]], 'D');
-polyBoth([[7, 48], [9, 43], [11, 46], [13, 43], [14, 48]], 'M');
-polyBoth([[8, 48], [9, 45], [10, 48]], 'C');
+// Shoulders that run off both edges, claws hooked over the bottom of the frame.
+polyBoth([[2, 48], [7, 42], [13, 41], [35, 41], [41, 42], [46, 48]], '#');
+polyBoth([[6, 46], [12, 46], [12, 48], [6, 48]], 'D');
+polyBoth([[3, 48], [6, 45], [8, 48]], 'C');
+
+// ---------- SCARS ----------
+// One thin line down each cheek: something the Guardian has already survived.
+polyBoth([[12, 30], [13, 30], [13, 33], [12, 33]], 'C');
 
 // ---------- RIM ----------
-// One line of light along the top of each shoulder: the only thing that says
-// the body has a shape rather than being a hole in the page.
-polyBoth([[11, 37], [15, 36], [15, 38], [12, 39]], 'C');
+// One cell of deep crimson around the whole silhouette. On the site's ink
+// ground this is the difference between a shape and a hole in the page.
+const filled = (x, y) => x >= 0 && x < W && y >= 0 && y < H && grid[y][x] !== '.';
+const silhouette = [];
+for (let y = 0; y < H; y++) {
+  for (let x = 0; x < W; x++) if (filled(x, y)) silhouette.push([x, y]);
+}
+silhouette.forEach(([x, y]) => {
+  [
+    [x + 1, y],
+    [x - 1, y],
+    [x, y + 1],
+    [x, y - 1],
+  ].forEach(([nx, ny]) => {
+    if (!filled(nx, ny) && nx >= 0 && nx < W && ny >= 0 && ny < H) set(nx, ny, 'D');
+  });
+});
 
 // ---------- PNG ----------
 const CELL = 16;
@@ -142,7 +158,8 @@ const chunk = (type, body) => {
   return Buffer.concat([len, head, tail]);
 };
 
-const png = () => {
+/** Truecolour, opaque: the figure is a lit plate, and the plate is its own ground. */
+const png = (ground) => {
   const stride = W * CELL * 3;
   const raw = Buffer.alloc((stride + 1) * H * CELL);
   const cache = new Map();
@@ -151,17 +168,16 @@ const png = () => {
     const gy = Math.floor(y / CELL);
     for (let x = 0; x < W * CELL; x++) {
       const symbol = grid[gy][Math.floor(x / CELL)];
-      const hex = PALETTE[symbol] ?? PALETTE['.'];
-      const ground = symbol === '.' ? '#F5F1E8' : hex;
-      let rgbValues = cache.get(ground);
-      if (!rgbValues) {
-        rgbValues = rgb(ground);
-        cache.set(ground, rgbValues);
+      const hex = symbol === '.' ? ground : PALETTE[symbol];
+      let values = cache.get(hex);
+      if (!values) {
+        values = rgb(hex);
+        cache.set(hex, values);
       }
       const o = y * (stride + 1) + 1 + x * 3;
-      raw[o] = rgbValues[0];
-      raw[o + 1] = rgbValues[1];
-      raw[o + 2] = rgbValues[2];
+      raw[o] = values[0];
+      raw[o + 1] = values[1];
+      raw[o + 2] = values[2];
     }
   }
 
@@ -169,7 +185,7 @@ const png = () => {
   ihdr.writeUInt32BE(W * CELL, 0);
   ihdr.writeUInt32BE(H * CELL, 4);
   ihdr[8] = 8;
-  ihdr[9] = 2;
+  ihdr[9] = 2; // truecolour
 
   return Buffer.concat([
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
@@ -179,7 +195,8 @@ const png = () => {
   ]);
 };
 
-const bytes = png();
-writeFileSync(site, bytes);
-writeFileSync(join(here, 'poster.png'), bytes);
-console.log(`wrote ${site} and guardian/poster.png (${W * CELL}x${H * CELL})`);
+writeFileSync(site, png('#F5F1E8'));
+// A review copy on the ink ground, so the plate can be judged on the wall it
+// hangs on rather than on white.
+writeFileSync(join(here, 'poster.png'), png('#1D1D1B'));
+console.log(`wrote ${site} and guardian/poster.png (on ink)`);

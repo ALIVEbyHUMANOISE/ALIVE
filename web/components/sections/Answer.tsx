@@ -6,7 +6,7 @@ import PixelSprite from '@/components/PixelSprite'
 import Reveal from '@/components/Reveal'
 import { Accents, HueTile, Pips, RewardChip, Swatch, TabCard, TimeBar } from '@/components/ui'
 import { useCopy } from '@/components/LangProvider'
-import { badgeFace, categories, fills } from '@/lib/hues'
+import { categories, fills } from '@/lib/hues'
 
 /** 04 - the number is not advice; the privacy promise is the reason to trust it. */
 export function SectionRealization() {
@@ -133,45 +133,61 @@ export function SectionChoice() {
 }
 
 /**
- * 07 - the Guardian, told the way ALIVE tells it: as a legend.
+ * 07 - the Guardian, told the way ALIVE tells it: as a legend, and in the dark.
  *
  * The page says what happens when it appears and nothing about what makes it
  * appear. That is deliberate and it is not an omission: the mechanism is an
  * internal detail, and publishing it would hand out a map of where the
  * protection can be switched off - which is a thing the app cannot prevent and
- * has no reason to advertise. What a reader needs is the rule and the
- * consequence, and those are the two things this section states plainly.
+ * has no reason to advertise.
  *
- * It is still honest about the character: no lock, no punishment, no power it
- * does not have - only a figure that arrives and stands there until you go back.
+ * It is the one beat on the site that turns the lights off. Every other section
+ * stands on the cream ground the app is made of; this one is ink, with the
+ * poster as a lit plate on it, a horizon of teeth along the bottom, and a few
+ * pairs of eyes in the dark that belong to the story rather than to the product.
  */
 export function SectionGuardian() {
   const copy = useCopy()
 
   return (
-    <section id="guardian" className="border-t-[3px] border-ink px-5 py-16 md:px-12 md:py-24">
-      <div className="mx-auto w-full max-w-5xl">
+    <section
+      id="guardian"
+      className="relative isolate overflow-hidden border-t-[3px] border-ink bg-ink px-5 py-20 text-paper md:px-12 md:py-28"
+    >
+      {/* Something is out there, and it is not illustrative: the eyes are the
+          Guardian's own motif, at the size they would be if you were far away. */}
+      <Watcher className="left-[7%] top-[14%] opacity-40" />
+      <Watcher className="right-[9%] top-[38%] opacity-25" />
+      <Watcher className="left-[14%] bottom-[26%] opacity-30" />
+
+      {/* The horizon: a flat sawtooth of teeth, no gradient and no glow, which
+          is the only way this app has ever drawn anything. */}
+      <FangHorizon className="absolute inset-x-0 bottom-0 -z-10 h-16 text-red-dark md:h-24" />
+
+      <div className="relative mx-auto w-full max-w-5xl">
         <Reveal className="flex items-center gap-3">
           {/* The app's own sprite, so the poster below is unmistakably the same
               character and not an illustration that happens to share a palette. */}
           <PixelSprite name="guardian_alert" size={32} />
-          <span className={`badge ${badgeFace('red')}`}>{copy.guardian.badge}</span>
+          <span className="badge border-paper/30 bg-red-dark text-paper">
+            {copy.guardian.badge}
+          </span>
         </Reveal>
 
-        <div className="mt-10 grid items-center gap-8 md:grid-cols-12">
+        <div className="mt-12 grid items-center gap-10 md:grid-cols-12">
           <Reveal delay={60} className="md:col-span-6">
             <Image
               src="/images/guardian.png"
               alt={copy.guardian.alt}
               width={768}
               height={768}
-              className="mx-auto h-auto w-full max-w-[420px] rounded-card border-[3px] border-ink shadow-raise"
+              className="mx-auto h-auto w-full max-w-[440px] rounded-card border-[3px] border-red-dark shadow-[10px_10px_0_0_var(--alive-red_short_dark)]"
             />
           </Reveal>
 
           <div className="md:col-span-6">
             <Reveal delay={120}>
-              <h2 className="font-display text-pixel-sm">
+              <h2 className="font-display text-pixel-sm text-paper">
                 {copy.guardian.title.map((line) => (
                   <span key={line} className="block">
                     {line}
@@ -181,17 +197,21 @@ export function SectionGuardian() {
             </Reveal>
 
             <Reveal delay={160}>
-              <p className="mt-5 font-head text-xl leading-snug">{copy.guardian.lead}</p>
+              <p className="mt-5 font-head text-xl leading-snug text-paper">
+                {copy.guardian.lead}
+              </p>
             </Reveal>
 
             <Reveal delay={200}>
-              <p className="mt-4 leading-relaxed text-ink-secondary">{copy.guardian.body}</p>
+              <p className="mt-4 leading-relaxed text-paper/75">{copy.guardian.body}</p>
             </Reveal>
 
             <div className="mt-6 space-y-3">
               {copy.guardian.places.map((place, index) => (
                 <Reveal key={place.name} delay={240 + index * 80}>
-                  <article className="card-sm p-4">
+                  {/* `text-ink` is not decoration: without it these cards inherit
+                      the section's paper type and print near-white on white. */}
+                  <article className="card-sm p-4 text-ink">
                     <div className="flex items-center gap-3">
                       {/* One colour for all three: they are not three ideas, they
                           are the same promise arriving three ways. */}
@@ -205,12 +225,46 @@ export function SectionGuardian() {
             </div>
 
             <Reveal delay={500}>
-              <p className="mt-6 text-sm leading-relaxed text-ink-muted">{copy.guardian.honest}</p>
+              <p className="mt-6 text-sm leading-relaxed text-paper/60">{copy.guardian.honest}</p>
             </Reveal>
           </div>
         </div>
       </div>
     </section>
+  )
+}
+
+/** Two pixels of amber in the dark. Decoration for the story, not for the app. */
+function Watcher({ className }: { className: string }) {
+  return (
+    <span aria-hidden className={`pointer-events-none absolute flex gap-4 ${className}`}>
+      <span className="block h-2.5 w-2.5 bg-amber" />
+      <span className="block h-2.5 w-2.5 bg-amber" />
+    </span>
+  )
+}
+
+/**
+ * A row of teeth along the bottom of the section.
+ *
+ * Generated rather than drawn: one path of alternating peaks, stretched to
+ * whatever width the window is, in the flat crimson the app uses for time that
+ * is running out. A gradient here would look like every other dark website.
+ */
+function FangHorizon({ className }: { className: string }) {
+  const teeth = Array.from({ length: 30 }, (_, index) => index * 40)
+  const path = `M0,80 ${teeth.map((x) => `L${x + 20},18 L${x + 40},80`).join(' ')}`
+
+  return (
+    <svg
+      aria-hidden
+      className={className}
+      viewBox="0 0 1200 80"
+      preserveAspectRatio="none"
+      fill="currentColor"
+    >
+      <path d={path} />
+    </svg>
   )
 }
 
