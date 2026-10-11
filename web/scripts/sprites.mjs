@@ -42,6 +42,7 @@ const SPRITES = {
   target: 'ic_pixel_target',
   briefcase: 'ic_pixel_briefcase',
   book: 'ic_pixel_book',
+  books: 'ic_pixel_books',
   lotus: 'ic_pixel_lotus',
   people: 'ic_pixel_people',
   dumbbell: 'ic_pixel_dumbbell',

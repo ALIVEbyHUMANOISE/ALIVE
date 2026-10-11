@@ -1,6 +1,6 @@
 import PixelSprite from './PixelSprite'
 import Reveal from './Reveal'
-import { face as toneFace, type Tone } from '@/lib/tones'
+import { badgeFace, type Tone } from '@/lib/hues'
 import type { SpriteName } from '@/lib/sprites'
 
 /**
@@ -39,7 +39,7 @@ export default function Panel({
     <section id={id} className="border-t-[3px] border-ink px-5 py-16 md:px-12 md:py-24">
       <div className="mx-auto w-full max-w-5xl">
         <Reveal>
-          <span className={`badge ${toneFace(tone)}`}>{badge}</span>
+          <span className={`badge ${badgeFace(tone)}`}>{badge}</span>
         </Reveal>
 
         <div className="mt-6 flex items-start justify-between gap-6">
@@ -61,13 +61,15 @@ export default function Panel({
             )}
           </div>
 
+          {/* The character is on every screen of the app, so he is on every beat
+              here too - including the wide ones, where there is most room for him. */}
           {face && (
-            <Reveal delay={180}>
+            <Reveal delay={180} className="shrink-0">
               <PixelSprite
                 name={face}
                 size={112}
                 label={faceLabel}
-                className="mt-2 shrink-0 md:hidden"
+                className="max-md:h-20 max-md:w-20"
               />
             </Reveal>
           )}

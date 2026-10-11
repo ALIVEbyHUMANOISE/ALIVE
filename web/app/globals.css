@@ -28,13 +28,23 @@ body {
 }
 
 @layer components {
-  /* A face with an ink edge and a hard shadow to its bottom-right. */
+  /*
+   * Two weights, copied from `surfaceFor()` in AliveComponents.kt. Content wears
+   * the MINOR one - a 2px edge and a 4px shadow - and a screen earns exactly one
+   * MAJOR, the way the app's `notice()` is the only object raised without being
+   * invited. A page where every card is MAJOR has no pile at all.
+   */
   .card {
+    @apply rounded-card border-2 border-ink bg-white shadow-raise-sm;
+  }
+
+  .card-major {
     @apply rounded-card border-[3px] border-ink bg-white shadow-raise;
   }
 
+  /* A tile: the same weight, the app's smaller corner. */
   .card-sm {
-    @apply rounded-tile border-[3px] border-ink bg-white shadow-raise-sm;
+    @apply rounded-tile border-2 border-ink bg-white shadow-raise-sm;
   }
 
   /* The amber action: brighter than everything else and never beside gold. */

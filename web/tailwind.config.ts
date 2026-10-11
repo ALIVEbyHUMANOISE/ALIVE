@@ -9,7 +9,14 @@ import type { Config } from 'tailwindcss'
  * point of the site is that it is the same object as the app.
  */
 const config: Config = {
-  content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}'],
+  /**
+   * `lib/` is in the list because the colour classes are written there, in one
+   * registry, rather than sprinkled through the sections. Tailwind matches raw
+   * text in the scanned files: a directory it never reads is a set of classes it
+   * silently deletes, and a purged colour does not fail the build - it just makes
+   * the site beige and nobody can tell why.
+   */
+  content: ['./{app,components,lib}/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
@@ -35,14 +42,31 @@ const config: Config = {
         'blue-soft': 'var(--alive-blue_work_soft)',
         'blue-pale': 'var(--alive-blue_work_pale)',
         amber: 'var(--alive-amber_action)',
-        pink: 'var(--alive-pink_soft)'
+        pink: 'var(--alive-pink_soft)',
+        /**
+         * The category family. A hue per kind of doing, and like the app it only
+         * ever paints two objects: a card's tab and its tile.
+         */
+        'cat-study': 'var(--alive-cat_study)',
+        'cat-reading': 'var(--alive-cat_reading)',
+        'cat-exercise': 'var(--alive-cat_exercise)',
+        'cat-walking': 'var(--alive-cat_walking)',
+        'cat-cleaning': 'var(--alive-cat_cleaning)',
+        'cat-creative': 'var(--alive-cat_creative)',
+        'cat-coding': 'var(--alive-cat_coding)',
+        'cat-writing': 'var(--alive-cat_writing)',
+        'cat-mindfulness': 'var(--alive-cat_mindfulness)',
+        'cat-social': 'var(--alive-cat_social)',
+        'cat-work': 'var(--alive-cat_work)',
+        'cat-other': 'var(--alive-cat_other)'
       },
       /** One radius per object size, the way the app's dimens say it. */
       borderRadius: {
         step: '4px',
         tile: '12px',
         field: '14px',
-        card: '16px'
+        card: '16px',
+        pill: '999px'
       },
       /** The picture every raised object wears: a bold edge and a hard offset shadow. */
       boxShadow: {
