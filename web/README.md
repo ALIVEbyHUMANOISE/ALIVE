@@ -41,6 +41,7 @@ Nothing here is a hand-copied second version of the app, because those drift.
 | Characters and marks (`lib/sprites.ts`) | the app's 16×16 `VectorDrawable` grids | `npm run sprites` |
 | Fonts (`public/fonts/`) | the TTFs the app bundles | copy from `app/src/main/res/font/` |
 | The Guardian (`public/images/guardian.png`) | `guardian/generate.mjs`, the same 48×48 grid the app draws | `node guardian/generate.mjs` |
+| Tab icon (`public/icon-*.png`) | the hourglass in `lib/sprites.ts`, centred on the app's cream | `npm run favicon` |
 
 Run `npm run sprites` after changing a colour or a sprite in the app.
 

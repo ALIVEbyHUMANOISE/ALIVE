@@ -8,6 +8,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "sprites": "node scripts/sprites.mjs",
+    "favicon": "node scripts/favicon.mjs",
     "guard": "node scripts/guard.mjs",
     "postbuild": "node scripts/guard.mjs"
   },
