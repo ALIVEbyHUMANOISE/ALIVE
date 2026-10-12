@@ -124,6 +124,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var timeBankRepository: TimeBankRepository
     private lateinit var questRepository: QuestRepository
     private lateinit var focusSessionManager: FocusSessionManager
+
+    /**
+     * Bumped every time the chart is asked for. A background read that finishes
+     * after the person has already opened something else must not paint over it.
+     */
+    private var chartOpenGeneration = 0
     private lateinit var questStartCoordinator: QuestStartCoordinator
     private lateinit var questVerificationCoordinator: QuestVerificationCoordinator
     private lateinit var claimCoordinator: EntertainmentClaimCoordinator
@@ -2133,14 +2139,35 @@ class MainActivity : AppCompatActivity() {
      */
     private fun openUsageChartPanel() {
         state.panel = AlivePanel.USAGE_CHART
-        // The hours are read here and only here. The panel is opened rather than
-        // kept open, so this is one read per visit: the daily total cannot be cut
-        // into hours after the fact, and "when today went" is wrong an hour later.
-        state.hourlyUsedMillis = usageTracker.hourlyUsedMillisToday()
-        // The chart is the bar's third key; opening it from anywhere moves the
-        // circle there, so the bar never disagrees with what is on screen.
+        // The bar moves first. Its flight is 340ms of animation, and reading the
+        // hours beside it was what made the tap feel like a freeze: the bar's
+        // first frames were competing with a walk over the day's event log.
         navBar.select(AliveNavBar.Index.STATS)
 
+        // The hours come from the platform's event log, and every package that
+        // log names has to be classified - far too much to do between a tap and a
+        // frame. It runs off the main thread now and the panel is built when the
+        // answer arrives; the allocation that came with it was also what left the
+        // screens after this one feeling rough.
+        val generation = ++chartOpenGeneration
+        Thread {
+            val hours = usageTracker.hourlyUsedMillisToday()
+            runOnUiThread {
+                // Somebody opened another tab while the hours were being read.
+                if (generation != chartOpenGeneration) return@runOnUiThread
+                state.hourlyUsedMillis = hours
+                buildUsageChartPanel()
+            }
+        }.apply { isDaemon = true }.start()
+    }
+
+    /**
+     * The chart, once the hours are known.
+     *
+     * Read once per visit and only here: the daily total cannot be cut into hours
+     * after the fact, and "when today went" is wrong an hour later.
+     */
+    private fun buildUsageChartPanel() {
         val (scroll, column) = panel()
         column.addView(panelHeader(getString(R.string.chart_heading)))
         column.addView(ui.vgap(ui.dimens.groupGap))

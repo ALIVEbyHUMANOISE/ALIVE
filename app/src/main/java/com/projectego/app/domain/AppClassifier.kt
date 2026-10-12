@@ -48,7 +48,18 @@ object AppClassifier {
         "com.pubg.krmobile",
         "com.tencent.ig",
         "com.miHoYo.GenshinImpact",
-        "com.roblox.client"
+        "com.roblox.client",
+        // Games that ship without declaring a category. The declared-category
+        // check in categorize() catches the ones that do say "game", but a
+        // title that stays silent would otherwise fall to the unknown-app
+        // default and be treated as free - and a game is the one kind of app
+        // this default must never get wrong.
+        "com.supercell.clashofclans",
+        "com.supercell.clashroyale",
+        "com.supercell.brawlstars",
+        "com.supercell.hayday",
+        "com.mojang.minecraftpe",
+        "com.innersloth.spacemafia"
     )
 
     // Seen, never locked and never charged - see AppCategory.TRACKED. Same
@@ -87,20 +98,76 @@ object AppClassifier {
         "com.anthropic.claude"                          // Claude
     )
 
+    // Money, and the apps a day gets built on. Blocking any of these can cost the
+    // person something they cannot see - the same reason a message is never
+    // charged - so they are reported in the free lens: visible in the chart,
+    // never charged, never blocked.
+    //
+    // A missing id here is not a hole. An app that is not entertainment, is not
+    // named in any curated list and declares no category is free by the fallback
+    // at the bottom of categorize(), so this list only decides whether the app
+    // gets a row in the free lens rather than a silent one. It grows by
+    // observation, never by guesswork.
+    private val MONEY_PACKAGES = setOf(
+        "id.dana",                  // DANA
+        "com.gojek.app",            // Gojek / GoPay
+        "com.shopee.id",            // Shopee / ShopeePay
+        "com.tokopedia.tkpd",       // Tokopedia
+        "id.co.ovo",                // OVO
+        "id.co.bri.brimo",          // BRImo (BRI)
+        "com.bca.mybca",            // myBCA
+        "id.bmri.livin",            // LIVIN' by Mandiri
+        "src.com.bni",              // BNI Mobile Banking
+        "com.bsm.bankbsm",          // BSI Mobile
+        "com.btpn.dc",              // Jenius
+        "com.jago.digitalBanking"   // Jago
+    )
+
     // System components that must never be counted or blocked
     private val SYSTEM_IGNORED_PACKAGES = setOf(
         "android",
         "com.android.systemui",
-        "com.projectego.app"
+        "com.projectego.app",
+        "com.humanoise.alive"
     )
 
-    fun categorize(context: Context, packageName: String?): AppCategory {
+    /**
+     * The curated lists only, without a Context: null means "nothing here names
+     * this package".
+     *
+     * Split out so the rule "which app is treated as what" is testable on plain
+     * JVM, and so [categorize] can consult it before it starts asking the
+     * platform anything.
+     */
+    fun curated(packageName: String?): AppCategory? {
         if (packageName.isNullOrBlank()) return AppCategory.SYSTEM_IGNORED
         if (SYSTEM_IGNORED_PACKAGES.contains(packageName)) return AppCategory.SYSTEM_IGNORED
-
         if (TRACKED_PACKAGES.contains(packageName)) return AppCategory.TRACKED
-
+        if (MONEY_PACKAGES.contains(packageName)) return AppCategory.TRACKED
         if (WORK_PACKAGES.contains(packageName)) return AppCategory.WORK
+        if (KNOWN_ENTERTAINMENT_PACKAGES.contains(packageName)) return AppCategory.ENTERTAINMENT
+        return null
+    }
+
+    /**
+     * Every package the curated lists name, paired with what its list decides.
+     *
+     * Exposed for the test that keeps the lists disjoint. They are drawn by hand,
+     * and an id that appears twice is resolved silently by which list is
+     * consulted first - which is how a bank ends up charged as entertainment
+     * because somebody pasted it into the wrong set.
+     */
+    internal fun curatedEntries(): List<Pair<String, AppCategory>> = buildList {
+        SYSTEM_IGNORED_PACKAGES.forEach { add(it to AppCategory.SYSTEM_IGNORED) }
+        TRACKED_PACKAGES.forEach { add(it to AppCategory.TRACKED) }
+        MONEY_PACKAGES.forEach { add(it to AppCategory.TRACKED) }
+        WORK_PACKAGES.forEach { add(it to AppCategory.WORK) }
+        KNOWN_ENTERTAINMENT_PACKAGES.forEach { add(it to AppCategory.ENTERTAINMENT) }
+    }
+
+    fun categorize(context: Context, packageName: String?): AppCategory {
+        curated(packageName)?.let { return it }
+        if (packageName.isNullOrBlank()) return AppCategory.SYSTEM_IGNORED
 
         // Essential: Default Phone Dialer
         val dialerIntent = Intent(Intent.ACTION_DIAL)
@@ -154,20 +221,15 @@ object AppClassifier {
             // Package might not be installed or query failed
         }
 
-        // Default heuristic: If it is a third-party non-system app, treat as entertainment screen time
-        // Unless it's explicitly identified as system app.
-        try {
-            val pm = context.packageManager
-            val appInfo = pm.getApplicationInfo(packageName, 0)
-            val isSystemApp = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
-            val isUpdatedSystemApp = (appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
-            if (!isSystemApp && !isUpdatedSystemApp) {
-                return AppCategory.ENTERTAINMENT
-            }
-        } catch (_: Exception) {
-            // Ignore
-        }
-
+        // Nothing named it and it declared nothing. It is left alone: free, and
+        // not counted in any figure.
+        //
+        // This used to read "third-party and not a system app, so it is
+        // entertainment" - which meant a bank, a wallet, a government app or a
+        // ticket app was charged against the allowance and could be closed
+        // mid-transfer at the exact moment the limit was reached. A game is now
+        // caught by its declared category or by the curated list above, and a
+        // wrong guess in the other direction costs only a row in the chart.
         return AppCategory.SYSTEM_IGNORED
     }
 }

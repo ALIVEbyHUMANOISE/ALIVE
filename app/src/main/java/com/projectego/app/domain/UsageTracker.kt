@@ -52,6 +52,20 @@ class UsageTracker(private val context: Context) {
     /** Read-only archive of what this method already computed, for the chart. */
     private val usageHistory = UsageHistoryRepository(context)
 
+    /**
+     * What each package was last classified as.
+     *
+     * Classifying asks the platform two questions per package, and one day of
+     * events names the same twenty packages over and over - which is what made
+     * opening the statistics tab feel like a freeze. Concurrent because the
+     * chart reads its hours on a background thread while Home reads its total
+     * on the main one.
+     */
+    private val categories = java.util.concurrent.ConcurrentHashMap<String, AppCategory>()
+
+    private fun categoryOf(packageName: String): AppCategory =
+        categories.getOrPut(packageName) { AppClassifier.categorize(context, packageName) }
+
     /** Today's focus windows, for the exemption; a second instance over the same prefs. */
     private val focusSessionManager = FocusSessionManager(context, timeBankRepository)
 
@@ -87,9 +101,6 @@ class UsageTracker(private val context: Context) {
         // when, and today is the part of that which lies after midnight.
         val windows = focusWindows()
         val spans = todaysSpans(startTime, endTime)
-        val categories = HashMap<String, AppCategory>()
-        fun categoryOf(packageName: String): AppCategory =
-            categories.getOrPut(packageName) { AppClassifier.categorize(context, packageName) }
 
         val entertainment = spans.filter { categoryOf(it.id) == AppCategory.ENTERTAINMENT }
 
@@ -234,7 +245,7 @@ class UsageTracker(private val context: Context) {
         // never disagree about the same day - and a session that began before
         // midnight pays for the minutes it spent after it here too.
         val spans = todaysSpans(dayStart, now).filter {
-            AppClassifier.categorize(context, it.id) == AppCategory.ENTERTAINMENT
+            categoryOf(it.id) == AppCategory.ENTERTAINMENT
         }
         return HourlyUsage.bucketSpans(dayStart, FocusExemption.chargeableSpans(spans, focusWindows()))
     }

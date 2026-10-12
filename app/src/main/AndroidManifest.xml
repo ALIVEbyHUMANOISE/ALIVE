@@ -62,8 +62,28 @@
         <package android:name="com.tencent.ig" />
         <package android:name="com.miHoYo.GenshinImpact" />
         <package android:name="com.roblox.client" />
+        <package android:name="com.supercell.clashofclans" />
+        <package android:name="com.supercell.clashroyale" />
+        <package android:name="com.supercell.brawlstars" />
+        <package android:name="com.supercell.hayday" />
+        <package android:name="com.mojang.minecraftpe" />
+        <package android:name="com.innersloth.spacemafia" />
         <package android:name="com.whatsapp" />
         <package android:name="com.whatsapp.w4b" />
+        <!-- Money. Visible in the free lens, so their labels have to resolve
+             like any other named package - see AppClassifier.MONEY_PACKAGES. -->
+        <package android:name="id.dana" />
+        <package android:name="com.gojek.app" />
+        <package android:name="com.shopee.id" />
+        <package android:name="com.tokopedia.tkpd" />
+        <package android:name="id.co.ovo" />
+        <package android:name="id.co.bri.brimo" />
+        <package android:name="com.bca.mybca" />
+        <package android:name="id.bmri.livin" />
+        <package android:name="src.com.bni" />
+        <package android:name="com.bsm.bankbsm" />
+        <package android:name="com.btpn.dc" />
+        <package android:name="com.jago.digitalBanking" />
     </queries>
 
     <application
