@@ -241,10 +241,16 @@ class UsageTracker(private val context: Context) {
         val dayStart = getTodayStartTimestamp()
         val now = System.currentTimeMillis()
 
-        // The same spans the daily figure charges for, so the two charts can
-        // never disagree about the same day - and a session that began before
-        // midnight pays for the minutes it spent after it here too.
-        val spans = todaysSpans(dayStart, now).filter {
+        // No lookback here, unlike the day total. An hour belongs to the day it
+        // falls in, so a session that began last night contributes nothing to
+        // these bars - and reading twelve extra hours of events only to discard
+        // them was most of what made this tab slow.
+        //
+        // The entertainment filter still runs on spans rather than on events,
+        // because one app being in front ends whatever was in front before it:
+        // filtering the stream first would let an entertainment app collect the
+        // minutes of the chat app that interrupted it.
+        val spans = Foreground.spans(readEvents(dayStart, now) { true }, now).filter {
             categoryOf(it.id) == AppCategory.ENTERTAINMENT
         }
         return HourlyUsage.bucketSpans(dayStart, FocusExemption.chargeableSpans(spans, focusWindows()))
@@ -258,6 +264,9 @@ class UsageTracker(private val context: Context) {
      * would not know the app was in front at all and would report the first
      * hours of the day as empty. [Foreground.clip] then keeps only today's part
      * of whatever survived.
+     *
+     * This is the day total's helper. The hourly chart reads its own window from
+     * midnight, because the extra hours cost it time and change none of its bars.
      */
     private fun todaysSpans(dayStart: Long, now: Long): List<Foreground.Span> =
         Foreground.clip(
