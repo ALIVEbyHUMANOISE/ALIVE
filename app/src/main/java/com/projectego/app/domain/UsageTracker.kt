@@ -68,66 +68,47 @@ class UsageTracker(private val context: Context) {
         // Ensure day rollover is checked and evaluated
         lockStateManager.checkAndPerformDailyReset()
 
-        val usageStatsManager =
-            context.getSystemService(AppCompatActivity.USAGE_STATS_SERVICE) as? UsageStatsManager
-
         val startTime = getTodayStartTimestamp()
         val endTime = System.currentTimeMillis()
 
-        var totalMillis = 0L
-        var unblockedMillis = 0L
         val details = mutableListOf<Pair<String, Long>>()
         val unblockedDetails = mutableListOf<Pair<String, Long>>()
 
-        // Minutes today's focus sessions swallowed, per package. Computed first
-        // because the loop below charges whatever is left over.
-        val exemptByPackage = focusExemptedMillis()
+        // The day, as intervals, from the same event log the hourly chart reads.
+        //
+        // This used to ask the platform for a number instead: one
+        // queryUsageStats(INTERVAL_DAILY, midnight, now) per app, with its
+        // totalTimeInForeground taken as today. Measured on a real phone that
+        // answer was nearly two hours bigger than Digital Wellbeing's, because
+        // the query returns whichever stored bucket overlaps the window, and on
+        // this device the buckets roll at about a quarter to seven in the
+        // evening - so yesterday's prime time was billed as today's. The events
+        // have no such opinion: they are a list of what came to the front and
+        // when, and today is the part of that which lies after midnight.
+        val windows = focusWindows()
+        val spans = todaysSpans(startTime, endTime)
+        val categories = HashMap<String, AppCategory>()
+        fun categoryOf(packageName: String): AppCategory =
+            categories.getOrPut(packageName) { AppClassifier.categorize(context, packageName) }
 
-        if (usageStatsManager != null) {
-            val usageStats = usageStatsManager.queryUsageStats(
-                UsageStatsManager.INTERVAL_DAILY,
-                startTime,
-                endTime
-            )
+        val entertainment = spans.filter { categoryOf(it.id) == AppCategory.ENTERTAINMENT }
 
-            if (!usageStats.isNullOrEmpty()) {
-                for (stat in usageStats) {
-                    if (stat.totalTimeInForeground <= 0) continue
+        // Only what ALIVE actually closes spends the allowance - minus whatever
+        // a focus session that approved the app swallowed, because that time was
+        // spent focusing.
+        val charged = FocusExemption.chargeableSpans(entertainment, windows)
+        val totalMillis = charged.sumOf { it.end - it.start }
+        minutesByPackage(charged).forEach { (packageName, minutes) ->
+            if (minutes > 0) details.add(Pair(packageName, minutes))
+        }
 
-                    val category = AppClassifier.categorize(context, stat.packageName)
-
-                    when (category) {
-                        // Only what ALIVE actually closes spends the allowance -
-                        // minus whatever a focus session that approved the app
-                        // swallowed, because that time was spent focusing.
-                        AppCategory.ENTERTAINMENT -> {
-                            val exempt = exemptByPackage[stat.packageName] ?: 0L
-                            val charged = (stat.totalTimeInForeground - exempt).coerceAtLeast(0L)
-                            totalMillis += charged
-                            val chargedMinutes = charged / 1000 / 60
-                            if (chargedMinutes > 0) {
-                                details.add(Pair(stat.packageName, chargedMinutes))
-                            }
-                        }
-
-                        // Messaging and the tools a session is for are
-                        // reported, counted separately, and charged for
-                        // nothing. They used to be added to the day, which
-                        // meant two hours of chatting spent the entertainment
-                        // allowance and then locked the apps that were only
-                        // ever entertainment.
-                        AppCategory.TRACKED, AppCategory.WORK -> {
-                            unblockedMillis += stat.totalTimeInForeground
-                            val minutes = stat.totalTimeInForeground / 1000 / 60
-                            if (minutes > 0) {
-                                unblockedDetails.add(Pair(stat.packageName, minutes))
-                            }
-                        }
-
-                        else -> Unit
-                    }
-                }
-            }
+        // Messaging and the tools a session is for are reported, counted
+        // separately, and charged for nothing. They used to be added to the day,
+        // which meant two hours of chatting spent the entertainment allowance and
+        // then locked the apps that were only ever entertainment.
+        val free = spans.filter {
+            val category = categoryOf(it.id)
+            category == AppCategory.TRACKED || category == AppCategory.WORK
         }
 
         // The focus-swallowed minutes are the third kind of time that does not
@@ -135,18 +116,20 @@ class UsageTracker(private val context: Context) {
         // belong to entertainment packages, so a package can honestly appear on
         // both sides of the day - and the total view adds the two rows together
         // rather than letting one of them win.
-        unblockedMillis += exemptByPackage.values.sum()
-        exemptByPackage.forEach { (packageName, millis) ->
+        val exempt = FocusExemption.exemptedMillis(entertainment, windows)
+        val unblockedMillis = free.sumOf { it.end - it.start } + exempt.values.sum()
+        minutesByPackage(free).forEach { (packageName, minutes) ->
+            if (minutes > 0) unblockedDetails.add(Pair(packageName, minutes))
+        }
+        exempt.forEach { (packageName, millis) ->
             val minutes = millis / 1000 / 60
-            if (minutes > 0) {
-                unblockedDetails.add(Pair(packageName, minutes))
-            }
+            if (minutes > 0) unblockedDetails.add(Pair(packageName, minutes))
         }
 
-        // Every minute ALIVE saw. The two figures above are disjoint by
-        // construction - a minute moved out of the allowance by a focus session
-        // lands here exactly once, on the unblocked side - so adding them is the
-        // whole day rather than a double count.
+        // Every minute ALIVE saw. Each span lands in exactly one of the three
+        // figures above, so adding them is the whole day rather than a double
+        // count - which the per-app totals were not: an app a focus session
+        // approved was counted once as a tool and again as exempt time.
         val screenMillis = totalMillis + unblockedMillis
 
         val totalMinutes = totalMillis / 1000 / 60
@@ -247,17 +230,30 @@ class UsageTracker(private val context: Context) {
         val dayStart = getTodayStartTimestamp()
         val now = System.currentTimeMillis()
 
-        val events = readEvents(dayStart, now) { packageName ->
-            AppClassifier.categorize(context, packageName) == AppCategory.ENTERTAINMENT
+        // The same spans the daily figure charges for, so the two charts can
+        // never disagree about the same day - and a session that began before
+        // midnight pays for the minutes it spent after it here too.
+        val spans = todaysSpans(dayStart, now).filter {
+            AppClassifier.categorize(context, it.id) == AppCategory.ENTERTAINMENT
         }
-        if (events.isEmpty()) return LongArray(HourlyUsage.HOURS)
-
-        // The same exemption the daily figure applies: the hours and the total
-        // must never tell two different stories about one day.
-        val spans = Foreground.spans(events, now)
-        val chargeable = FocusExemption.chargeableSpans(spans, focusWindows())
-        return HourlyUsage.bucketSpans(dayStart, chargeable)
+        return HourlyUsage.bucketSpans(dayStart, FocusExemption.chargeableSpans(spans, focusWindows()))
     }
+
+    /**
+     * Today's foreground time, as spans that lie inside today.
+     *
+     * The log is read from before midnight on purpose: a session that started
+     * yesterday has no resume event after it, so a query that began at midnight
+     * would not know the app was in front at all and would report the first
+     * hours of the day as empty. [Foreground.clip] then keeps only today's part
+     * of whatever survived.
+     */
+    private fun todaysSpans(dayStart: Long, now: Long): List<Foreground.Span> =
+        Foreground.clip(
+            Foreground.spans(readEvents(dayStart - SESSION_LOOKBACK_MILLIS, now) { true }, now),
+            dayStart,
+            now
+        )
 
     /** Today's focus windows, with the packages each session said were allowed. */
     private fun focusWindows(): List<FocusExemption.Window> =
@@ -269,30 +265,13 @@ class UsageTracker(private val context: Context) {
             )
         }
 
-    /**
-     * The minutes today's focus sessions swallowed, per package.
-     *
-     * Only the apps a session itself approved are exempt - there is no other
-     * list and no other path, so an app no focus activity approves can never be
-     * excused by this, whatever the state of the accessibility service.
-     */
-    private fun focusExemptedMillis(): Map<String, Long> {
-        val windows = focusWindows()
-        if (windows.isEmpty()) return emptyMap()
-
-        val dayStart = getTodayStartTimestamp()
-        val now = System.currentTimeMillis()
-        val spans = ArrayList<Foreground.Span>()
-        windows.forEach { window ->
-            val from = maxOf(window.start, dayStart)
-            val to = minOf(window.end, now)
-            if (to <= from) return@forEach
-            val events = readEvents(from, to) { packageName ->
-                window.approved.contains(packageName)
-            }
-            spans += Foreground.spans(events, to)
+    /** Whole minutes per package, in the order the spans first name each one. */
+    private fun minutesByPackage(spans: List<Foreground.Span>): Map<String, Long> {
+        val millis = LinkedHashMap<String, Long>()
+        spans.forEach { span ->
+            millis[span.id] = (millis[span.id] ?: 0L) + (span.end - span.start)
         }
-        return FocusExemption.exemptedMillis(spans, windows)
+        return millis.mapValues { it.value / 1000 / 60 }
     }
 
     /**
@@ -335,5 +314,12 @@ class UsageTracker(private val context: Context) {
         /** ACTIVITY_RESUMED and ACTIVITY_PAUSED: the same two events, renamed in API 29. */
         const val EVENT_RESUMED = 23
         const val EVENT_PAUSED = 24
+
+        /**
+         * How far before midnight the event log is read, to catch the session
+         * that was still running when the day changed. Longer than any plausible
+         * unbroken session, short enough that the log has certainly kept it.
+         */
+        const val SESSION_LOOKBACK_MILLIS = 12 * 3_600_000L
     }
 }

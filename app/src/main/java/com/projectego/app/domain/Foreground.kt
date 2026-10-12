@@ -50,4 +50,19 @@ object Foreground {
         open.keys.toList().forEach { close(it, nowMillis) }
         return spans.sortedBy { it.start }
     }
+
+    /**
+     * The part of each span that lies inside `[from, to)`.
+     *
+     * A session that began before midnight is not today's session, but the
+     * minutes it spent after midnight are today's, so a span that crosses the
+     * boundary is trimmed rather than dropped - and a span that lies wholly
+     * outside is dropped rather than counted at zero.
+     */
+    fun clip(spans: List<Span>, from: Long, to: Long): List<Span> =
+        spans.mapNotNull { span ->
+            val start = maxOf(span.start, from)
+            val end = minOf(span.end, to)
+            if (end > start) Span(span.id, start, end) else null
+        }
 }

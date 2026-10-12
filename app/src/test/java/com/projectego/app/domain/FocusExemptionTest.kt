@@ -83,4 +83,26 @@ class FocusExemptionTest {
             chargeable
         )
     }
+
+    /**
+     * The invariant the daily total now stands on.
+     *
+     * The day is built by adding the chargeable minutes, the exempt minutes and
+     * the unblocked apps' minutes together, so a minute that appeared on two of
+     * those sides would be billed twice - which is exactly what the per-app
+     * totals used to do to an app a focus session had approved.
+     */
+    @Test
+    fun `chargeable and exempt minutes are the same time once, never twice`() {
+        val spans = listOf(
+            span("com.notion.id", 10 * minute, 40 * minute),
+            span("com.instagram.android", 45 * minute, 60 * minute)
+        )
+        val windows = listOf(window(20 * minute, 50 * minute, setOf("com.notion.id")))
+        val charged = FocusExemption.chargeableSpans(spans, windows).sumOf { it.end - it.start }
+        val exempt = FocusExemption.exemptedMillis(spans, windows).values.sum()
+
+        assertEquals(spans.sumOf { it.end - it.start }, charged + exempt)
+        assertEquals(20 * minute, exempt)
+    }
 }
