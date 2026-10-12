@@ -402,28 +402,50 @@ export function SiteFooter() {
   const copy = useCopy()
 
   return (
-    <footer className="border-t-[3px] border-ink px-5 py-10 md:px-12">
-      <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-4">
-        <PixelSprite name="hourglass" size={20} />
-        <span className="font-display text-pixel-xs">{copy.footer.line}</span>
-        <span className="text-sm text-ink-secondary">{copy.footer.sub}</span>
-        <Accents seed={1} size={14} className="ml-auto" />
-        <a href="#existence" className="text-sm text-ink-secondary underline">
-          {copy.meta.toTop}
-        </a>
-      </div>
-      <p className="mx-auto mt-4 w-full max-w-5xl text-sm text-ink-muted">{copy.footer.made}</p>
+    <footer className="border-t-[3px] border-ink px-5 pb-10 pt-12 md:px-12">
+      <div className="mx-auto grid w-full max-w-5xl gap-10 md:grid-cols-2">
+        {/* Who is speaking. The wordmark stays in the pixel face; the copyright
+            sits in the body face, because Silkscreen has no © glyph and drew a
+            fallback box where the symbol should be. */}
+        <div>
+          <div className="flex items-center gap-2.5">
+            <PixelSprite name="hourglass" size={22} />
+            <span className="font-display text-pixel-sm">{copy.footer.line}</span>
+          </div>
+          <p className="mt-3 max-w-xs text-sm text-ink-secondary">{copy.footer.sub}</p>
+          <p className="mt-1.5 max-w-xs text-sm text-ink-muted">{copy.footer.promise}</p>
+        </div>
 
-      {/* The two links a store listing and a crawler both look for: the policy
-          behind the promise above, and an address a person can write to. A bare
-          <a> gets no basePath prefix from Next, so the folder is written in. */}
-      <div className="mx-auto mt-3 flex w-full max-w-5xl flex-wrap items-center gap-4 text-sm">
-        <a href={`${basePath}/privacy/`} className="text-ink-secondary underline">
-          {copy.footer.privacy}
-        </a>
-        <a href={`mailto:${contactEmail}`} className="text-ink-secondary underline">
-          {contactEmail}
-        </a>
+        {/* Where to go next, as a list rather than three loose sentences. The
+            policy and the address are the two links a store listing and a
+            crawler both look for; a bare <a> gets no basePath prefix from Next,
+            so the folder is written in by hand. */}
+        <div className="md:justify-self-end md:text-right">
+          <h2 className="eyebrow">{copy.footer.links}</h2>
+          <ul className="mt-3 space-y-2 text-sm">
+            <li>
+              <a href={`${basePath}/privacy/`} className="text-ink-secondary underline">
+                {copy.footer.privacy}
+              </a>
+            </li>
+            <li>
+              <span className="text-ink-muted">{copy.footer.contact}</span>{' '}
+              <a href={`mailto:${contactEmail}`} className="text-ink-secondary underline">
+                {contactEmail}
+              </a>
+            </li>
+            <li>
+              <a href="#existence" className="text-ink-secondary underline">
+                {copy.meta.toTop}
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div className="mx-auto mt-10 w-full max-w-5xl">
+        <div className="rule" />
+        <p className="mt-4 text-sm text-ink-muted">{copy.footer.legal}</p>
       </div>
     </footer>
   )

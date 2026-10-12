@@ -203,10 +203,13 @@ const id = {
   },
 
   footer: {
-    line: 'ALIVE © 2026',
-    sub: 'proyek independen soal atensi',
-    made: 'Dibuat di Android Studio, tanpa backend.',
-    privacy: 'Kebijakan privasi'
+    line: 'ALIVE',
+    sub: 'Sadari waktumu, kendalikan layarmu.',
+    promise: 'Tanpa akun · tanpa server · tanpa izin internet.',
+    legal: '© 2026 proyek independen soal atensi',
+    links: 'Tautan',
+    privacy: 'Kebijakan privasi',
+    contact: 'Kontak'
   }
 }
 
@@ -404,10 +407,13 @@ const en: typeof id = {
   },
 
   footer: {
-    line: 'ALIVE © 2026',
-    sub: 'an independent project about attention',
-    made: 'Built in Android Studio, with no backend.',
-    privacy: 'Privacy policy'
+    line: 'ALIVE',
+    sub: 'Know your time. Control your screen.',
+    promise: 'No account · no server · no internet permission.',
+    legal: '© 2026 an independent project about attention',
+    links: 'Links',
+    privacy: 'Privacy policy',
+    contact: 'Contact'
   }
 }
 
