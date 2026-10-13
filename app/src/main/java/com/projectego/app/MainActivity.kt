@@ -457,7 +457,13 @@ class MainActivity : AppCompatActivity() {
             reclaimedAvailableMinutes = report.timeBank.availableMinutes,
             attemptState = attempt?.state,
             focusActive = focusSession != null && focusSession.isActive,
-            focusActivityType = focusSession?.activityType
+            focusActivityType = focusSession?.activityType,
+            // Read straight from the manager rather than from the render state:
+            // evaluateGuardState runs later in this same render, and a face that
+            // was a render behind its own card would be a lie with a delay.
+            promiseBroken = lockStateManager.isGuardGapOpenOn(
+                LockStateManager.dayKeyOf(System.currentTimeMillis())
+            )
         )
 
         state.signals = signals

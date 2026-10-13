@@ -92,7 +92,18 @@ data class AliveSignals(
     val reclaimedAvailableMinutes: Long,
     val attemptState: QuestAttemptState?,
     val focusActive: Boolean,
-    val focusActivityType: FocusActivityType? = null
+    val focusActivityType: FocusActivityType? = null,
+
+    /**
+     * The character's condition, which is not the same axis as the day's
+     * pressure: a broken promise or a gap in the guard tires it, and one quest
+     * that day brings it back. Defaults keep every existing caller and test
+     * reading exactly as they did before this existed.
+     */
+    val promiseBroken: Boolean = false,
+
+    /** A rest the person declared, which is a nap and never a failure. */
+    val restingToday: Boolean = false
 )
 
 object AliveStates {
@@ -170,6 +181,15 @@ object AliveStates {
             signals.criticalZoneTier >= 1 -> AliveFace.TIRED
 
             attempt == QuestAttemptState.FAILED -> AliveFace.SAD
+
+            // The character's own condition, and it sits below the day's
+            // pressure on purpose: when the allowance is nearly gone, that is
+            // the truer face. A day declared as rest naps; a promise broken
+            // shows as tired, never as sad - sad is for a mission that went
+            // wrong, and one quest today is all it takes to look awake again.
+            signals.restingToday -> AliveFace.SLEEPY
+
+            signals.promiseBroken -> AliveFace.TIRED
 
             signals.currentStreak >= 1 || signals.reclaimedAvailableMinutes > 0 -> AliveFace.HAPPY
 

@@ -8,7 +8,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-class LockStateManager(context: Context) {
+class LockStateManager(private val context: Context) {
 
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
@@ -81,6 +81,9 @@ class LockStateManager(context: Context) {
             context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE).edit()
                 .putString(KEY_QUEST_DONE_DAY, dayKey)
                 .apply()
+            // The same moment is the character's: a quest that paid out is a day
+            // the person actually did something, which is what the form grows on.
+            CharacterGrowthRepository(context).recordQuestDay(dayKey)
         }
     }
 
@@ -122,6 +125,12 @@ class LockStateManager(context: Context) {
             // a second sentence: time earned while nothing was watching is not time
             // ALIVE can stand behind.
             val landed = isQuestCompletedOn(lastDate) && !isGuardGapOpenOn(lastDate)
+
+            // The character grows on a day that was actually kept, and the
+            // judgement above is the only place that knows one happened. A point
+            // is added, never taken back: the form is a lifetime, and a day that
+            // failed costs the condition, not the body.
+            if (landed) CharacterGrowthRepository(context).recordPromiseDay(lastDate)
 
             // The first rollover after this rule exists is not judged, because
             // yesterday was lived under the old one. From the day after, the rule is
