@@ -481,10 +481,10 @@
     <string name="night_contract_allowance_label">Jatah besok</string>
     <string name="night_contract_allowance_same">Sama seperti hari ini (%1$d mnt)</string>
     <string name="night_contract_counted_label">Yang dihitung</string>
-    <string name="night_contract_counted_note">Aplikasi yang memang sudah dihitung ALIVE. Ini cuma ditampilkan, bukan dipilih: daftar yang bisa diubah malam hari adalah daftar yang bisa dikosongkan sore hari.</string>
+    <string name="night_contract_counted_note">Aplikasi yang sudah dihitung ALIVE. Ini ditampilkan, bukan dipilih — daftar yang bisa diubah malam hari bisa dikosongkan sore hari.</string>
     <string name="night_contract_quest_label">Satu quest untuk besok</string>
     <string name="night_contract_quest_none">Tanpa quest</string>
-    <string name="night_contract_quest_option">%1$s · %2$d mnt</string>
+    <string name="night_contract_quest_picked">%1$s · hadiah %2$d menit</string>
     <string name="night_contract_quest_note">Quest inilah yang menjaga jatah besok.</string>
     <string name="night_contract_no_quest_note">Tanpa quest, tidak ada yang menjaga jatah besok.</string>
     <string name="night_contract_price_note">Menaikkannya besok harus dibayar dengan menit dari Time Bank, dan itu hanya terisi dari quest yang cair.</string>

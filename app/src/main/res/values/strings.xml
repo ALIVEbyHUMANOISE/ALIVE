@@ -523,10 +523,10 @@
     <string name="night_contract_allowance_label">Tomorrow\u2019s allowance</string>
     <string name="night_contract_allowance_same">Same as today (%1$d mnt)</string>
     <string name="night_contract_counted_label">What counts</string>
-    <string name="night_contract_counted_note">The apps ALIVE already counts. They are shown here, not chosen: a list you can edit in the evening is a list you can empty in the afternoon.</string>
+    <string name="night_contract_counted_note">The apps ALIVE already counts. They are shown, not chosen — a list you can edit at night is a list you can empty in the afternoon.</string>
     <string name="night_contract_quest_label">One quest for tomorrow</string>
     <string name="night_contract_quest_none">No quest</string>
-    <string name="night_contract_quest_option">%1$s · %2$d mnt</string>
+    <string name="night_contract_quest_picked">%1$s · %2$d mnt reward</string>
     <string name="night_contract_quest_note">This is the quest that keeps tomorrow\u2019s allowance.</string>
     <string name="night_contract_no_quest_note">Without a quest, nothing keeps tomorrow\u2019s allowance.</string>
     <string name="night_contract_price_note">Raising it tomorrow costs minutes from the Time Bank, and those come from quests that paid out.</string>

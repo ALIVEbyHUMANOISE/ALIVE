@@ -1440,7 +1440,10 @@ class MainActivity : AppCompatActivity() {
         val (scroll, column) = panel()
         column.addView(panelHeader(getString(R.string.night_contract_heading)))
         column.addView(ui.vgap(ui.dimens.groupGap))
-        column.addView(ui.annotation(getString(R.string.night_contract_invite_note)))
+        // Body face, not the pixel one. A pixel paragraph six lines long reads as
+        // shouting, and this sheet already had three of them competing with the
+        // choices they were meant to explain.
+        column.addView(ui.note(getString(R.string.night_contract_invite_note)))
         column.addView(ui.vgap(ui.dimens.groupGap))
 
         val inForce = nightContractRepository
@@ -1450,7 +1453,9 @@ class MainActivity : AppCompatActivity() {
 
         column.addView(ui.cardTitle(getString(R.string.night_contract_allowance_label)))
         column.addView(ui.vgap(ui.dimens.lineGap))
-        val allowanceGroup = RadioGroup(this)
+        // One row of three, not three full-width bars: the choice is a single
+        // decision about one number, and stacking them made it look like three.
+        val allowanceGroup = RadioGroup(this).apply { orientation = LinearLayout.HORIZONTAL }
         NIGHT_ALLOWANCES.forEachIndexed { index, minutes ->
             allowanceGroup.addView(
                 ui.tileOption(
@@ -1460,12 +1465,8 @@ class MainActivity : AppCompatActivity() {
                 ).apply {
                     id = NIGHT_ALLOWANCE_ID_BASE + index
                     isChecked = minutes == chosenMinutes
-                    layoutParams = RadioGroup.LayoutParams(
-                        RadioGroup.LayoutParams.MATCH_PARENT,
-                        RadioGroup.LayoutParams.WRAP_CONTENT
-                    ).apply {
-                        if (index > 0) topMargin = ui.dimens.pairGap
-                    }
+                    layoutParams = RadioGroup.LayoutParams(0, RadioGroup.LayoutParams.WRAP_CONTENT, 1f)
+                        .apply { if (index > 0) marginStart = ui.dimens.pairGap }
                 }
             )
         }
@@ -1478,14 +1479,31 @@ class MainActivity : AppCompatActivity() {
         column.addView(ui.vgap(ui.dimens.groupGap))
         column.addView(ui.cardTitle(getString(R.string.night_contract_counted_label)))
         column.addView(ui.vgap(ui.dimens.lineGap))
-        column.addView(ui.annotation(getString(R.string.night_contract_counted_note)))
+        column.addView(ui.note(getString(R.string.night_contract_counted_note)))
 
         column.addView(ui.vgap(ui.dimens.groupGap))
         column.addView(ui.cardTitle(getString(R.string.night_contract_quest_label)))
         column.addView(ui.vgap(ui.dimens.lineGap))
         val quests = questRepository.getAllQuests().filter { it.status == QuestStatus.AVAILABLE }
-        val questNote = ui.annotation(getString(R.string.night_contract_no_quest_note))
         val questGroup = RadioGroup(this)
+        // Rows carry the name of the thing and nothing else. With the reward
+        // glued to every title, thirteen rows read as thirteen sentences and the
+        // eye has nothing to compare; the reward is stated once, below, for the
+        // one that is actually chosen.
+        quests.forEachIndexed { index, quest ->
+            questGroup.addView(
+                ui.tileOption(quest.title, 0, ui.palette.softForest).apply {
+                    id = NIGHT_QUEST_ID_BASE + 1 + index
+                    isChecked = quest.id == chosenQuestId
+                    layoutParams = RadioGroup.LayoutParams(
+                        RadioGroup.LayoutParams.MATCH_PARENT,
+                        RadioGroup.LayoutParams.WRAP_CONTENT
+                    ).apply { if (index > 0) topMargin = ui.dimens.pairGap }
+                }
+            )
+        }
+        // Last, and quieter: declining is a real answer, and it should not be the
+        // first thing a thumb lands on.
         questGroup.addView(
             ui.tileOption(getString(R.string.night_contract_quest_none), 0, ui.palette.warmGray).apply {
                 id = NIGHT_QUEST_ID_BASE
@@ -1493,35 +1511,27 @@ class MainActivity : AppCompatActivity() {
                 layoutParams = RadioGroup.LayoutParams(
                     RadioGroup.LayoutParams.MATCH_PARENT,
                     RadioGroup.LayoutParams.WRAP_CONTENT
-                )
+                ).apply { if (quests.isNotEmpty()) topMargin = ui.dimens.pairGap }
             }
         )
-        quests.forEachIndexed { index, quest ->
-            questGroup.addView(
-                ui.tileOption(
-                    getString(R.string.night_contract_quest_option, quest.title, quest.rewardMinutes),
-                    0,
-                    ui.palette.softForest
-                ).apply {
-                    id = NIGHT_QUEST_ID_BASE + 1 + index
-                    isChecked = quest.id == chosenQuestId
-                    layoutParams = RadioGroup.LayoutParams(
-                        RadioGroup.LayoutParams.MATCH_PARENT,
-                        RadioGroup.LayoutParams.WRAP_CONTENT
-                    ).apply { topMargin = ui.dimens.pairGap }
+        val questNote = ui.note(
+            chosenQuestId?.let { id ->
+                quests.firstOrNull { it.id == id }?.let {
+                    getString(R.string.night_contract_quest_picked, it.title, it.rewardMinutes)
                 }
-            )
-        }
+            } ?: getString(R.string.night_contract_no_quest_note)
+        )
         questGroup.setOnCheckedChangeListener { _, checkedId ->
             val index = checkedId - NIGHT_QUEST_ID_BASE
-            chosenQuestId = if (index <= 0) null else quests.getOrNull(index - 1)?.id
-            questNote.text = if (chosenQuestId == null) {
-                getString(R.string.night_contract_no_quest_note)
-            } else {
-                getString(R.string.night_contract_quest_note)
-            }
+            val chosen = if (index <= 0) null else quests.getOrNull(index - 1)
+            chosenQuestId = chosen?.id
+            questNote.text = chosen
+                ?.let { getString(R.string.night_contract_quest_picked, it.title, it.rewardMinutes) }
+                ?: getString(R.string.night_contract_no_quest_note)
         }
         column.addView(questGroup)
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        column.addView(ui.annotation(getString(R.string.night_contract_quest_note)))
         column.addView(ui.vgap(ui.dimens.lineGap))
         column.addView(questNote)
 
@@ -1538,7 +1548,7 @@ class MainActivity : AppCompatActivity() {
         column.addView(reasonInput)
 
         column.addView(ui.vgap(ui.dimens.groupGap))
-        column.addView(ui.annotation(getString(R.string.night_contract_price_note)))
+        column.addView(ui.note(getString(R.string.night_contract_price_note)))
         column.addView(ui.vgap(ui.dimens.groupGap))
         column.addView(
             ui.primary(getString(R.string.night_contract_save)).apply {
