@@ -13,6 +13,9 @@ class LockStateManager(context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
 
+    /** Last night's promise, when there is one in force. See the limit below. */
+    private val nightContract = NightContractRepository(context)
+
     companion object {
         private const val PREFS_FILE = "project_ego_state"
 
@@ -279,7 +282,20 @@ class LockStateManager(context: Context) {
         if (getDayType() == DayType.ZERO_ENTERTAINMENT_DAY) {
             return 0L
         }
-        val base = if (isDevTestModeEnabled()) DEV_TEST_LIMIT_MINUTES else PRODUCTION_LIMIT_MINUTES
+        val base = if (isDevTestModeEnabled()) {
+            DEV_TEST_LIMIT_MINUTES
+        } else {
+            // What last night promised, when a promise is in force at all.
+            //
+            // This is the whole weight of the nightly contract: the day's base
+            // is the number the person chose while calm, and the only thing that
+            // raises it is a minute claimed from the Time Bank - which is filled
+            // by quests that actually paid out. The version of them that wants
+            // more at three in the afternoon pays with time the evening version
+            // earned. No lock is added anywhere; only a price.
+            nightContract.inForceOn(getTodayDateString())?.allowanceMinutes
+                ?: PRODUCTION_LIMIT_MINUTES
+        }
         return base + claimedMinutesToday()
     }
 
