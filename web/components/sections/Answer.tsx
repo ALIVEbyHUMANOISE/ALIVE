@@ -177,13 +177,31 @@ export function SectionGuardian() {
 
         <div className="mt-12 grid items-center gap-10 md:grid-cols-12">
           <Reveal delay={60} className="md:col-span-6">
-            <Image
-              src={`${basePath}/images/guardian.png`}
-              alt={copy.guardian.alt}
-              width={768}
-              height={768}
-              className="mx-auto h-auto w-full max-w-[440px] rounded-card border-[3px] border-red-dark shadow-[10px_10px_0_0_var(--alive-red_short_dark)]"
-            />
+            {/* The figure stands on a lit ground, with the circle it keeps drawn
+                around it, rather than arriving inside a framed rectangle. Those
+                three things - a ring, a ground, a figure with nothing holding it
+                up - are the whole of what the reference was doing, and all three
+                are flat shapes here: the blur it leans on is the one effect this
+                language has never used, and it is what makes a dark page look
+                like every other dark page. The sprite now ships with a clear
+                background, so it can stand on the ink itself. */}
+            <div className="relative mx-auto w-full max-w-[420px]">
+              <span
+                aria-hidden
+                className="absolute left-1/2 top-1/2 -z-10 h-[92%] w-[92%] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-dashed border-red-dark/60"
+              />
+              <span
+                aria-hidden
+                className="absolute inset-x-[26%] bottom-[3%] -z-10 h-3 rounded-pill bg-red-dark/80"
+              />
+              <Image
+                src={`${basePath}/images/guardian.png`}
+                alt={copy.guardian.alt}
+                width={768}
+                height={768}
+                className="relative mx-auto h-auto w-full"
+              />
+            </div>
           </Reveal>
 
           <div className="md:col-span-6">

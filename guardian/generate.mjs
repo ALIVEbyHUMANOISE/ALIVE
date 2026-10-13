@@ -315,6 +315,42 @@ function png(pixelAt, width, height) {
   ]);
 }
 
+/** The same encoder with an alpha channel: a null pixel comes out clear. */
+function pngWithAlpha(pixelAt, width, height) {
+  const stride = width * 4;
+  const raw = Buffer.alloc((stride + 1) * height);
+  const cache = new Map();
+  for (let y = 0; y < height; y++) {
+    raw[y * (stride + 1)] = 0;
+    for (let x = 0; x < width; x++) {
+      const hex = pixelAt(x, y);
+      let values = cache.get(hex);
+      if (!values) {
+        values = hex === null ? [0, 0, 0, 0] : [...rgb(hex), 255];
+        cache.set(hex, values);
+      }
+      const o = y * (stride + 1) + 1 + x * 4;
+      raw[o] = values[0];
+      raw[o + 1] = values[1];
+      raw[o + 2] = values[2];
+      raw[o + 3] = values[3];
+    }
+  }
+
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 6;
+
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', ihdr),
+    chunk('IDAT', deflateSync(raw, { level: 9 })),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
 const INK = '#1D1D1B';
 const PAPER = '#F5F1E8';
 const CELL = 8;
@@ -343,14 +379,20 @@ writeFileSync(
   )
 );
 
-// The site's hero: the alert pose on its own, at 16 screen pixels a cell.
+// The site's hero: the alert pose on its own, at 16 screen pixels a cell, with
+// everything outside the figure transparent.
+//
+// The paper square was the reason this always arrived as a framed poster: on the
+// dark section the figure could only be shown inside a card, because it came
+// glued to a rectangle of paper. With an alpha channel it can stand on the ink
+// itself, which is what the section was always describing.
 const HERO_CELL = 16;
 writeFileSync(
   join(here, '../web/public/images/guardian.png'),
-  png(
+  pngWithAlpha(
     (x, y) => {
       const cell = drawing.alert[Math.floor(y / HERO_CELL)][Math.floor(x / HERO_CELL)];
-      return cell === '.' ? PAPER : TOKEN[cell].hex;
+      return cell === '.' ? null : TOKEN[cell].hex;
     },
     W * HERO_CELL,
     H * HERO_CELL
