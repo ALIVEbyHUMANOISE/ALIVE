@@ -439,6 +439,8 @@
     <string name="widget_stats_no_allowance">No allowance today</string>
     <string name="widget_stats_streak">%1$d days in a row</string>
     <string name="widget_stats_empty">Open ALIVE once and this fills itself in.</string>
+    <string name="widget_promise">promised %1$d mnt</string>
+    <string name="widget_promise_quest">promised %1$d mnt · 1 quest</string>
     <string name="chart_total_minutes">%1$s across the days ALIVE saw</string>
     <string name="chart_none">ALIVE hasn\'t recorded a day yet.</string>
     <string name="chart_just_started">This is the first day ALIVE has recorded.</string>

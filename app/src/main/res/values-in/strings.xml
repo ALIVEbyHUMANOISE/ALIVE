@@ -412,6 +412,8 @@
     <string name="widget_stats_no_allowance">Hari ini tanpa jatah</string>
     <string name="widget_stats_streak">%1$d hari beruntun</string>
     <string name="widget_stats_empty">Buka ALIVE sekali, ini terisi sendiri.</string>
+    <string name="widget_promise">janji %1$d mnt</string>
+    <string name="widget_promise_quest">janji %1$d mnt · 1 quest</string>
     <string name="chart_total_minutes">%1$s di hari-hari yang ALIVE lihat</string>
     <string name="chart_none">ALIVE belum mencatat satu hari pun.</string>
     <string name="chart_just_started">Ini hari pertama yang ALIVE catat.</string>

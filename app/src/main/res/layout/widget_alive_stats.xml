@@ -109,6 +109,22 @@
                         android:textColor="@color/alive_ink_secondary"
                         android:textSize="14sp" />
                 </LinearLayout>
+
+                <!-- Last night's promise, when one governs today. It sits in this
+                     column rather than in a row of its own on purpose: the column
+                     is beside a 64dp character and has room for a third line, so
+                     the promise costs the card no height at all - and a 4x2 card
+                     has none to give. -->
+                <TextView
+                    android:id="@+id/widget_promise"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="@font/manrope_medium"
+                    android:includeFontPadding="false"
+                    android:textColor="@color/alive_ink_secondary"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
             </LinearLayout>
 
             <ImageView

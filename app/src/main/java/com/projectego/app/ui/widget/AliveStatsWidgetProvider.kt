@@ -12,6 +12,7 @@ import androidx.core.content.ContextCompat
 import com.projectego.app.MainActivity
 import com.projectego.app.R
 import com.projectego.app.data.LockStateManager
+import com.projectego.app.data.NightContractRepository
 import com.projectego.app.data.UsageHistoryRepository
 import com.projectego.app.ui.AppLabels
 import com.projectego.app.ui.Durations
@@ -148,6 +149,29 @@ class AliveStatsWidgetProvider : AppWidgetProvider() {
                 context.getString(R.string.widget_stats_streak, streak)
             )
             views.setViewVisibility(R.id.widget_flame, if (streak > 0) View.VISIBLE else View.GONE)
+
+            // Last night's promise, when one governs today.
+            //
+            // The widget is the one surface a person sees without opening
+            // anything, and a promise nobody sees is not a promise. It is only
+            // stated while it is in force: outside that window the line is gone
+            // rather than empty, so a card with no contract looks exactly like
+            // the card that shipped before this existed.
+            val contract = NightContractRepository(context)
+                .inForceOn(LockStateManager.dayKeyOf(System.currentTimeMillis()))
+            if (contract == null) {
+                views.setViewVisibility(R.id.widget_promise, View.GONE)
+            } else {
+                views.setViewVisibility(R.id.widget_promise, View.VISIBLE)
+                views.setTextViewText(
+                    R.id.widget_promise,
+                    context.getString(
+                        if (contract.questId == null) R.string.widget_promise
+                        else R.string.widget_promise_quest,
+                        contract.allowanceMinutes
+                    )
+                )
+            }
 
             val rowIds = intArrayOf(R.id.widget_row_1, R.id.widget_row_2, R.id.widget_row_3)
             val nameIds = intArrayOf(R.id.widget_name_1, R.id.widget_name_2, R.id.widget_name_3)
