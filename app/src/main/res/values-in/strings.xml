@@ -501,4 +501,8 @@
     <string name="promise_hold_none">Kamu nggak menulis alasannya. Angkanya tetap berlaku.</string>
     <string name="promise_hold_stay">Tetap</string>
     <string name="promise_hold_open">Buka saja</string>
+    <string name="promise_notif_title">Sudah malam</string>
+    <string name="promise_notif_body">Mau berjanji sesuatu untuk besok? Tiga ketukan, sementara kepala masih dingin.</string>
+    <string name="promise_channel_name">Janji malam</string>
+    <string name="promise_channel_description">Satu kali, jam sembilan malam, dan cuma kalau janjinya belum ditulis.</string>
 </resources>

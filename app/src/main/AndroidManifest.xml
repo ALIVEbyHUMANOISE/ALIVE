@@ -97,6 +97,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ProjectEgo">
 
+        <!-- The nightly note about tomorrow's promise. Not exported: the only
+             sender that matters is this app's own alarm. -->
+        <receiver
+            android:name=".service.PromiseWatchReceiver"
+            android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

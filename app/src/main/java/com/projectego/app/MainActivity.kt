@@ -27,9 +27,9 @@ import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
 import androidx.core.widget.addTextChangedListener
-import androidx.core.content.ContextCompat
 import com.projectego.app.data.FocusSessionManager
 import com.projectego.app.data.LockStateManager
 import com.projectego.app.data.NightContractRepository
@@ -60,6 +60,7 @@ import com.projectego.app.model.Quest
 import com.projectego.app.model.QuestAttempt
 import com.projectego.app.model.QuestAttemptState
 import com.projectego.app.service.AccessibilityWatch
+import com.projectego.app.service.PromiseWatch
 import com.projectego.app.model.TimeStatus
 import com.projectego.app.model.UsageDay
 import com.projectego.app.model.VerificationMethod
@@ -315,6 +316,18 @@ class MainActivity : AppCompatActivity() {
             intent?.removeExtra(AliveStatsWidgetProvider.EXTRA_OPEN_STATS)
             openUsageChartPanel()
         }
+
+        // The nightly note opens the promise itself, not the app: the person
+        // pressed it because they meant to write something.
+        if (intent?.getBooleanExtra(PromiseWatch.EXTRA_OPEN_PROMISE, false) == true) {
+            intent?.removeExtra(PromiseWatch.EXTRA_OPEN_PROMISE)
+            openNightContractSheet()
+        }
+
+        // Re-armed on every visit rather than at boot: a phone that runs ALIVE
+        // when the person looks at it keeps the nine o'clock appointment, and a
+        // phone that never opens it has nobody to remind.
+        PromiseWatch.arm(this)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -1456,12 +1469,20 @@ class MainActivity : AppCompatActivity() {
         // One row of three, not three full-width bars: the choice is a single
         // decision about one number, and stacking them made it look like three.
         val allowanceGroup = RadioGroup(this).apply { orientation = LinearLayout.HORIZONTAL }
+        // Each size wears its own colour, so the choice can be read before the
+        // numbers are: tighter is the red end, looser is the green one. Colour
+        // here is chrome - it says which is which, not which is good.
+        val allowanceHues = intArrayOf(
+            ui.palette.shortPale,
+            ui.palette.rewardPale,
+            ui.palette.softForest
+        )
         NIGHT_ALLOWANCES.forEachIndexed { index, minutes ->
             allowanceGroup.addView(
                 ui.tileOption(
                     getString(R.string.stat_minutes, minutes),
                     0,
-                    ui.palette.rewardPale
+                    allowanceHues[index.coerceIn(0, allowanceHues.lastIndex)]
                 ).apply {
                     id = NIGHT_ALLOWANCE_ID_BASE + index
                     isChecked = minutes == chosenMinutes
@@ -1492,7 +1513,15 @@ class MainActivity : AppCompatActivity() {
         // one that is actually chosen.
         quests.forEachIndexed { index, quest ->
             questGroup.addView(
-                ui.tileOption(quest.title, 0, ui.palette.softForest).apply {
+                // Each row wears its category's mark and colour, the same pair the
+                // quest board uses, so a mission is recognisable here by the same
+                // shape it has there - and the mark is read out by TalkBack.
+                ui.tileOption(
+                    quest.title,
+                    PixelMarks.quest(quest.category),
+                    ContextCompat.getColor(this, QuestHues.quest(quest.category))
+                ).apply {
+                    contentDescription = getString(PixelMarks.description(quest.category))
                     id = NIGHT_QUEST_ID_BASE + 1 + index
                     isChecked = quest.id == chosenQuestId
                     layoutParams = RadioGroup.LayoutParams(

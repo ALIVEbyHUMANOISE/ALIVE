@@ -543,4 +543,8 @@
     <string name="promise_hold_none">You did not write why. The number still stands.</string>
     <string name="promise_hold_stay">Stay with it</string>
     <string name="promise_hold_open">Open anyway</string>
+    <string name="promise_notif_title">It\u2019s night</string>
+    <string name="promise_notif_body">Promise tomorrow something? Three taps, while the head is cool.</string>
+    <string name="promise_channel_name">Nightly promise</string>
+    <string name="promise_channel_description">Once, at nine in the evening, and only when the promise is not written yet.</string>
 </resources>
