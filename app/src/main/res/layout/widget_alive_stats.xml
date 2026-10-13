@@ -23,17 +23,28 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/bg_widget"
-    android:paddingLeft="18dp"
-    android:paddingTop="18dp"
-    android:paddingRight="24dp"
-    android:paddingBottom="24dp">
+    android:layout_height="match_parent">
+
+    <!-- The card is a picture now, painted by AliveWidgetArt.card, because a
+         translucent face cannot be expressed as a layered drawable: the ink
+         shadow would sit behind the whole card and show through the face
+         instead of the wallpaper. Full-bleed and behind the content, so the
+         padding below stays the content's own measure from the face's edge. -->
+    <ImageView
+        android:id="@+id/widget_card"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingLeft="18dp"
+        android:paddingTop="18dp"
+        android:paddingRight="24dp"
+        android:paddingBottom="24dp">
 
         <LinearLayout
             android:layout_width="match_parent"

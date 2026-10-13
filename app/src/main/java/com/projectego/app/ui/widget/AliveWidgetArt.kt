@@ -4,6 +4,9 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RectF
 import android.graphics.Typeface
 import androidx.annotation.ColorInt
 import androidx.core.content.ContextCompat
@@ -29,6 +32,74 @@ object AliveWidgetArt {
 
     /** Widest the figure may be: the card's own width minus its padding. */
     private const val FIGURE_MAX_DP = 200f
+
+    // The card, when it is painted instead of drawn by the launcher. Same shape
+    // as bg_widget.xml in the app - ink edge, hard shadow, paper face - but the
+    // face is allowed to be translucent, which the drawable cannot be: in a
+    // layered drawable the ink shadow sits behind the whole card, so a
+    // translucent face would show that ink rather than the wallpaper.
+    private const val CARD_RADIUS_DP = 16f
+    private const val CARD_STROKE_DP = 3f
+    private const val CARD_SHADOW_DP = 6f
+
+    /** 232/255: the wallpaper is readable through the card without the ink
+     *  losing its contrast against the paper behind it. */
+    private const val CARD_FACE_ALPHA = 232
+
+    /**
+     * The card itself, at [widthPx] by [heightPx].
+     *
+     * Painted rather than declared, for one reason: the shadow has to be drawn
+     * only where it will be seen. Draw it as a full rectangle behind a
+     * translucent face and the face stops being translucent - the ink shows
+     * through it as a grey wash and the wallpaper never does. So the shadow is
+     * painted first, the face's area is cut out of it, and the face is laid in
+     * that hole at [CARD_FACE_ALPHA].
+     *
+     * The picture is stretched to the widget's real size, so the corner radius
+     * and the edge are exact only at the size this is drawn for; a 4x2 card is
+     * what that size is.
+     */
+    fun card(context: Context, widthPx: Int, heightPx: Int): Bitmap {
+        val density = context.resources.displayMetrics.density
+        val radius = CARD_RADIUS_DP * density
+        val stroke = CARD_STROKE_DP * density
+        val shadow = CARD_SHADOW_DP * density
+
+        val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val ink = ContextCompat.getColor(context, R.color.alive_ink)
+        val paper = ContextCompat.getColor(context, R.color.alive_paper)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+        val faceW = widthPx - shadow
+        val faceH = heightPx - shadow
+        val face = RectF(0f, 0f, faceW, faceH)
+
+        paint.color = ink
+        canvas.drawRoundRect(RectF(shadow, shadow, widthPx.toFloat(), heightPx.toFloat()), radius, radius, paint)
+
+        paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
+        canvas.drawRoundRect(face, radius, radius, paint)
+        paint.xfermode = null
+
+        paint.color = paper
+        paint.alpha = CARD_FACE_ALPHA
+        canvas.drawRoundRect(face, radius, radius, paint)
+        paint.alpha = 255
+
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = stroke
+        paint.color = ink
+        val inset = stroke / 2f
+        canvas.drawRoundRect(
+            RectF(inset, inset, faceW - inset, faceH - inset),
+            radius,
+            radius,
+            paint
+        )
+        return bitmap
+    }
 
     /** The meter is stretched to whatever the card turns out to be, so it is
      * drawn wide and flat: only the seams and the slice edges scale. */
