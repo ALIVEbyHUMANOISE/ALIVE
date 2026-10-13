@@ -74,6 +74,17 @@ const paint = {
     paint.poly(grid, points, colour);
     paint.poly(grid, points.map(([x, y]) => [W - 1 - x, y]), colour);
   },
+  /** A filled disc, for the reactor rings: at this size a circle has to be drawn,
+   *  because a square core reads as a badge and a ring reads as something lit. */
+  disc(grid, cx, cy, r, colour) {
+    for (let y = cy - r; y <= cy + r; y++) {
+      for (let x = cx - r; x <= cx + r; x++) {
+        const dx = x - cx;
+        const dy = y - cy;
+        if (dx * dx + dy * dy <= r * r + r * 0.6) paint.set(grid, x, y, colour);
+      }
+    }
+  },
 };
 
 /** One cell of deep crimson around everything, so the figure exists on ink. */
@@ -108,8 +119,13 @@ function draw(pose) {
   // ---------- CLOAK ----------
   // Shoulders narrow, hem wide: the whole body is this one shape, and the figure
   // stands on the hem rather than on legs.
-  paint.polyBoth(grid, [[17, 14], [30, 14], [35, 22], [40, 40], [42, 46], [5, 46], [7, 40], [12, 22]], '#');
+  paint.polyBoth(grid, [[15, 13], [32, 13], [35, 20], [40, 40], [42, 46], [5, 46], [7, 40], [12, 20]], '#');
   paint.rect(grid, 5, 44, 42, 46, '#');
+  // Shoulder mass, carried inside the cloak rather than as separate plates. The
+  // reference has pauldrons; at forty-eight pixels the way to borrow them is
+  // weight along the top edge, not more shapes - which is the mistake the two
+  // plated passes made.
+  paint.polyBoth(grid, [[13, 15], [20, 13], [20, 21], [13, 23]], '#');
   // Two feet under the hem, so it is standing rather than floating.
   paint.polyBoth(grid, [[17, 46], [22, 46], [22, 47], [16, 47]], 'D');
 
@@ -117,13 +133,13 @@ function draw(pose) {
   paint.polyBoth(grid, [[18, 4], [29, 4], [35, 10], [36, 18], [11, 18], [12, 10]], '#');
   paint.polyBoth(grid, [[11, 16], [18, 16], [18, 19], [11, 18]], '#');;
 
-  // ---------- HORNS ----------
-  // Small, swept back and ink only. The crimson on them is the rim, not paint:
-  // a lit tip sticking out of the silhouette turned into a red blob hanging off
-  // the hood, and the test that caught it is the reason this rule is written
-  // down here.
-  paint.polyBoth(grid, [[18, 5], [13, 1], [10, 0], [14, 4], [17, 7]], '#');
-  paint.polyBoth(grid, [[29, 5], [34, 1], [37, 0], [33, 4], [30, 7]], '#');
+  // ---------- CREST ----------
+  // Borrowed from the reference: horns that rise and spread instead of lying
+  // back, plus a centre spike, so the head has a silhouette before the face is
+  // read. Ink only - the rim pass lights their edges, and a lit tip on a horn
+  // was already tried in this file and rejected.
+  paint.polyBoth(grid, [[18, 6], [19, 3], [16, 4], [11, 0], [11, 3], [16, 7]], '#');
+  paint.poly(grid, [[22, 5], [25, 5], [26, 2], [23, 0], [21, 2]], '#');
 
   // ---------- THE FACE IN THE HOOD ----------
   // Two slits of amber with a cell of dark between them, and nothing else. This
@@ -137,14 +153,16 @@ function draw(pose) {
   paint.polyBoth(grid, eye, 'A');
   paint.polyBoth(grid, [[18, 12], [22, 12], [22, 13], [18, 13]], 'D');
 
-  // ---------- SIGIL ----------
-  // The mark on the cloak, where a chest would be: a crimson ring around a core
-  // that burns harder in the two poses that are doing something about it.
-  paint.rect(grid, 20, 24, 27, 31, 'D');
-  paint.polyBoth(grid, [[19, 26], [20, 24], [21, 26], [19, 28]], 'D');
-  paint.rect(grid, 21, 25, 26, 30, glow);
-  paint.rect(grid, 22, 26, 25, 29, lit ? 'A' : 'C');
-  paint.rect(grid, 23, 27, 24, 28, '#');
+  // ---------- REACTOR ----------
+  // A ring, not a badge. The reference's chest core is what makes that figure
+  // read as powered rather than merely armoured, and concentric rings survive
+  // the cut to forty-eight pixels better than any detail on the plates does:
+  // crimson rim, a dark iris, then the light. It burns harder in the two poses
+  // that are doing something about it.
+  paint.disc(grid, 23, 27, 5, 'D');
+  paint.disc(grid, 23, 27, 3, '#');
+  paint.disc(grid, 23, 27, 2, glow);
+  paint.disc(grid, 23, 27, lit ? 1 : 0, lit ? 'A' : glow);
 
   // ---------- STAFF ----------
   // Held out to the side, thin shaft, and a head that is the brightest thing in
