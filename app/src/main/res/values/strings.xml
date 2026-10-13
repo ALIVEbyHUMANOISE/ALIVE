@@ -513,4 +513,25 @@
     <string name="dev_reward_locked">[dev] reward requires the verification pipeline</string>
     <string name="dev_test_focus_started">[dev] 15-second study focus started</string>
     <string name="dev_replay_welcome">[dev] replay the first-run welcome</string>
+
+    <string name="night_contract_heading">Tomorrow\u2019s promise</string>
+    <string name="night_contract_invite">Night. Promise tomorrow something?</string>
+    <string name="night_contract_invite_note">Three taps now, while it is quiet, instead of fifty decisions tomorrow.</string>
+    <string name="night_contract_invite_action">Make the promise</string>
+    <string name="night_contract_allowance_label">Tomorrow\u2019s allowance</string>
+    <string name="night_contract_allowance_same">Same as today (%1$d mnt)</string>
+    <string name="night_contract_counted_label">What counts</string>
+    <string name="night_contract_counted_note">The apps ALIVE already counts. They are shown here, not chosen: a list you can edit in the evening is a list you can empty in the afternoon.</string>
+    <string name="night_contract_quest_label">One quest for tomorrow</string>
+    <string name="night_contract_quest_none">No quest</string>
+    <string name="night_contract_quest_option">%1$s · %2$d mnt</string>
+    <string name="night_contract_quest_note">This is the quest that keeps tomorrow\u2019s allowance.</string>
+    <string name="night_contract_no_quest_note">Without a quest, nothing keeps tomorrow\u2019s allowance.</string>
+    <string name="night_contract_price_note">Raising it tomorrow costs minutes from the Time Bank, and those come from quests that paid out.</string>
+    <string name="night_contract_save">Save the promise</string>
+    <string name="night_contract_saved">Saved. It starts tomorrow, not tonight.</string>
+    <string name="night_contract_in_force">Promised: %1$d mnt</string>
+    <string name="night_contract_in_force_quest">Quest: %1$s</string>
+    <string name="night_contract_in_force_no_quest">No quest was named for today.</string>
+    <string name="cd_night_contract">The promise made last night</string>
 </resources>

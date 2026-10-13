@@ -1,6 +1,7 @@
 package com.projectego.app.domain
 
 import com.projectego.app.data.LockStateManager
+import java.util.Calendar
 
 /**
  * The promise made the night before, as a rule rather than as storage.
@@ -31,6 +32,22 @@ object NightContract {
 
     /** Four hours: the width of "tonight" that belongs to the day before. */
     const val NIGHT_SHIFT_MILLIS = 4 * 3_600_000L
+
+    /** When the app is willing to ask about tomorrow, and when it stops. */
+    const val NIGHT_START_HOUR = 21
+    const val NIGHT_END_HOUR = 4
+
+    /**
+     * Whether this is an hour for asking about tomorrow.
+     *
+     * The same window the night shift describes, said as clock hours: from nine
+     * in the evening until four in the morning. Outside it, a card offering to
+     * write tomorrow's promise is a card offering to undo an afternoon.
+     */
+    fun isNight(millis: Long): Boolean {
+        val hour = Calendar.getInstance().apply { timeInMillis = millis }.get(Calendar.HOUR_OF_DAY)
+        return hour >= NIGHT_START_HOUR || hour < NIGHT_END_HOUR
+    }
 
     /** The night a moment belongs to, as the day key the promise is written on. */
     fun nightKeyOf(millis: Long): String = LockStateManager.dayKeyOf(millis - NIGHT_SHIFT_MILLIS)

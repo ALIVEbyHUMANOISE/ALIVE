@@ -58,4 +58,12 @@ class NightContractTest {
             NightContract.nightKeyOf(at(2026, 10, 12, 23, 59))
         )
     }
+
+    @Test
+    fun `the offer appears at nine and disappears at four`() {
+        assertFalse(NightContract.isNight(at(2026, 10, 12, 20, 59)))
+        assertTrue(NightContract.isNight(at(2026, 10, 12, 21, 0)))
+        assertTrue(NightContract.isNight(at(2026, 10, 13, 3, 59)))
+        assertFalse(NightContract.isNight(at(2026, 10, 13, 4, 0)))
+    }
 }

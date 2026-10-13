@@ -32,6 +32,7 @@ import androidx.core.widget.addTextChangedListener
 import androidx.core.content.ContextCompat
 import com.projectego.app.data.FocusSessionManager
 import com.projectego.app.data.LockStateManager
+import com.projectego.app.data.NightContractRepository
 import com.projectego.app.data.QuestEvidenceRepository
 import com.projectego.app.data.QuestRepository
 import com.projectego.app.data.TimeBankRepository
@@ -42,6 +43,7 @@ import com.projectego.app.domain.CriticalAlertPolicy
 import com.projectego.app.domain.EntertainmentClaimCoordinator
 import com.projectego.app.domain.EntertainmentClaimPolicy
 import com.projectego.app.domain.FocusAppPolicy
+import com.projectego.app.domain.NightContract
 import com.projectego.app.domain.PhysicalQuestPolicy
 import com.projectego.app.domain.PhysicalQuestVerifier
 import com.projectego.app.domain.QuestStartCoordinator
@@ -50,6 +52,7 @@ import com.projectego.app.domain.UsageReport
 import com.projectego.app.domain.UsageBuckets
 import com.projectego.app.domain.UsageTracker
 import com.projectego.app.model.DayType
+import com.projectego.app.model.QuestStatus
 import com.projectego.app.model.FocusActivityType
 import com.projectego.app.model.FocusSession
 import com.projectego.app.model.PhysicalQuestRequirement
@@ -57,7 +60,6 @@ import com.projectego.app.model.Quest
 import com.projectego.app.model.QuestAttempt
 import com.projectego.app.model.QuestAttemptState
 import com.projectego.app.service.AccessibilityWatch
-import com.projectego.app.model.QuestStatus
 import com.projectego.app.model.TimeStatus
 import com.projectego.app.model.UsageDay
 import com.projectego.app.model.VerificationMethod
@@ -122,6 +124,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var usageTracker: UsageTracker
     private lateinit var lockStateManager: LockStateManager
     private lateinit var timeBankRepository: TimeBankRepository
+    private lateinit var nightContractRepository: NightContractRepository
     private lateinit var questRepository: QuestRepository
     private lateinit var focusSessionManager: FocusSessionManager
 
@@ -190,6 +193,7 @@ class MainActivity : AppCompatActivity() {
         usageTracker = UsageTracker(this)
         lockStateManager = LockStateManager(this)
         timeBankRepository = TimeBankRepository(this)
+        nightContractRepository = NightContractRepository(this)
         questRepository = QuestRepository(this, timeBankRepository)
         focusSessionManager = FocusSessionManager(this, timeBankRepository)
         val questEvidenceRepository = QuestEvidenceRepository(this)
@@ -514,6 +518,7 @@ class MainActivity : AppCompatActivity() {
         renderCurrentAction(signals)
         renderCurrentQuestBlock(attempt, quests)
         renderTimeBank(signals)
+        renderNightContract()
         renderFocusSection(focusSession)
 
         if (BuildConfig.DEBUG && showDevPanel) {
@@ -1358,6 +1363,175 @@ class MainActivity : AppCompatActivity() {
 
         timeBankAnchor = card
         statusContainer.addView(card)
+    }
+
+    /**
+     * The nightly promise.
+     *
+     * Two states and nothing in between: an offer in the evening, and the
+     * promise being lived during the day. Nothing here asks twice - a card that
+     * keeps asking after being declined turns a ritual into a bill, and the
+     * whole point is that skipping it costs nothing.
+     */
+    private fun renderNightContract() {
+        val now = System.currentTimeMillis()
+        val inForce = nightContractRepository.inForceOn(LockStateManager.dayKeyOf(now))
+        val night = NightContract.isNight(now)
+        if (!night && inForce == null) return
+
+        val card = ui.bentoCard(getString(R.string.night_contract_heading))
+
+        if (night) {
+            card.addView(ui.note(getString(R.string.night_contract_invite)))
+            card.addView(ui.annotation(getString(R.string.night_contract_invite_note)))
+            card.addView(ui.vgap(ui.dimens.groupGap))
+            card.addView(
+                ui.primary(getString(R.string.night_contract_invite_action)).apply {
+                    setOnClickListener { openNightContractSheet() }
+                }
+            )
+        } else {
+            inForce?.let { contract ->
+                card.addView(
+                    ui.note(getString(R.string.night_contract_in_force, contract.allowanceMinutes))
+                )
+                val questTitle = contract.questId?.let { id ->
+                    questRepository.getAllQuests().firstOrNull { it.id == id }?.title
+                }
+                card.addView(
+                    ui.annotation(
+                        questTitle?.let { getString(R.string.night_contract_in_force_quest, it) }
+                            ?: getString(R.string.night_contract_in_force_no_quest)
+                    )
+                )
+                card.addView(ui.vgap(ui.dimens.lineGap))
+                card.addView(ui.annotation(getString(R.string.night_contract_price_note)))
+            }
+        }
+
+        statusContainer.addView(card)
+    }
+
+    /**
+     * Writing the promise: the allowance, what counts, and one quest.
+     *
+     * The counted apps are shown and not chosen. A list that can be edited in
+     * the evening is a list that can be emptied in the afternoon, and the one
+     * thing this app must never hand over is the ability to quietly excuse an
+     * app the person has already decided counts.
+     */
+    private fun openNightContractSheet() {
+        val (scroll, column) = panel()
+        column.addView(panelHeader(getString(R.string.night_contract_heading)))
+        column.addView(ui.vgap(ui.dimens.groupGap))
+        column.addView(ui.annotation(getString(R.string.night_contract_invite_note)))
+        column.addView(ui.vgap(ui.dimens.groupGap))
+
+        val inForce = nightContractRepository
+            .inForceOn(LockStateManager.dayKeyOf(System.currentTimeMillis()))
+        var chosenMinutes = inForce?.allowanceMinutes ?: LockStateManager.PRODUCTION_LIMIT_MINUTES
+        var chosenQuestId = inForce?.questId
+
+        column.addView(ui.cardTitle(getString(R.string.night_contract_allowance_label)))
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        val allowanceGroup = RadioGroup(this)
+        NIGHT_ALLOWANCES.forEachIndexed { index, minutes ->
+            allowanceGroup.addView(
+                ui.tileOption(
+                    getString(R.string.stat_minutes, minutes),
+                    0,
+                    ui.palette.rewardPale
+                ).apply {
+                    id = NIGHT_ALLOWANCE_ID_BASE + index
+                    isChecked = minutes == chosenMinutes
+                    layoutParams = RadioGroup.LayoutParams(
+                        RadioGroup.LayoutParams.MATCH_PARENT,
+                        RadioGroup.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        if (index > 0) topMargin = ui.dimens.pairGap
+                    }
+                }
+            )
+        }
+        allowanceGroup.setOnCheckedChangeListener { _, checkedId ->
+            val index = (checkedId - NIGHT_ALLOWANCE_ID_BASE).coerceIn(0, NIGHT_ALLOWANCES.lastIndex)
+            chosenMinutes = NIGHT_ALLOWANCES[index]
+        }
+        column.addView(allowanceGroup)
+
+        column.addView(ui.vgap(ui.dimens.groupGap))
+        column.addView(ui.cardTitle(getString(R.string.night_contract_counted_label)))
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        column.addView(ui.annotation(getString(R.string.night_contract_counted_note)))
+
+        column.addView(ui.vgap(ui.dimens.groupGap))
+        column.addView(ui.cardTitle(getString(R.string.night_contract_quest_label)))
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        val quests = questRepository.getAllQuests().filter { it.status == QuestStatus.AVAILABLE }
+        val questNote = ui.annotation(getString(R.string.night_contract_no_quest_note))
+        val questGroup = RadioGroup(this)
+        questGroup.addView(
+            ui.tileOption(getString(R.string.night_contract_quest_none), 0, ui.palette.warmGray).apply {
+                id = NIGHT_QUEST_ID_BASE
+                isChecked = chosenQuestId == null
+                layoutParams = RadioGroup.LayoutParams(
+                    RadioGroup.LayoutParams.MATCH_PARENT,
+                    RadioGroup.LayoutParams.WRAP_CONTENT
+                )
+            }
+        )
+        quests.forEachIndexed { index, quest ->
+            questGroup.addView(
+                ui.tileOption(
+                    getString(R.string.night_contract_quest_option, quest.title, quest.rewardMinutes),
+                    0,
+                    ui.palette.softForest
+                ).apply {
+                    id = NIGHT_QUEST_ID_BASE + 1 + index
+                    isChecked = quest.id == chosenQuestId
+                    layoutParams = RadioGroup.LayoutParams(
+                        RadioGroup.LayoutParams.MATCH_PARENT,
+                        RadioGroup.LayoutParams.WRAP_CONTENT
+                    ).apply { topMargin = ui.dimens.pairGap }
+                }
+            )
+        }
+        questGroup.setOnCheckedChangeListener { _, checkedId ->
+            val index = checkedId - NIGHT_QUEST_ID_BASE
+            chosenQuestId = if (index <= 0) null else quests.getOrNull(index - 1)?.id
+            questNote.text = if (chosenQuestId == null) {
+                getString(R.string.night_contract_no_quest_note)
+            } else {
+                getString(R.string.night_contract_quest_note)
+            }
+        }
+        column.addView(questGroup)
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        column.addView(questNote)
+
+        column.addView(ui.vgap(ui.dimens.groupGap))
+        column.addView(ui.annotation(getString(R.string.night_contract_price_note)))
+        column.addView(ui.vgap(ui.dimens.groupGap))
+        column.addView(
+            ui.primary(getString(R.string.night_contract_save)).apply {
+                setOnClickListener {
+                    nightContractRepository.save(
+                        chosenMinutes,
+                        chosenQuestId,
+                        System.currentTimeMillis()
+                    )
+                    Toast.makeText(
+                        this@MainActivity,
+                        getString(R.string.night_contract_saved),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    closeOverlay()
+                    renderDashboard()
+                }
+            }
+        )
+
+        openOverlay(scroll)
     }
 
     /**
@@ -3210,6 +3384,19 @@ private const val CHART_BUCKET_ID_BASE = 400
 
 /** The language row's two options. Same synthetic-id contract as the pickers. */
 private const val LANGUAGE_ID_BASE = 500
+
+/** The nightly contract's two pickers: the allowance, then the quest. */
+private const val NIGHT_ALLOWANCE_ID_BASE = 600
+private const val NIGHT_QUEST_ID_BASE = 700
+
+/**
+ * What tomorrow can be promised, in minutes.
+ *
+ * Three sizes and no free field: a number someone types at ten at night is a
+ * number they will not recognise at three the next afternoon, and the tile they
+ * pressed is one they can still picture.
+ */
+private val NIGHT_ALLOWANCES = longArrayOf(60L, 120L, 180L)
 
 /** The chart's legend rows: "All days" first, then one per kind. */
 private const val KIND_FILTER_ID_BASE = 700

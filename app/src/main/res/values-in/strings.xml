@@ -471,4 +471,25 @@
     <string name="guardian_channel_name">Guardian</string>
     <string name="guardian_channel_description">Bilang penjagaan mati, sampai nyala lagi.</string>
     <string name="permissions_notifications_why">ALIVE juga minta izin notifikasi. Kerjanya cuma satu: terus bilang penjaganya mati saat app-nya ditutup, lalu berhenti begitu dinyalakan.</string>
+
+    <string name="night_contract_heading">Janji besok</string>
+    <string name="night_contract_invite">Malam. Mau berjanji sesuatu untuk besok?</string>
+    <string name="night_contract_invite_note">Tiga ketukan sekarang, saat kepala dingin, daripada lima puluh keputusan besok.</string>
+    <string name="night_contract_invite_action">Bikin janji</string>
+    <string name="night_contract_allowance_label">Jatah besok</string>
+    <string name="night_contract_allowance_same">Sama seperti hari ini (%1$d mnt)</string>
+    <string name="night_contract_counted_label">Yang dihitung</string>
+    <string name="night_contract_counted_note">Aplikasi yang memang sudah dihitung ALIVE. Ini cuma ditampilkan, bukan dipilih: daftar yang bisa diubah malam hari adalah daftar yang bisa dikosongkan sore hari.</string>
+    <string name="night_contract_quest_label">Satu quest untuk besok</string>
+    <string name="night_contract_quest_none">Tanpa quest</string>
+    <string name="night_contract_quest_option">%1$s · %2$d mnt</string>
+    <string name="night_contract_quest_note">Quest inilah yang menjaga jatah besok.</string>
+    <string name="night_contract_no_quest_note">Tanpa quest, tidak ada yang menjaga jatah besok.</string>
+    <string name="night_contract_price_note">Menaikkannya besok harus dibayar dengan menit dari Time Bank, dan itu hanya terisi dari quest yang cair.</string>
+    <string name="night_contract_save">Simpan janji</string>
+    <string name="night_contract_saved">Tersimpan. Berlaku besok, bukan malam ini.</string>
+    <string name="night_contract_in_force">Dijanjikan: %1$d mnt</string>
+    <string name="night_contract_in_force_quest">Quest: %1$s</string>
+    <string name="night_contract_in_force_no_quest">Tidak ada quest yang dijanjikan untuk hari ini.</string>
+    <string name="cd_night_contract">Janji dari malam sebelumnya</string>
 </resources>
