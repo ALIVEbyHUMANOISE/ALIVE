@@ -16,7 +16,16 @@ class NightContractRepository(context: Context) {
     data class Contract(
         val allowanceMinutes: Long,
         val questId: String?,
-        val nightKey: String
+        val nightKey: String,
+        /**
+         * Why the person chose that number, in their own words, or null.
+         *
+         * It is the only thing in this app that can be held up at the moment of
+         * temptation without the app having to say a word of its own: a
+         * warning is the program's opinion, and a sentence typed at ten at
+         * night is a person's.
+         */
+        val reason: String?
     )
 
     private val prefs = context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
@@ -28,7 +37,8 @@ class NightContractRepository(context: Context) {
         return Contract(
             allowanceMinutes = prefs.getLong(KEY_ALLOWANCE, 0L),
             questId = prefs.getString(KEY_QUEST, null),
-            nightKey = nightKey
+            nightKey = nightKey,
+            reason = prefs.getString(KEY_REASON, null)?.takeIf { it.isNotBlank() }
         )
     }
 
@@ -36,10 +46,11 @@ class NightContractRepository(context: Context) {
     fun inForceOn(todayKey: String): Contract? =
         stored()?.takeIf { NightContract.isInForce(it.nightKey, todayKey) }
 
-    fun save(allowanceMinutes: Long, questId: String?, nowMillis: Long) {
+    fun save(allowanceMinutes: Long, questId: String?, reason: String?, nowMillis: Long) {
         prefs.edit()
             .putLong(KEY_ALLOWANCE, allowanceMinutes)
             .putString(KEY_QUEST, questId)
+            .putString(KEY_REASON, reason?.trim()?.takeIf { it.isNotEmpty() })
             .putString(KEY_NIGHT, NightContract.nightKeyOf(nowMillis))
             .apply()
     }
@@ -48,6 +59,7 @@ class NightContractRepository(context: Context) {
         const val PREFS_FILE = "project_ego_night_contract"
         const val KEY_ALLOWANCE = "key_allowance_minutes"
         const val KEY_QUEST = "key_quest_id"
+        const val KEY_REASON = "key_reason"
         const val KEY_NIGHT = "key_night"
     }
 }

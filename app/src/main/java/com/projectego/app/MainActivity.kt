@@ -768,7 +768,9 @@ class MainActivity : AppCompatActivity() {
                         LinearLayout.LayoutParams.WRAP_CONTENT
                     )
                     setOnClickListener {
-                        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                        confirmAgainstPromise {
+                            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                        }
                     }
                 }
             )
@@ -862,7 +864,9 @@ class MainActivity : AppCompatActivity() {
                         LinearLayout.LayoutParams.WRAP_CONTENT
                     )
                     setOnClickListener {
-                        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                        confirmAgainstPromise {
+                            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                        }
                     }
                 }
             )
@@ -1401,6 +1405,12 @@ class MainActivity : AppCompatActivity() {
                 card.addView(
                     ui.note(getString(R.string.night_contract_in_force, contract.allowanceMinutes))
                 )
+                contract.reason?.let { reason ->
+                    card.addView(ui.vgap(ui.dimens.lineGap))
+                    card.addView(
+                        ui.annotation(getString(R.string.night_contract_in_force_reason, reason))
+                    )
+                }
                 val questTitle = contract.questId?.let { id ->
                     questRepository.getAllQuests().firstOrNull { it.id == id }?.title
                 }
@@ -1516,6 +1526,18 @@ class MainActivity : AppCompatActivity() {
         column.addView(questNote)
 
         column.addView(ui.vgap(ui.dimens.groupGap))
+        column.addView(ui.cardTitle(getString(R.string.night_contract_reason_label)))
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        // The one field on this sheet that is not a choice. It exists for the
+        // afternoon, not for the evening: it is the only thing that can be held
+        // up later without the app having to speak for the person.
+        val reasonInput = ui.input(getString(R.string.night_contract_reason_hint)).apply {
+            maxLines = 2
+            setText(inForce?.reason ?: "")
+        }
+        column.addView(reasonInput)
+
+        column.addView(ui.vgap(ui.dimens.groupGap))
         column.addView(ui.annotation(getString(R.string.night_contract_price_note)))
         column.addView(ui.vgap(ui.dimens.groupGap))
         column.addView(
@@ -1524,6 +1546,7 @@ class MainActivity : AppCompatActivity() {
                     nightContractRepository.save(
                         chosenMinutes,
                         chosenQuestId,
+                        reasonInput.text?.toString(),
                         System.currentTimeMillis()
                     )
                     Toast.makeText(
@@ -1537,6 +1560,62 @@ class MainActivity : AppCompatActivity() {
             }
         )
 
+        openOverlay(scroll)
+    }
+
+    /**
+     * The character, holding the promise, in front of the two doors that open it.
+     *
+     * This is not a warning, and that is the whole point: ALIVE has no opinion to
+     * state here. What it does is return the sentence the person typed last
+     * night, in their own words, and let them choose - a program's advice is
+     * easy to dismiss, and a person's own sentence is not. If they wrote
+     * nothing, the character still stands there, because the number they chose
+     * is on its own enough to be asked about.
+     *
+     * The door is never locked, only slower. There is no second question, no
+     * countdown, and no record kept of how many times it was opened.
+     */
+    private fun confirmAgainstPromise(onOpen: () -> Unit) {
+        val contract = nightContractRepository
+            .inForceOn(LockStateManager.dayKeyOf(System.currentTimeMillis()))
+        if (contract == null) {
+            onOpen()
+            return
+        }
+
+        val (scroll, column) = panel()
+        column.addView(
+            ui.pose(
+                AliveStates.faceSpriteFor(AliveFace.WORRIED),
+                ui.dimens.characterLarge,
+                getString(R.string.cd_night_contract)
+            )
+        )
+        column.addView(ui.vgap(ui.dimens.groupGap))
+        column.addView(ui.cardTitle(getString(R.string.promise_hold_title)))
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        column.addView(
+            ui.note(
+                contract.reason?.let { getString(R.string.night_contract_in_force_reason, it) }
+                    ?: getString(R.string.promise_hold_none)
+            )
+        )
+        column.addView(ui.vgap(ui.dimens.groupGap))
+        column.addView(
+            ui.primary(getString(R.string.promise_hold_stay)).apply {
+                setOnClickListener { closeOverlay() }
+            }
+        )
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        column.addView(
+            ui.secondary(getString(R.string.promise_hold_open)).apply {
+                setOnClickListener {
+                    closeOverlay()
+                    onOpen()
+                }
+            }
+        )
         openOverlay(scroll)
     }
 
@@ -1583,7 +1662,7 @@ class MainActivity : AppCompatActivity() {
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT
                     )
-                    setOnClickListener { claimBankMinutes() }
+                    setOnClickListener { confirmAgainstPromise { claimBankMinutes() } }
                 }
             )
             EntertainmentClaimPolicy.Decision.DailyCapReached ->

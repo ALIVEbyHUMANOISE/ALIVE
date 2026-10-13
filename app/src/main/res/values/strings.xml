@@ -536,4 +536,11 @@
     <string name="night_contract_in_force_quest">Quest: %1$s</string>
     <string name="night_contract_in_force_no_quest">No quest was named for today.</string>
     <string name="cd_night_contract">The promise made last night</string>
+    <string name="night_contract_reason_label">Why this number?</string>
+    <string name="night_contract_reason_hint">One line, in your own words</string>
+    <string name="night_contract_in_force_reason">You wrote: %1$s</string>
+    <string name="promise_hold_title">Last night you wrote this</string>
+    <string name="promise_hold_none">You did not write why. The number still stands.</string>
+    <string name="promise_hold_stay">Stay with it</string>
+    <string name="promise_hold_open">Open anyway</string>
 </resources>

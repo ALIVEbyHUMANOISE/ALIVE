@@ -494,4 +494,11 @@
     <string name="night_contract_in_force_quest">Quest: %1$s</string>
     <string name="night_contract_in_force_no_quest">Tidak ada quest yang dijanjikan untuk hari ini.</string>
     <string name="cd_night_contract">Janji dari malam sebelumnya</string>
+    <string name="night_contract_reason_label">Kenapa angka ini?</string>
+    <string name="night_contract_reason_hint">Satu kalimat, pakai kata-katamu sendiri</string>
+    <string name="night_contract_in_force_reason">Kamu menulis: %1$s</string>
+    <string name="promise_hold_title">Semalam kamu menulis ini</string>
+    <string name="promise_hold_none">Kamu nggak menulis alasannya. Angkanya tetap berlaku.</string>
+    <string name="promise_hold_stay">Tetap</string>
+    <string name="promise_hold_open">Buka saja</string>
 </resources>
