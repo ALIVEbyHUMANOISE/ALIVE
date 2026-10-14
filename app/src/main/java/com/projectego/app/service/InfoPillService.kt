@@ -76,6 +76,7 @@ class InfoPillService : Service() {
         }
 
         startedAt = System.currentTimeMillis()
+        isRunning = true
         startForeground(NOTIFICATION_ID, ongoingNote())
         show()
         ticker.removeCallbacks(tick)
@@ -84,6 +85,7 @@ class InfoPillService : Service() {
     }
 
     override fun onDestroy() {
+        isRunning = false
         ticker.removeCallbacks(tick)
         pill?.let { window?.removeView(it) }
         pill = null
@@ -221,6 +223,12 @@ class InfoPillService : Service() {
 
     companion object {
         const val EXTRA_PACKAGE = "com.projectego.app.extra.PILL_PACKAGE"
+
+        /** For the tile's own state: the pill is up, so its next tap takes it down. */
+        @Volatile
+        var isRunning = false
+            private set
+
         private const val CHANNEL_ID = "alive_pill"
         private const val NOTIFICATION_ID = 7401
         private const val TICK_MILLIS = 20_000L

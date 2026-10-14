@@ -110,6 +110,19 @@
                 android:value="A small always-on-top reading of the user's own screen time" />
         </service>
 
+        <!-- The button that summons it. Exported because the system's shade is
+             the caller, behind the platform's own bind permission. -->
+        <service
+            android:name=".service.InfoPillTile"
+            android:exported="true"
+            android:icon="@drawable/ic_alive_hourglass"
+            android:label="@string/pill_tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
         <!-- The nightly note about tomorrow's promise. Not exported: the only
              sender that matters is this app's own alarm. -->
         <receiver
