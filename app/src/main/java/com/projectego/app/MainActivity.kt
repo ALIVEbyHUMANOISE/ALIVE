@@ -61,6 +61,7 @@ import com.projectego.app.model.QuestAttempt
 import com.projectego.app.model.QuestAttemptState
 import com.projectego.app.service.AccessibilityWatch
 import com.projectego.app.service.PromiseWatch
+import com.projectego.app.service.QuestWatch
 import com.projectego.app.model.TimeStatus
 import com.projectego.app.model.UsageDay
 import com.projectego.app.model.VerificationMethod
@@ -328,6 +329,7 @@ class MainActivity : AppCompatActivity() {
         // when the person looks at it keeps the nine o'clock appointment, and a
         // phone that never opens it has nobody to remind.
         PromiseWatch.arm(this)
+        QuestWatch.arm(this)
     }
 
     override fun onNewIntent(intent: Intent) {

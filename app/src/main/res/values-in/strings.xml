@@ -512,7 +512,11 @@
     <string name="pill_left">sisa %1$s hari ini</string>
     <string name="pill_spent">jatah hari ini habis</string>
     <string name="pill_cd">Waktumu di aplikasi yang sedang terbuka</string>
-        <string name="pill_tile_label">Pill waktu</string>
+            <string name="quest_watch_title">Misi yang kamu tulis semalam</string>
+    <string name="quest_watch_body">Masih terbuka hari ini: %1$s. Satu misi hari ini menjaga jatah besok.</string>
+    <string name="quest_watch_channel_name">Pengingat misi</string>
+    <string name="quest_watch_channel_description">Satu kali, sore hari, dan cuma untuk misi yang ditulis di janji semalam.</string>
+    <string name="pill_tile_label">Pill waktu</string>
 <string name="pill_channel_name">Pill waktu</string>
     <string name="pill_channel_description">Muncul selama pill-nya di layar. Matikan pill-nya, ini ikut hilang.</string>
 </resources>

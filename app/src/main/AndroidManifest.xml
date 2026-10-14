@@ -129,6 +129,11 @@
             android:name=".service.PromiseWatchReceiver"
             android:exported="false" />
 
+        <!-- The mid-afternoon note about the quest that promise named. -->
+        <receiver
+            android:name=".service.QuestWatchReceiver"
+            android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

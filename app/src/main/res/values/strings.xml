@@ -554,7 +554,11 @@
     <string name="pill_left">%1$s left today</string>
     <string name="pill_spent">today\u2019s allowance is spent</string>
     <string name="pill_cd">Your time in the app that is open right now</string>
-        <string name="pill_tile_label">Time pill</string>
+            <string name="quest_watch_title">The quest you wrote down</string>
+    <string name="quest_watch_body">Still open today: %1$s. One quest today keeps tomorrow’s allowance.</string>
+    <string name="quest_watch_channel_name">Quest reminder</string>
+    <string name="quest_watch_channel_description">Once, mid-afternoon, and only for the quest written in last night’s promise.</string>
+    <string name="pill_tile_label">Time pill</string>
 <string name="pill_channel_name">Time pill</string>
     <string name="pill_channel_description">Shows while the pill is on screen. Turn the pill off and this goes with it.</string>
 </resources>
