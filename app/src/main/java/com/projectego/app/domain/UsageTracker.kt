@@ -275,6 +275,33 @@ class UsageTracker(private val context: Context) {
             now
         )
 
+    /**
+     * How many times [packageName] came to the front today.
+     *
+     * The pill's second sentence, and the one number people are wrong about:
+     * nearly everyone knows roughly how long they have been in an app, and
+     * almost nobody knows how often they went back in. Counted from the same
+     * event stream the totals use, so the two can never disagree.
+     */
+    fun opensToday(packageName: String): Int {
+        val startTime = getTodayStartTimestamp()
+        val now = System.currentTimeMillis()
+        val stream = (context.getSystemService(AppCompatActivity.USAGE_STATS_SERVICE) as? UsageStatsManager)
+            ?.queryEvents(startTime, now) ?: return 0
+        val event = UsageEvents.Event()
+        var opens = 0
+        while (stream.hasNextEvent()) {
+            stream.getNextEvent(event)
+            if (event.eventType != EVENT_RESUMED &&
+                event.eventType != UsageEvents.Event.MOVE_TO_FOREGROUND
+            ) {
+                continue
+            }
+            if (event.packageName == packageName) opens += 1
+        }
+        return opens
+    }
+
     /** Today's focus windows, with the packages each session said were allowed. */
     private fun focusWindows(): List<FocusExemption.Window> =
         focusSessionManager.getTodayWindows().map { window ->

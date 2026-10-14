@@ -554,4 +554,6 @@
     <string name="pill_left">%1$s left today</string>
     <string name="pill_spent">today\u2019s allowance is spent</string>
     <string name="pill_cd">Your time in the app that is open right now</string>
+    <string name="pill_channel_name">Time pill</string>
+    <string name="pill_channel_description">Shows while the pill is on screen. Turn the pill off and this goes with it.</string>
 </resources>

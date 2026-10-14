@@ -97,6 +97,19 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ProjectEgo">
 
+        <!-- The pill: summoned from the quick settings tile, gone the moment the
+             person asks or the process dies. specialUse because none of the
+             declared types describe "small window on top", and it is honest
+             about being exactly that. -->
+        <service
+            android:name=".service.InfoPillService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="A small always-on-top reading of the user's own screen time" />
+        </service>
+
         <!-- The nightly note about tomorrow's promise. Not exported: the only
              sender that matters is this app's own alarm. -->
         <receiver
