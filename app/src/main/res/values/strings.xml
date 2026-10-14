@@ -547,4 +547,11 @@
     <string name="promise_notif_body">Promise tomorrow something? Three taps, while the head is cool.</string>
     <string name="promise_channel_name">Nightly promise</string>
     <string name="promise_channel_description">Once, at nine in the evening, and only when the promise is not written yet.</string>
+
+    <string name="pill_on_app">on %1$s</string>
+    <string name="pill_opens">opened %1$d× today</string>
+    <string name="pill_today">%1$s today</string>
+    <string name="pill_left">%1$s left today</string>
+    <string name="pill_spent">today\u2019s allowance is spent</string>
+    <string name="pill_cd">Your time in the app that is open right now</string>
 </resources>
