@@ -17,7 +17,9 @@ import java.util.UUID
 data class FocusWindow(
     val start: Long,
     val end: Long,
-    val activityType: FocusActivityType
+    val activityType: FocusActivityType,
+    /** The apps the session named itself, or null for the activity's own list. */
+    val approvedOverride: Set<String>? = null
 )
 
 class FocusSessionManager(
@@ -48,8 +50,6 @@ class FocusSessionManager(
 
         // ASCII control separators, the same trick the quest attempt uses: a
         // visible delimiter would eventually appear inside a goal string.
-        private const val WINDOW_SEPARATOR = "\u001E"
-        private const val WINDOW_FIELD_SEPARATOR = "\u001F"
     }
 
     @Synchronized
@@ -153,25 +153,12 @@ class FocusSessionManager(
     }
 
     private fun serializeWindows(windows: List<FocusWindow>): String =
-        windows.joinToString(WINDOW_SEPARATOR) {
-            "${it.start}$WINDOW_FIELD_SEPARATOR${it.end}$WINDOW_FIELD_SEPARATOR${it.activityType.name}"
-        }
+        FocusWindowCodec.encode(windows)
 
-    private fun deserializeWindows(raw: String?): List<FocusWindow> {
-        if (raw.isNullOrBlank()) return emptyList()
-        return raw.split(WINDOW_SEPARATOR).mapNotNull { part ->
-            val fields = part.split(WINDOW_FIELD_SEPARATOR)
-            if (fields.size != 3) return@mapNotNull null
-            val start = fields[0].toLongOrNull() ?: return@mapNotNull null
-            val end = fields[1].toLongOrNull() ?: return@mapNotNull null
-            val type = try {
-                FocusActivityType.valueOf(fields[2])
-            } catch (_: Exception) {
-                return@mapNotNull null
-            }
-            FocusWindow(start, end, type)
-        }
-    }
+    /** Both shapes: the three-field record this app has always written, and the
+     *  four-field one a self-written mission adds its app list to. */
+    private fun deserializeWindows(raw: String?): List<FocusWindow> =
+        FocusWindowCodec.decode(raw)
 
     /**
      * Starts a new Focus Session.
