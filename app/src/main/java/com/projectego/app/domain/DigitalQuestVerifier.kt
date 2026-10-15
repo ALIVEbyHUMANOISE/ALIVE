@@ -2,8 +2,6 @@ package com.projectego.app.domain
 
 import com.projectego.app.model.DigitalQuestEvidence
 import com.projectego.app.model.DigitalQuestVerificationResult
-import com.projectego.app.model.FocusActivityType
-import com.projectego.app.model.QuestCategory
 import com.projectego.app.model.VerificationMethod
 
 /**
@@ -46,14 +44,11 @@ object DigitalQuestVerifier {
             return DigitalQuestVerificationResult.failedStartTimestampMismatch()
         }
 
-        // Category/activity type must match
-        val expected = when (evidence.questCategory) {
-            QuestCategory.STUDY -> FocusActivityType.STUDY
-            QuestCategory.CODING -> FocusActivityType.CODING
-            QuestCategory.WRITING -> FocusActivityType.WRITING
-            QuestCategory.CREATIVE -> FocusActivityType.CREATIVE
-            else -> return DigitalQuestVerificationResult.failedNonDigital()
-        }
+        // Category/activity type must match. A self-written mission carries its kind
+        // as its category, so this one question covers it too - there is no id
+        // to special-case anywhere in this file.
+        val expected = QuestStartCoordinator.focusActivityTypeFor(evidence.questCategory)
+            ?: return DigitalQuestVerificationResult.failedNonDigital()
         if (evidence.focusActivityType != expected) {
             return DigitalQuestVerificationResult.failedActivityTypeMismatch()
         }

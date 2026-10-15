@@ -2,6 +2,7 @@
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.projectego.app.domain.CustomQuest
 import com.projectego.app.model.Quest
 import com.projectego.app.model.QuestAttempt
 import com.projectego.app.model.QuestAttemptState
@@ -20,7 +21,12 @@ class QuestRepository(
     // Test seam only: every persisted timestamp goes through this clock so a
     // physical settle can be driven deterministically. Defaults to the real
     // clock, which keeps every existing call site untouched.
-    private val clock: () -> Long = System::currentTimeMillis
+    private val clock: () -> Long = System::currentTimeMillis,
+    // The one mission the person wrote, if any. A supplier rather than a value:
+    // it can be rewritten while this repository is alive, and the board must
+    // show the words that are on file now. The default reports none, which is
+    // every case where no mission has been written.
+    private val customQuestProvider: () -> CustomQuestRepository.Stored? = { null }
 ) {
 
     // Kept as given, not applicationContext: below API 33 AppCompat's per-app
@@ -252,6 +258,49 @@ class QuestRepository(
         )
     )
 
+    /**
+     * Everything the board shows: the catalog, plus the person's own mission
+     * when one is on file. A rewritten mission is the same board entry with new
+     * words - its id never changes, so it cannot become a second quest.
+     */
+    private fun board(): List<Quest> =
+        catalog() + listOfNotNull(
+            customQuestProvider()?.let {
+                CustomQuest.quest(
+                    title = it.name,
+                    description = context.getString(R.string.quest_custom_body),
+                    durationMinutes = it.durationMinutes,
+                    kind = it.kind
+                )
+            }
+        )
+
+    /**
+     * Whether this id names something that can be attempted at all.
+     *
+     * The catalog's ids are a fixed list on file, but a mission exists only
+     * while it is written down: clearing it takes the entry away with it.
+     */
+    private fun existsOnBoard(questId: String): Boolean =
+        INITIAL_QUEST_IDS.contains(questId) ||
+            (questId == CustomQuest.ID && customQuestProvider() != null)
+
+    /**
+     * What an attempt pays, read from the attempt itself rather than from the
+     * board.
+     *
+     * A mission that earned its reward is paid even if its words were rewritten
+     * or cleared in the meantime: the attempt is the record of what was agreed,
+     * and a payout that could be voided by editing afterwards would not be a
+     * reward.
+     */
+    private fun rewardForAttempt(attempt: QuestAttempt): Long? =
+        if (attempt.questId == CustomQuest.ID) {
+            CustomQuest.rewardFor(attempt.committedDurationMinutes.toInt())
+        } else {
+            catalog().find { it.id == attempt.questId }?.rewardMinutes
+        }
+
     // ============================================================
     // Legacy Phase 2.1 quest board (AVAILABLE/ACTIVE/COMPLETED).
     // Unchanged in Phase 2.3.2 - still drives MainActivity's existing
@@ -274,7 +323,7 @@ class QuestRepository(
         val activeId = getActiveQuestId()
         val completedIds = getCompletedIds()
 
-        return catalog().map { quest ->
+        return board().map { quest ->
             val status = when {
                 completedIds.contains(quest.id) -> QuestStatus.COMPLETED
                 quest.id == activeId -> QuestStatus.ACTIVE
@@ -306,7 +355,7 @@ class QuestRepository(
             return false
         }
 
-        val exists = INITIAL_QUEST_IDS.contains(questId)
+        val exists = existsOnBoard(questId)
         if (!exists) return false
 
         prefs.edit().putString(KEY_ACTIVE_QUEST_ID, questId).apply()
@@ -357,7 +406,7 @@ class QuestRepository(
      */
     @Synchronized
     fun commitQuest(questId: String, method: VerificationMethod, committedDurationMinutes: Long): Boolean {
-        val exists = INITIAL_QUEST_IDS.contains(questId)
+        val exists = existsOnBoard(questId)
         if (!exists) return false
 
         if (getCompletedIds().contains(questId)) return false
@@ -498,11 +547,11 @@ class QuestRepository(
         val current = getCurrentAttempt() ?: return null
         if (current.state != QuestAttemptState.VERIFIED) return null
 
-        val quest = catalog().find { it.id == current.questId } ?: return null
+        val reward = rewardForAttempt(current) ?: return null
 
         val rewardedAttempt = current.copy(
             state = QuestAttemptState.REWARDED,
-            rewardMinutes = quest.rewardMinutes,
+            rewardMinutes = reward,
             rewardedTimestamp = clock()
         )
 
@@ -519,7 +568,7 @@ class QuestRepository(
             return null
         }
 
-        timeBankRepository.addEarnedMinutes(quest.rewardMinutes)
+        timeBankRepository.addEarnedMinutes(reward)
 
         val completedIds = getCompletedIds().toMutableSet()
         completedIds.add(current.questId)
@@ -530,7 +579,7 @@ class QuestRepository(
         // marker can cost a day, it can never grant one.
         LockStateManager.recordQuestCompleted(context)
 
-        return quest.rewardMinutes
+        return reward
     }
 
     private fun persistAttempt(attempt: QuestAttempt) {

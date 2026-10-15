@@ -4,6 +4,7 @@ import com.projectego.app.data.FocusSessionManager
 import com.projectego.app.data.QuestEvidenceRepository
 import com.projectego.app.data.QuestRepository
 import com.projectego.app.model.FocusActivityType
+import com.projectego.app.model.Quest
 import com.projectego.app.model.QuestCategory
 import com.projectego.app.model.QuestStatus
 import com.projectego.app.model.VerificationMethod

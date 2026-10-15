@@ -156,6 +156,25 @@
     <string name="quest_declare_done">Saya selesai</string>
     <string name="quest_declare_failed">ALIVE tidak bisa mencatat itu.</string>
 
+    <!-- ============ MISI TULISAN SENDIRI ============ -->
+    <string name="quest_custom_body">Kata-katamu sendiri, dijaga persis seperti misi katalog: durasinya, jenisnya, dan daftar aplikasi milik ALIVE untuk jenis itu.</string>
+    <string name="quest_custom_invite_title">Misi tulisan sendiri</string>
+    <string name="quest_custom_invite_body">Tiga belas misi dipilihkan untukmu. Tulis satu yang benar-benar milikmu — kata-katamu, durasinya, dan jenis pekerjaannya.</string>
+    <string name="quest_custom_invite_action">Tulis misinya</string>
+    <string name="quest_custom_edit">Ubah misi ini</string>
+    <string name="quest_custom_sheet_heading">Misi tulisan sendiri</string>
+    <string name="quest_custom_name_label">Misinya apa?</string>
+    <string name="quest_custom_name_hint">ulang bab empat statistika</string>
+    <string name="quest_custom_duration_label">Berapa lama</string>
+    <string name="quest_custom_kind_label">Jenis pekerjaannya apa?</string>
+    <string name="quest_custom_kind_note">ALIVE yang menyimpan daftar aplikasi tiap jenis, bukan kamu — supaya misi tidak bisa jadi pintu ke app hiburan.</string>
+    <string name="quest_custom_save">Simpan misi</string>
+    <string name="quest_custom_saved">Misi tersimpan.</string>
+    <string name="quest_custom_name_required">Kasih nama dulu.</string>
+    <string name="quest_custom_clear">Hapus misi ini</string>
+    <string name="quest_custom_cleared">Misi terhapus.</string>
+    <string name="quest_custom_pays_note">Bayarannya sama dengan misi katalog sepanjang itu, sekali.</string>
+
     <!-- ============ HALAMAN MISI ============ -->
     <string name="quest_detail_duration_title">Menit</string>
     <string name="quest_detail_how_title">Cara kerjanya</string>

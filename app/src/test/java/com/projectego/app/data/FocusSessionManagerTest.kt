@@ -61,6 +61,80 @@ class FocusSessionManagerTest {
     }
 
     @Test
+    fun `a session with no override carries none, and a mission's is restored`() {
+        focusSessionManager.startFocusSession(FocusActivityType.STUDY, "Catalog goal", 30L)
+        // Null, not empty: the activity's own curated list is still in charge.
+        assertNull(focusSessionManager.getFocusSession()?.approvedOverride)
+
+        focusSessionManager.startFocusSession(
+            FocusActivityType.STUDY,
+            "lari sore keliling blok",
+            20L,
+            approvedOverride = setOf("com.spotify.music", "com.strava")
+        )
+        assertEquals(
+            setOf("com.spotify.music", "com.strava"),
+            focusSessionManager.getFocusSession()?.approvedOverride
+        )
+        // The read used by verification and by the guard must agree with the
+        // read used by the screen, or one of the three sees a different session.
+        assertEquals(
+            setOf("com.spotify.music", "com.strava"),
+            focusSessionManager.getLastFocusSession()?.approvedOverride
+        )
+    }
+
+    @Test
+    fun `an empty override stays empty rather than falling back to the catalog`() {
+        focusSessionManager.startFocusSession(
+            FocusActivityType.STUDY,
+            "duduk diam",
+            10L,
+            approvedOverride = emptySet()
+        )
+
+        // "Nothing allowed" is a mission, not a missing value - collapsing the
+        // two would hand this session the catalog's list instead.
+        assertEquals(emptySet<String>(), focusSessionManager.getFocusSession()?.approvedOverride)
+    }
+
+    @Test
+    fun `a later catalog session replaces a mission's override instead of inheriting it`() {
+        focusSessionManager.startFocusSession(
+            FocusActivityType.STUDY,
+            "lari sore",
+            20L,
+            approvedOverride = setOf("com.spotify.music")
+        )
+        focusSessionManager.startFocusSession(FocusActivityType.STUDY, "Catalog goal", 30L)
+
+        assertNull(focusSessionManager.getFocusSession()?.approvedOverride)
+    }
+
+    @Test
+    fun `the mission lengths are accepted, and a length nobody offers is not`() {
+        assertTrue(focusSessionManager.startFocusSession(FocusActivityType.STUDY, "ten", 10L))
+        assertTrue(focusSessionManager.startFocusSession(FocusActivityType.STUDY, "twenty", 20L))
+        // 7 is not one of the offered lengths, so it is refused rather than
+        // rounded into one.
+        assertFalse(focusSessionManager.startFocusSession(FocusActivityType.STUDY, "seven", 7L))
+    }
+
+    @Test
+    fun `the recorded window keeps the mission's own list, and a catalog one keeps none`() {
+        focusSessionManager.startFocusSession(
+            FocusActivityType.STUDY,
+            "lari sore",
+            20L,
+            approvedOverride = setOf("com.spotify.music")
+        )
+        assertEquals(
+            setOf("com.spotify.music"),
+            focusSessionManager.getTodayWindows().single().approvedOverride
+        )
+    }
+
+    @Test
     fun `focusSessionId is preserved across manager reconstruction`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         focusSessionManager.startFocusSession(FocusActivityType.STUDY, "Test goal", 30L)

@@ -48,9 +48,30 @@ class FocusSessionManager(
         private const val KEY_WINDOWS_DAY = "key_windows_day"
         private const val KEY_WINDOWS = "key_windows"
 
-        // ASCII control separators, the same trick the quest attempt uses: a
-        // visible delimiter would eventually appear inside a goal string.
+        // The apps a session named itself. Nothing writes one any more - the one
+        // attempt at a person-chosen list was withdrawn as a cheat surface - but
+        // the reader stays, because a session persisted by the build that had it
+        // may still be running when this one is installed, and dropping its list
+        // mid-session would block the app the person is sitting in.
+        private const val KEY_APPROVED_OVERRIDE = "key_approved_override"
+        private const val PACKAGE_SEPARATOR = ","
+
+        /**
+         * The durations a session may run.
+         *
+         * The picker offers 30/60/90/120; the three shorter ones are the ones a
+         * self-written mission offers, and a mission is a real session like any
+         * other. A twenty-minute CREATIVE quest was already in the catalog and
+         * could not start before this - the mismatch was here, not in the catalog.
+         */
+        val VALID_DURATIONS = setOf(10L, 20L, 30L, 60L, 90L, 120L)
     }
+
+    private fun encodeOverride(override: Set<String>?): String? =
+        override?.joinToString(PACKAGE_SEPARATOR)
+
+    private fun decodeOverride(raw: String?): Set<String>? =
+        raw?.split(PACKAGE_SEPARATOR)?.filter { it.isNotBlank() }?.toSet()
 
     @Synchronized
     fun getFocusSession(): FocusSession? {
@@ -99,7 +120,8 @@ class FocusSessionManager(
             isActive = true,
             focusSessionId = focusSessionId,
             linkedQuestAttemptId = linkedQuestAttemptId,
-            violationCount = violationCount
+            violationCount = violationCount,
+            approvedOverride = decodeOverride(prefs.getString(KEY_APPROVED_OVERRIDE, null))
         )
     }
 
@@ -128,14 +150,19 @@ class FocusSessionManager(
     }
 
     @Synchronized
-    private fun recordWindow(start: Long, end: Long, activityType: FocusActivityType) {
+    private fun recordWindow(
+        start: Long,
+        end: Long,
+        activityType: FocusActivityType,
+        approvedOverride: Set<String>? = null
+    ) {
         val today = LockStateManager.dayKeyOf(start)
         val storedDay = prefs.getString(KEY_WINDOWS_DAY, null)
         val existing = if (storedDay == today) deserializeWindows(prefs.getString(KEY_WINDOWS, null)) else emptyList()
         // A session that was replaced is truncated at the moment its replacement
         // began, so two windows can never overlap and double-count an exemption.
         val truncated = existing.map { it.copy(end = minOf(it.end, start)) }
-        val updated = (truncated + FocusWindow(start, end, activityType)).sortedBy { it.start }
+        val updated = (truncated + FocusWindow(start, end, activityType, approvedOverride)).sortedBy { it.start }
         prefs.edit()
             .putString(KEY_WINDOWS_DAY, today)
             .putString(KEY_WINDOWS, serializeWindows(updated))
@@ -162,21 +189,23 @@ class FocusSessionManager(
 
     /**
      * Starts a new Focus Session.
-     * Allowed durations: 30, 60, 90, 120 minutes.
+     * Allowed durations are [VALID_DURATIONS].
      * Rejects if a session is already active.
      *
      * @param linkedQuestAttemptId optional ID of a QuestAttempt to correlate this session with
      *        (null for ordinary standalone Focus sessions unrelated to any quest)
+     * @param approvedOverride the apps this session allows, when the person named
+     *        them; null - the default - leaves the activity's own list in charge.
      */
     @Synchronized
     fun startFocusSession(
         activityType: FocusActivityType,
         goal: String,
         durationMinutes: Long,
-        linkedQuestAttemptId: String? = null
+        linkedQuestAttemptId: String? = null,
+        approvedOverride: Set<String>? = null
     ): Boolean {
-        // Validate duration (max 120 minutes in V1)
-        if (durationMinutes !in setOf(30L, 60L, 90L, 120L)) {
+        if (durationMinutes !in VALID_DURATIONS) {
             return false
         }
 
@@ -204,11 +233,16 @@ class FocusSessionManager(
         // Reading code converts empty string back to null
         edit.putString(KEY_LINKED_QUEST_ATTEMPT_ID, linkedQuestAttemptId ?: "")
 
+        // Absent means the catalog's list; an empty string means "none allowed".
+        // putString(key, null) removes the key, which is what a catalog session
+        // must look like - including one that replaced a mission's session.
+        edit.putString(KEY_APPROVED_OVERRIDE, encodeOverride(approvedOverride))
+
         edit.apply()
 
         // The allowance's arithmetic keeps the window, not the session: from
         // here on, this stretch of time is the stretch that does not charge.
-        recordWindow(now, end, activityType)
+        recordWindow(now, end, activityType, approvedOverride)
 
         return true
     }
@@ -310,7 +344,8 @@ class FocusSessionManager(
             isActive = isActive,
             focusSessionId = focusSessionId,
             linkedQuestAttemptId = linkedQuestAttemptId,
-            violationCount = violationCount
+            violationCount = violationCount,
+            approvedOverride = decodeOverride(prefs.getString(KEY_APPROVED_OVERRIDE, null))
         )
     }
 

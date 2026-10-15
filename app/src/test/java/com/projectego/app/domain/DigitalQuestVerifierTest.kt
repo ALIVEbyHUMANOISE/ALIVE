@@ -66,6 +66,19 @@ class DigitalQuestVerifierTest {
     }
 
     @Test
+    fun `A2 - a self-written mission verifies by its kind, like any other quest`() {
+        val evidence = baseEvidence.copy(
+            questId = CustomQuest.ID,
+            questCategory = QuestCategory.STUDY,
+            focusActivityType = FocusActivityType.STUDY
+        )
+        // Nothing in the verifier knows this quest was written by hand, and that
+        // is the design: the mission carries its kind as its category, so one
+        // rule covers it instead of an id-shaped exception.
+        assertTrue(DigitalQuestVerifier.verify(evidence) is DigitalQuestVerificationResult.Verified)
+    }
+
+    @Test
     fun `B - duration incomplete returns not ready`() {
         val evidence = baseEvidence.copy(
             activityStartTimestamp = now - (15L * 60_000L), // only 15 minutes elapsed

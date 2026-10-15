@@ -168,6 +168,30 @@
     <string name="quest_declare_done">I\'m done</string>
     <string name="quest_declare_failed">ALIVE couldn\'t record that.</string>
 
+    <!-- ============ A MISSION OF YOUR OWN ============ -->
+    <!-- The board's one open slot. The copy refuses the two things that would make
+         it a loophole: it is not a promise ALIVE takes on faith (the kind's own
+         apps are watched), and it is not a way to rewrite your way to more time
+         (it pays once, like every other quest). The app list is deliberately not
+         the person's to choose, and the sheet says why. -->
+    <string name="quest_custom_body">Your own words, watched exactly like a catalog quest: your length, your kind, and ALIVE\'s own list of apps for that kind.</string>
+    <string name="quest_custom_invite_title">A mission of your own</string>
+    <string name="quest_custom_invite_body">Thirteen quests were chosen for you. Write one that is actually yours — your words, its length, and the kind of doing it is.</string>
+    <string name="quest_custom_invite_action">Write the mission</string>
+    <string name="quest_custom_edit">Edit this mission</string>
+    <string name="quest_custom_sheet_heading">A mission of your own</string>
+    <string name="quest_custom_name_label">What is it?</string>
+    <string name="quest_custom_name_hint">review chapter four of statistics</string>
+    <string name="quest_custom_duration_label">How long</string>
+    <string name="quest_custom_kind_label">What kind of doing?</string>
+    <string name="quest_custom_kind_note">ALIVE keeps the app list for each kind, not you — so a mission can never become a door to an entertainment app.</string>
+    <string name="quest_custom_save">Save mission</string>
+    <string name="quest_custom_saved">Mission saved.</string>
+    <string name="quest_custom_name_required">Give it a name first.</string>
+    <string name="quest_custom_clear">Delete this mission</string>
+    <string name="quest_custom_cleared">Mission deleted.</string>
+    <string name="quest_custom_pays_note">It pays the same as a catalog quest of the same length, once.</string>
+
     <!-- ============ QUEST DETAIL (journal page) ============ -->
     <string name="quest_detail_duration_title">Minutes</string>
     <string name="quest_detail_how_title">How it works</string>

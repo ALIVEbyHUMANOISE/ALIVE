@@ -33,6 +33,7 @@ class QuestStartCoordinatorTest {
         context.getSharedPreferences("project_ego_focus_session", Context.MODE_PRIVATE).edit().clear().apply()
         context.getSharedPreferences("project_ego_time_bank", Context.MODE_PRIVATE).edit().clear().apply()
         context.getSharedPreferences("project_ego_quest_evidence", Context.MODE_PRIVATE).edit().clear().apply()
+        context.getSharedPreferences("project_ego_custom_quest", Context.MODE_PRIVATE).edit().clear().apply()
         timeBankRepository = TimeBankRepository(context)
         questRepository = QuestRepository(context, timeBankRepository)
         focusSessionManager = FocusSessionManager(context, timeBankRepository)
@@ -171,6 +172,19 @@ class QuestStartCoordinatorTest {
         assertNull(QuestStartCoordinator.focusActivityTypeFor(QuestCategory.EXERCISE))
         assertNull(QuestStartCoordinator.focusActivityTypeFor(QuestCategory.WALKING))
         assertNull(QuestStartCoordinator.focusActivityTypeFor(QuestCategory.CLEANING))
+        // A mission written by hand carries its kind as its category, so the
+        // kinds it may be are exactly these four - and nothing here has to know
+        // the mission exists.
+        assertNull(QuestStartCoordinator.focusActivityTypeFor(QuestCategory.OTHER))
+    }
+
+    @Test
+    fun `a catalog quest's session names no apps of its own`() {
+        coordinator().startDigitalQuest("quest_study_30")
+
+        val session = focusSessionManager.getFocusSession()
+        assertNotNull(session)
+        assertNull(session!!.approvedOverride)
     }
 
     private fun physicalCoordinator(provider: PhysicalQuestEvidenceProvider): QuestStartCoordinator =

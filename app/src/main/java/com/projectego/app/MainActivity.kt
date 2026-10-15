@@ -17,6 +17,7 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.Toast
@@ -30,6 +31,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
 import androidx.core.widget.addTextChangedListener
+import com.projectego.app.data.CustomQuestRepository
 import com.projectego.app.data.FocusSessionManager
 import com.projectego.app.data.LockStateManager
 import com.projectego.app.data.NightContractRepository
@@ -40,6 +42,7 @@ import com.projectego.app.data.UsageHistoryRepository
 import com.projectego.app.data.WelcomeGate
 import com.projectego.app.domain.AndroidPhysicalQuestEvidenceProvider
 import com.projectego.app.domain.CriticalAlertPolicy
+import com.projectego.app.domain.CustomQuest
 import com.projectego.app.domain.EntertainmentClaimCoordinator
 import com.projectego.app.domain.EntertainmentClaimPolicy
 import com.projectego.app.domain.FocusAppPolicy
@@ -128,6 +131,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var timeBankRepository: TimeBankRepository
     private lateinit var nightContractRepository: NightContractRepository
     private lateinit var questRepository: QuestRepository
+    private lateinit var customQuestRepository: CustomQuestRepository
     private lateinit var focusSessionManager: FocusSessionManager
 
     /**
@@ -196,7 +200,14 @@ class MainActivity : AppCompatActivity() {
         lockStateManager = LockStateManager(this)
         timeBankRepository = TimeBankRepository(this)
         nightContractRepository = NightContractRepository(this)
-        questRepository = QuestRepository(this, timeBankRepository)
+        // Read before the board is built, because the board's one open slot is
+        // whatever words are on file right now.
+        customQuestRepository = CustomQuestRepository(this)
+        questRepository = QuestRepository(
+            this,
+            timeBankRepository,
+            customQuestProvider = { customQuestRepository.stored() }
+        )
         focusSessionManager = FocusSessionManager(this, timeBankRepository)
         val questEvidenceRepository = QuestEvidenceRepository(this)
         val physicalEvidenceProvider = AndroidPhysicalQuestEvidenceProvider(this)
@@ -1605,6 +1616,148 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * Writing the one mission of your own.
+     *
+     * A name in the person's words, one of the three lengths the contract offers,
+     * and the kind of doing it is. The apps are deliberately not asked for: the
+     * list belongs to ALIVE, and the copy says so, because a list the person
+     * could edit is a list the person could widen - the first draft of this
+     * feature let them name TikTok and get paid for scrolling it.
+     */
+    private fun openCustomQuestSheet() {
+        val stored = customQuestRepository.stored()
+
+        val (scroll, column) = panel()
+        column.addView(panelHeader(getString(R.string.quest_custom_sheet_heading)))
+        column.addView(ui.vgap(ui.dimens.groupGap))
+
+        column.addView(ui.cardTitle(getString(R.string.quest_custom_name_label)))
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        val nameInput = ui.input(getString(R.string.quest_custom_name_hint)).apply {
+            maxLines = 2
+            setText(stored?.name ?: "")
+        }
+        column.addView(nameInput)
+
+        column.addView(ui.vgap(ui.dimens.groupGap))
+        column.addView(ui.cardTitle(getString(R.string.quest_custom_duration_label)))
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        var chosenDuration = stored?.durationMinutes ?: CustomQuest.DURATIONS.first()
+        val durationGroup = RadioGroup(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val durationHues = intArrayOf(
+            ui.palette.shortPale,
+            ui.palette.rewardPale,
+            ui.palette.softForest
+        )
+        CustomQuest.DURATIONS.forEachIndexed { index, minutes ->
+            durationGroup.addView(
+                ui.tileOption(
+                    getString(R.string.stat_minutes, minutes),
+                    0,
+                    durationHues[index.coerceIn(0, durationHues.lastIndex)]
+                ).apply {
+                    id = CUSTOM_DURATION_ID_BASE + index
+                    isChecked = minutes == chosenDuration
+                    layoutParams = RadioGroup.LayoutParams(0, RadioGroup.LayoutParams.WRAP_CONTENT, 1f)
+                        .apply { if (index > 0) marginStart = ui.dimens.pairGap }
+                }
+            )
+        }
+        durationGroup.setOnCheckedChangeListener { _, checkedId ->
+            chosenDuration = CustomQuest.DURATIONS[
+                (checkedId - CUSTOM_DURATION_ID_BASE).coerceIn(0, CustomQuest.DURATIONS.lastIndex)
+            ]
+        }
+        column.addView(durationGroup)
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        // Body face, not the pixel one: a pixel paragraph reads as shouting, and
+        // both of this sheet's notes are disclosures rather than accents.
+        column.addView(ui.note(getString(R.string.quest_custom_pays_note)))
+
+        column.addView(ui.vgap(ui.dimens.groupGap))
+        column.addView(ui.cardTitle(getString(R.string.quest_custom_kind_label)))
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        var chosenKind = stored?.kind ?: CustomQuest.KINDS.first()
+        // Two per row, the way the board itself is drawn: four full-width rows
+        // read as a form to fill in, and two rows of two read as four cards to
+        // pick from - which is what this is. The tiles are picked by hand rather
+        // than by a RadioGroup, because a grid of rows is not one group - the
+        // selection rule stays the same: exactly one of them is on.
+        val kindGrid = ui.column()
+        val kindTiles = mutableListOf<RadioButton>()
+        CustomQuest.KINDS.chunked(2).forEachIndexed { rowIndex, pair ->
+            if (rowIndex > 0) kindGrid.addView(ui.vgap(ui.dimens.pairGap))
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            pair.forEachIndexed { index, kind ->
+                if (index > 0) row.addView(ui.hgap(ui.dimens.pairGap))
+                val tile = ui.tileOption(
+                    // Each kind wears the same mark and colour its card will wear
+                    // on the board, so what is chosen here is recognisable there.
+                    getString(AliveStates.categoryLabel(kind)),
+                    PixelMarks.quest(kind),
+                    ContextCompat.getColor(this, QuestHues.quest(kind))
+                ).apply {
+                    contentDescription = getString(PixelMarks.description(kind))
+                    isChecked = kind == chosenKind
+                    layoutParams = LinearLayout.LayoutParams(
+                        0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        1f
+                    )
+                    setOnClickListener {
+                        chosenKind = kind
+                        kindTiles.forEach { other -> other.isChecked = other === this }
+                    }
+                }
+                kindTiles.add(tile)
+                row.addView(tile)
+            }
+            kindGrid.addView(row)
+        }
+        column.addView(kindGrid)
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        // Said plainly, because this is the one part of the mission the person
+        // does not get to decide, and the reason is worth more than the rule.
+        column.addView(ui.note(getString(R.string.quest_custom_kind_note)))
+
+        column.addView(ui.vgap(ui.dimens.groupGap))
+        column.addView(
+            ui.primary(getString(R.string.quest_custom_save)).apply {
+                setOnClickListener {
+                    val name = nameInput.text?.toString().orEmpty()
+                    if (!CustomQuest.isComplete(name, chosenDuration, chosenKind)) {
+                        toast(R.string.quest_custom_name_required)
+                        return@setOnClickListener
+                    }
+                    customQuestRepository.save(name, chosenDuration, chosenKind)
+                    toast(R.string.quest_custom_saved)
+                    closeOverlay()
+                    renderQuestSection()
+                }
+            }
+        )
+
+        // Deleting is offered only when there is something to delete, and it sits
+        // under the save button rather than beside it: rewriting a mission is the
+        // ordinary act, and throwing it away is the rare one.
+        if (stored != null) {
+            column.addView(ui.vgap(ui.dimens.lineGap))
+            column.addView(
+                ui.quiet(getString(R.string.quest_custom_clear)).apply {
+                    setOnClickListener {
+                        customQuestRepository.clear()
+                        toast(R.string.quest_custom_cleared)
+                        closeOverlay()
+                        renderQuestSection()
+                    }
+                }
+            )
+        }
+
+        openOverlay(scroll)
+    }
+
+    /**
      * The character, holding the promise, in front of the two doors that open it.
      *
      * This is not a warning, and that is the whole point: ALIVE has no opinion to
@@ -1972,6 +2125,28 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
+        // The board's one open slot, offered and not demanded. It disappears
+        // once a mission exists, because from then on its card stands in the
+        // grid with every other quest and this would just be the same words
+        // twice.
+        //
+        // One sentence and a button, and nothing else: the first draft stacked a
+        // paragraph, a pixel-caps promise and the button into one card, and three
+        // voices in one card is how a card stops being readable.
+        if (customQuestRepository.stored() == null) {
+            questContainer.addView(
+                ui.bentoCard(getString(R.string.quest_custom_invite_title)).apply {
+                    addView(ui.note(getString(R.string.quest_custom_invite_body)))
+                    addView(ui.vgap(ui.dimens.groupGap))
+                    addView(
+                        ui.primary(getString(R.string.quest_custom_invite_action)).apply {
+                            setOnClickListener { openCustomQuestSheet() }
+                        }
+                    )
+                }
+            )
+        }
+
         val others = allQuests.filter { it.id != activeQuestId }
         if (others.isEmpty()) {
             questContainer.addView(
@@ -2133,7 +2308,11 @@ class MainActivity : AppCompatActivity() {
      * offering a button that would fail.
      */
     private fun buildQuestDetailInto(column: LinearLayout, quest: Quest) {
-        val verifiable = AliveStates.isSelfVerifiable(quest.category)
+        // Whether ALIVE can watch this quest is one rule, asked of the same place
+        // the start flow asks it. A mission written by hand carries its kind as
+        // its category, so it is answered here by the same line as everything
+        // else - nothing in this screen knows it was written by a person.
+        val verifiable = QuestStartCoordinator.focusActivityTypeFor(quest.category) != null
         val requirement = PhysicalQuestPolicy.requirementFor(quest.id, quest.category)
         val stepsMeasurable = stepSensorPresent() && activityRecognitionGranted()
 
@@ -2261,6 +2440,19 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+
+        // A mission is the person's own words, so it is theirs to change. The
+        // catalog's quests have no such door: those words were chosen for them,
+        // and a quest that can be reworded the moment it is inconvenient is not
+        // a quest.
+        if (quest.id == CustomQuest.ID) {
+            column.addView(ui.vgap(ui.dimens.groupGap))
+            column.addView(
+                ui.quiet(getString(R.string.quest_custom_edit)).apply {
+                    setOnClickListener { openCustomQuestSheet() }
+                }
+            )
         }
     }
 
@@ -3514,6 +3706,9 @@ private const val LANGUAGE_ID_BASE = 500
 /** The nightly contract's two pickers: the allowance, then the quest. */
 private const val NIGHT_ALLOWANCE_ID_BASE = 600
 private const val NIGHT_QUEST_ID_BASE = 700
+
+/** The self-written mission's duration picker. Same synthetic-id contract as the rest. */
+private const val CUSTOM_DURATION_ID_BASE = 800
 
 /**
  * What tomorrow can be promised, in minutes.

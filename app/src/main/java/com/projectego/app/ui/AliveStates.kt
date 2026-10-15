@@ -532,23 +532,6 @@ object AliveStates {
     // ---------- QUESTS ----------
 
     /**
-     * Which quest kinds the engine can currently verify on its own.
-     *
-     * Mirrors QuestStartCoordinator.focusActivityTypeFor(): anything else returns
-     * null there and startDigitalQuest() fails. This is a UI-side mirror, so if
-     * that map ever grows, this one has to grow with it or the board will mark a
-     * startable quest as unverifiable.
-     */
-    fun isSelfVerifiable(category: QuestCategory): Boolean = when (category) {
-        QuestCategory.STUDY,
-        QuestCategory.CODING,
-        QuestCategory.WRITING,
-        QuestCategory.CREATIVE -> true
-
-        else -> false
-    }
-
-    /**
      * The "how ALIVE decides" step line for a physical quest, decided by the
      * quest's own signal requirement.
      */

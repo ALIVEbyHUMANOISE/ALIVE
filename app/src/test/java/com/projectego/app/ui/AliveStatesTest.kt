@@ -341,18 +341,6 @@ class AliveStatesTest {
     }
 
     @Test
-    fun `only the quest kinds the engine can watch are offered as verifiable`() {
-        listOf(QuestCategory.STUDY, QuestCategory.CODING, QuestCategory.WRITING, QuestCategory.CREATIVE)
-            .forEach { assertTrue(it.name, AliveStates.isSelfVerifiable(it)) }
-
-        listOf(
-            QuestCategory.WALKING, QuestCategory.READING, QuestCategory.EXERCISE,
-            QuestCategory.CLEANING, QuestCategory.MINDFULNESS, QuestCategory.SOCIAL,
-            QuestCategory.OTHER
-        ).forEach { assertTrue(it.name, AliveStates.isSelfVerifiable(it).not()) }
-    }
-
-    @Test
     fun `a recovery day is never shown as a normal allowance`() {
         val recovery = AliveStates.timeHeadline(TimeStatus.ZERO_ENTERTAINMENT_DAY, 5, 0L)
         assertEquals(R.string.zero_day_heading, recovery)

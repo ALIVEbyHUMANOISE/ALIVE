@@ -47,7 +47,8 @@ class QuestRolloverTest {
         timeBankRepository = TimeBankRepository(context)
     }
 
-    private fun repositoryAt(now: Long) = QuestRepository(context, timeBankRepository) { now }
+    private fun repositoryAt(now: Long) =
+        QuestRepository(context, timeBankRepository, clock = { now })
 
     /** The real pipeline, so the attempt under test is a real one. */
     private fun QuestRepository.rewardFirstQuest() {
