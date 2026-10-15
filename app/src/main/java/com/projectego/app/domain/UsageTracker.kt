@@ -308,7 +308,13 @@ class UsageTracker(private val context: Context) {
             FocusExemption.Window(
                 start = window.start,
                 end = window.end,
-                approved = FocusAppPolicy.getApprovedPackages(window.activityType)
+                // The session's own list when it named one: a window whose
+                // apps were allowed while it ran must still be exempt after
+                // it ends, or the day quietly re-charges time it forgave.
+                approved = FocusAppPolicy.approvedFor(
+                    window.activityType,
+                    window.approvedOverride
+                )
             )
         }
 

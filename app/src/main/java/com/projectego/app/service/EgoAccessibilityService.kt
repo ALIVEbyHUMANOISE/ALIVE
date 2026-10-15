@@ -98,7 +98,8 @@ class EgoAccessibilityService : AccessibilityService() {
             val allowed = FocusAppPolicy.isPackageAllowedDuringFocus(
                 this,
                 packageName,
-                activeFocusSession.activityType
+                activeFocusSession.activityType,
+                activeFocusSession.approvedOverride
             )
 
             if (!allowed) {

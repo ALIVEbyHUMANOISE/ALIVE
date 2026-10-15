@@ -141,9 +141,10 @@ object FocusAppPolicy {
     fun isPackageAllowedDuringFocus(
         context: Context,
         packageName: String,
-        activityType: FocusActivityType
+        activityType: FocusActivityType,
+        override: Set<String>? = null
     ): Boolean = decide(
-        getApprovedPackages(activityType),
+        approvedFor(activityType, override),
         AppClassifier.categorize(context, packageName),
         packageName
     )
