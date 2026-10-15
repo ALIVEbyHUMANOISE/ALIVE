@@ -98,6 +98,19 @@ object FocusAppPolicy {
     }
 
     /**
+     * What a session allows: the person's own list when they named one, the
+     * catalog's otherwise.
+     *
+     * One function rather than the decision spread across call sites, because
+     * the list has to answer the same way in three places at once - while the
+     * session runs, when the day is charged, and in the archive after the
+     * session has ended - and a session whose apps were allowed while it ran but
+     * charged afterwards is a session that lied about itself.
+     */
+    fun approvedFor(activityType: FocusActivityType, override: Set<String>?): Set<String> =
+        override ?: getApprovedPackages(activityType)
+
+    /**
      * The focus gate as a pure rule, so the rule can be tested as a rule.
      *
      * Order is the whole policy:

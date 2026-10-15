@@ -37,7 +37,17 @@ data class FocusSession(
     val isActive: Boolean = true,
     val focusSessionId: String = UUID.randomUUID().toString(),
     val linkedQuestAttemptId: String? = null,
-    val violationCount: Int = 0
+    val violationCount: Int = 0,
+
+    /**
+     * The apps this session allows, when the person named them.
+     *
+     * Null - the default, and what every existing session carries - means the
+     * session allows whatever its activity type allows, exactly as before. A
+     * self-written mission fills this in instead, because its list of apps is
+     * the one thing about it that cannot come from a catalog.
+     */
+    val approvedOverride: Set<String>? = null
 ) {
     fun getRemainingMillis(): Long {
         val now = System.currentTimeMillis()
