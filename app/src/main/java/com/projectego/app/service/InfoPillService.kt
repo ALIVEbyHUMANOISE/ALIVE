@@ -78,6 +78,7 @@ class InfoPillService : Service() {
 
         startedAt = System.currentTimeMillis()
         isRunning = true
+        watching = watchedPackage
         startForeground(NOTIFICATION_ID, ongoingNote())
         // The tap that summons it happens in the shade, and an overlay is drawn
         // below the shade - so arriving immediately would mean arriving while
@@ -95,6 +96,7 @@ class InfoPillService : Service() {
 
     override fun onDestroy() {
         isRunning = false
+        watching = null
         ticker.removeCallbacks(tick)
         // It leaves the way it arrived: shrinking back towards the top edge,
         // rather than vanishing between two frames.
@@ -302,6 +304,11 @@ class InfoPillService : Service() {
         var isRunning = false
             private set
 
+        /** Which app the running pill is watching, so nothing restarts it twice. */
+        @Volatile
+        var watching: String? = null
+            private set
+
         private const val CHANNEL_ID = "alive_pill"
         private const val NOTIFICATION_ID = 7401
         private const val TICK_MILLIS = 20_000L
@@ -313,8 +320,11 @@ class InfoPillService : Service() {
          *  pill over a black hole is how the hole stops existing. */
         private const val TUCK_DP = 2
 
-        fun start(context: Context) {
-            context.startForegroundService(Intent(context, InfoPillService::class.java))
+        fun start(context: Context, packageName: String? = null) {
+            context.startForegroundService(
+                Intent(context, InfoPillService::class.java)
+                    .putExtra(EXTRA_PACKAGE, packageName)
+            )
         }
 
         fun stop(context: Context) {

@@ -6,6 +6,7 @@ import android.provider.Settings
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.projectego.app.R
+import com.projectego.app.data.PillSettings
 
 /**
  * The button that summons the pill.
@@ -27,10 +28,11 @@ class InfoPillTile : TileService() {
 
     override fun onClick() {
         super.onClick()
-        if (InfoPillService.isRunning) {
+        if (PillSettings.isEnabled(this)) {
+            PillSettings.setEnabled(this, false)
             InfoPillService.stop(this)
         } else if (Settings.canDrawOverlays(this)) {
-            InfoPillService.start(this)
+            PillSettings.setEnabled(this, true)
         }
         // The state lands a moment later, when the service says it is up.
         refresh()
@@ -39,7 +41,7 @@ class InfoPillTile : TileService() {
     private fun refresh() {
         val tile = qsTile ?: return
         tile.state = when {
-            InfoPillService.isRunning -> Tile.STATE_ACTIVE
+            PillSettings.isEnabled(this) -> Tile.STATE_ACTIVE
             !Settings.canDrawOverlays(this) -> Tile.STATE_UNAVAILABLE
             else -> Tile.STATE_INACTIVE
         }

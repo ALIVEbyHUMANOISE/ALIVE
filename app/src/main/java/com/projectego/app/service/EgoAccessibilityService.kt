@@ -6,6 +6,7 @@ import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import com.projectego.app.data.FocusSessionManager
 import com.projectego.app.data.LockStateManager
+import com.projectego.app.data.PillSettings
 import com.projectego.app.data.QuestRepository
 import com.projectego.app.data.TimeBankRepository
 import com.projectego.app.domain.AppClassifier
@@ -52,6 +53,25 @@ class EgoAccessibilityService : AccessibilityService() {
         questVerificationCoordinator = QuestVerificationCoordinator(questRepository, focusSessionManager)
     }
 
+    /**
+     * Up while an entertainment app is in front, down the moment one is not.
+     *
+     * Entertainment only, on purpose: a pill over a bank or a chat app would be
+     * a reading nobody asked to see, in a place ALIVE has promised never to
+     * interfere.
+     */
+    private fun syncPill(packageName: String) {
+        if (!PillSettings.isEnabled(this)) return
+        val entertainment =
+            AppClassifier.categorize(this, packageName) == AppCategory.ENTERTAINMENT
+        when {
+            entertainment && InfoPillService.watching != packageName ->
+                InfoPillService.start(this, packageName)
+            !entertainment && (InfoPillService.isRunning || InfoPillService.watching != null) ->
+                InfoPillService.stop(this)
+        }
+    }
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null || event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             return
@@ -65,6 +85,12 @@ class EgoAccessibilityService : AccessibilityService() {
         }
 
         lastForegroundPackage = packageName
+
+        // The pill follows whoever is in front, once the person has asked for it
+        // with the tile. No second watch is needed: this callback already knows
+        // which app is in front, and it is the one place that cannot be wrong
+        // about it - so the pill and the enforcement can never disagree.
+        syncPill(packageName)
 
         // Check 1: FOCUS MODE ENFORCEMENT
         val activeFocusSession = focusSessionManager.getFocusSession()
