@@ -79,9 +79,17 @@ class InfoPillService : Service() {
         startedAt = System.currentTimeMillis()
         isRunning = true
         startForeground(NOTIFICATION_ID, ongoingNote())
-        show()
+        // The tap that summons it happens in the shade, and an overlay is drawn
+        // below the shade - so arriving immediately would mean arriving while
+        // nobody can see it, and the animation would be over before the shade
+        // finished closing. Half a second is enough for that, and short enough
+        // that it still feels like the press caused it.
         ticker.removeCallbacks(tick)
-        ticker.post(tick)
+        ticker.postDelayed({
+            if (!isRunning) return@postDelayed
+            show()
+            ticker.post(tick)
+        }, ARRIVE_DELAY_MILLIS)
         return START_STICKY
     }
 
@@ -136,7 +144,7 @@ class InfoPillService : Service() {
             // lower is the closest this platform lets anything get.
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             x = 0
-            y = statusBarHeight() - (TUCK_DP * resources.displayMetrics.density).toInt()
+            y = (TUCK_DP * resources.displayMetrics.density).toInt()
         }
 
         manager.addView(view, params)
@@ -297,10 +305,13 @@ class InfoPillService : Service() {
         private const val CHANNEL_ID = "alive_pill"
         private const val NOTIFICATION_ID = 7401
         private const val TICK_MILLIS = 20_000L
+        private const val ARRIVE_DELAY_MILLIS = 800L
         private const val PROBE_MILLIS = 60_000L
         private const val NEAR_MINUTES = 15L
-        /** How far the pill tucks up into the lower edge of the status bar. */
-        private const val TUCK_DP = 6
+        /** How far down from the very top edge the pill hangs. Flush, near enough:
+         *  the camera hole on this device is centred and 64px tall, and a black
+         *  pill over a black hole is how the hole stops existing. */
+        private const val TUCK_DP = 2
 
         fun start(context: Context) {
             context.startForegroundService(Intent(context, InfoPillService::class.java))
