@@ -21,6 +21,7 @@ import android.provider.Settings
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
+import android.view.animation.OvershootInterpolator
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.app.NotificationCompat
@@ -87,8 +88,21 @@ class InfoPillService : Service() {
     override fun onDestroy() {
         isRunning = false
         ticker.removeCallbacks(tick)
-        pill?.let { window?.removeView(it) }
+        // It leaves the way it arrived: shrinking back towards the top edge,
+        // rather than vanishing between two frames.
+        val leaving = pill
         pill = null
+        if (leaving != null) {
+            val density = resources.displayMetrics.density
+            leaving.animate()
+                .alpha(0f)
+                .scaleX(0.8f)
+                .scaleY(0.8f)
+                .translationY(-10 * density)
+                .setDuration(160L)
+                .withEndAction { runCatching { window?.removeView(leaving) } }
+                .start()
+        }
         super.onDestroy()
     }
 
@@ -122,10 +136,35 @@ class InfoPillService : Service() {
             // lower is the closest this platform lets anything get.
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             x = 0
-            y = (MARGIN_DP * resources.displayMetrics.density).toInt()
+            y = statusBarHeight() - (TUCK_DP * resources.displayMetrics.density).toInt()
         }
 
         manager.addView(view, params)
+
+        // It arrives the way an island does: growing out of the top rather than
+        // appearing at full size. Overshoot, not ease - the arrival is a moment,
+        // and the same curve the navbar's circle travels on.
+        view.apply {
+            alpha = 0f
+            scaleX = 0.72f
+            scaleY = 0.72f
+            translationY = -(12 * resources.displayMetrics.density)
+            animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .translationY(0f)
+                .setDuration(240L)
+                .setInterpolator(OvershootInterpolator(1.05f))
+                .start()
+        }
+    }
+
+    /** The status bar's own height, so the pill lands under it on any device. */
+    private fun statusBarHeight(): Int {
+        val id = resources.getIdentifier("status_bar_height", "dimen", "android")
+        val fallback = (28 * resources.displayMetrics.density).toInt()
+        return if (id > 0) resources.getDimensionPixelSize(id) else fallback
     }
 
     private fun build(): View {
@@ -260,7 +299,8 @@ class InfoPillService : Service() {
         private const val TICK_MILLIS = 20_000L
         private const val PROBE_MILLIS = 60_000L
         private const val NEAR_MINUTES = 15L
-        private const val MARGIN_DP = 38
+        /** How far the pill tucks up into the lower edge of the status bar. */
+        private const val TUCK_DP = 6
 
         fun start(context: Context) {
             context.startForegroundService(Intent(context, InfoPillService::class.java))
