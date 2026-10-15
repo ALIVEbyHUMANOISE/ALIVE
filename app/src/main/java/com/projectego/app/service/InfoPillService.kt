@@ -116,35 +116,46 @@ class InfoPillService : Service() {
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            x = margin()
-            y = margin()
+            // Centred and tucked under the status bar, the way the phone's own
+            // chrome sits. The camera hole is in the middle on this device, so
+            // "in the status bar" would mean covering the clock - a few pixels
+            // lower is the closest this platform lets anything get.
+            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+            x = 0
+            y = (MARGIN_DP * resources.displayMetrics.density).toInt()
         }
 
         manager.addView(view, params)
     }
 
-    private fun margin(): Int = (MARGIN_DP * resources.displayMetrics.density).toInt()
-
     private fun build(): View {
         val density = resources.displayMetrics.density
         fun px(dp: Int) = (dp * density).toInt()
 
-        val column = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(px(14), px(10), px(14), px(12))
+        // Ink, not paper, and no edge and no shadow. Every other surface ALIVE
+        // draws is a bright card with a bold border, and that language is right
+        // inside the app and wrong here: an overlay over somebody's video has to
+        // disappear into the phone's own chrome, exactly the way the home-screen
+        // widget had to be allowed to be translucent. The colour that survives
+        // is the one the eye should land on - the number.
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(px(16), px(9), px(18), px(9))
             background = GradientDrawable().apply {
-                setColor(ContextCompat.getColor(context, R.color.alive_paper))
-                setStroke(px(3), ContextCompat.getColor(context, R.color.alive_ink))
-                cornerRadius = px(12).toFloat()
+                setColor(ContextCompat.getColor(context, R.color.alive_ink))
+                cornerRadius = px(26).toFloat()
             }
-            elevation = px(6).toFloat()
         }
 
-        column.addView(text("", 22f, R.font.silkscreen_bold, R.color.alive_ink))
-        column.addView(text("", 13f, R.font.manrope_medium, R.color.alive_ink_secondary))
-        column.addView(text("", 13f, R.font.manrope_medium, R.color.alive_ink_secondary))
-        return column
+        row.addView(text("0", 15f, R.font.silkscreen_bold, R.color.alive_amber_action))
+        row.addView(
+            text("", 11f, R.font.manrope_medium, R.color.alive_paper).apply {
+                setPadding(px(10), 0, 0, 0)
+                alpha = 0.9f
+            }
+        )
+        return row
     }
 
     private fun text(value: String, sizeSp: Float, font: Int, colour: Int): TextView =
@@ -160,21 +171,36 @@ class InfoPillService : Service() {
     // ---------- the words ----------
 
     private fun refresh() {
-        val column = pill as? LinearLayout ?: return
+        val row = pill as? LinearLayout ?: return
         val app = watchedPackage ?: return
         val sessionMinutes = (System.currentTimeMillis() - startedAt) / 60_000
         val opens = runCatching { UsageTracker(this).opensToday(app) }.getOrDefault(0)
         val report = runCatching { UsageTracker(this).calculateTodayEntertainmentUsage() }.getOrNull()
+        val spent = report?.isLimitExceeded == true
+        val label = AppLabels.labelFor(this, app)
 
-        (column.getChildAt(0) as? TextView)?.text = Durations.of(this, sessionMinutes)
-        (column.getChildAt(1) as? TextView)?.text =
-            getString(R.string.pill_on_app, AppLabels.labelFor(this, app))
-        (column.getChildAt(2) as? TextView)?.text = when {
-            report == null -> getString(R.string.pill_opens, opens)
-            report.isLimitExceeded -> getString(R.string.pill_spent)
-            report.remainingMinutes <= NEAR_MINUTES ->
-                getString(R.string.pill_left, Durations.of(this, report.remainingMinutes))
-            else -> getString(R.string.pill_opens, opens)
+        // Two facts and a colour. The number is the loud one; the line beside it
+        // is the one that changes; and a spent day turns the number crimson
+        // instead of adding a sentence - a pill that grows when things go wrong
+        // is a pill that shouts.
+        (row.getChildAt(0) as? TextView)?.apply {
+            text = Durations.of(this@InfoPillService, sessionMinutes)
+            setTextColor(
+                ContextCompat.getColor(
+                    this@InfoPillService,
+                    if (spent) R.color.alive_red_short_mid else R.color.alive_amber_action
+                )
+            )
+        }
+        (row.getChildAt(1) as? TextView)?.text = when {
+            spent -> getString(R.string.pill_line_spent, label)
+            report != null && report.remainingMinutes <= NEAR_MINUTES ->
+                getString(
+                    R.string.pill_line_left,
+                    label,
+                    Durations.of(this, report.remainingMinutes)
+                )
+            else -> getString(R.string.pill_line_opens, label, opens)
         }
     }
 
@@ -234,7 +260,7 @@ class InfoPillService : Service() {
         private const val TICK_MILLIS = 20_000L
         private const val PROBE_MILLIS = 60_000L
         private const val NEAR_MINUTES = 15L
-        private const val MARGIN_DP = 44
+        private const val MARGIN_DP = 38
 
         fun start(context: Context) {
             context.startForegroundService(Intent(context, InfoPillService::class.java))
