@@ -61,13 +61,18 @@ class EgoAccessibilityService : AccessibilityService() {
      * interfere.
      */
     private fun syncPill(packageName: String) {
-        if (!PillSettings.isEnabled(this)) return
-        val entertainment =
-            AppClassifier.categorize(this, packageName) == AppCategory.ENTERTAINMENT
+        // The setting decides whether the pill may go UP, never whether it may
+        // come DOWN. It used to guard the whole method, which meant that once
+        // the switch was off the one event that could take a live pill away -
+        // the person leaving the app - was also the event that returned early,
+        // so the pill sat on the home screen until the process died.
+        val wanted =
+            AppClassifier.categorize(this, packageName) == AppCategory.ENTERTAINMENT &&
+                PillSettings.isEnabled(this)
         when {
-            entertainment && InfoPillService.watching != packageName ->
+            wanted && InfoPillService.watching != packageName ->
                 InfoPillService.start(this, packageName)
-            !entertainment && (InfoPillService.isRunning || InfoPillService.watching != null) ->
+            !wanted && (InfoPillService.isRunning || InfoPillService.watching != null) ->
                 InfoPillService.stop(this)
         }
     }

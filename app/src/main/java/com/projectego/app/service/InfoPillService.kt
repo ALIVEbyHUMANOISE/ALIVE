@@ -5,8 +5,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
-import android.app.usage.UsageEvents
-import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -29,6 +27,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import com.projectego.app.MainActivity
 import com.projectego.app.R
+import com.projectego.app.data.PillSettings
 import com.projectego.app.domain.UsageTracker
 import com.projectego.app.ui.AppLabels
 import com.projectego.app.ui.Durations
@@ -64,17 +63,18 @@ class InfoPillService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (!Settings.canDrawOverlays(this)) {
-            stopSelf()
-            return START_NOT_STICKY
-        }
-
+        // Only a request raises the pill. A null intent means the system restarted
+        // the service on its own, and a restart is not a request - the service
+        // used to answer one by re-showing the pill over whatever the last app in
+        // the usage log happened to be, which is how a reading nobody asked for
+        // appeared on the home screen. The next time an entertainment app really
+        // comes to the front, the watcher asks again.
         val asked = intent?.getStringExtra(EXTRA_PACKAGE)
-        watchedPackage = asked ?: recentForegroundPackage()
-        if (watchedPackage == null) {
+        if (asked == null || !PillSettings.isEnabled(this) || !Settings.canDrawOverlays(this)) {
             stopSelf()
             return START_NOT_STICKY
         }
+        watchedPackage = asked
 
         startedAt = System.currentTimeMillis()
         isRunning = true
@@ -91,7 +91,7 @@ class InfoPillService : Service() {
             show()
             ticker.post(tick)
         }, ARRIVE_DELAY_MILLIS)
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     override fun onDestroy() {
@@ -253,24 +253,6 @@ class InfoPillService : Service() {
         }
     }
 
-    /** The app in front a moment ago, so the tile does not have to know. */
-    private fun recentForegroundPackage(): String? {
-        val manager = getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager ?: return null
-        val now = System.currentTimeMillis()
-        val stream = manager.queryEvents(now - PROBE_MILLIS, now) ?: return null
-        val event = UsageEvents.Event()
-        var found: String? = null
-        while (stream.hasNextEvent()) {
-            stream.getNextEvent(event)
-            if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED ||
-                event.eventType == UsageEvents.Event.MOVE_TO_FOREGROUND
-            ) {
-                found = event.packageName
-            }
-        }
-        return found
-    }
-
     private fun ongoingNote(): Notification {
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.createNotificationChannel(
@@ -313,7 +295,6 @@ class InfoPillService : Service() {
         private const val NOTIFICATION_ID = 7401
         private const val TICK_MILLIS = 20_000L
         private const val ARRIVE_DELAY_MILLIS = 800L
-        private const val PROBE_MILLIS = 60_000L
         private const val NEAR_MINUTES = 15L
         /** How far down from the very top edge the pill hangs. Flush, near enough:
          *  the camera hole on this device is centred and 64px tall, and a black
