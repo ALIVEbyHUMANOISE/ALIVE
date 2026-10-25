@@ -9,7 +9,9 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import com.projectego.app.data.FocusSessionManager
+import com.projectego.app.data.LockStateManager
 import com.projectego.app.data.QuestEvidenceRepository
+import com.projectego.app.data.QuestHistoryRepository
 import com.projectego.app.data.QuestRepository
 import com.projectego.app.data.TimeBankRepository
 import com.projectego.app.model.FocusActivityType
@@ -47,6 +49,7 @@ class QuestVerificationCoordinatorTest {
         context.getSharedPreferences("project_ego_focus_session", Context.MODE_PRIVATE).edit().clear().apply()
         context.getSharedPreferences("project_ego_time_bank", Context.MODE_PRIVATE).edit().clear().apply()
         context.getSharedPreferences("project_ego_quest_evidence", Context.MODE_PRIVATE).edit().clear().apply()
+        context.getSharedPreferences("project_ego_quest_history", Context.MODE_PRIVATE).edit().clear().apply()
         now = 1_000_000L
         timeBankRepository = TimeBankRepository(context)
         questRepository = QuestRepository(context, timeBankRepository, clock = { now })
@@ -290,5 +293,100 @@ class QuestVerificationCoordinatorTest {
         assertEquals(QuestAttemptState.REWARDED, questRepository.getCurrentAttempt()?.state)
         assertEquals(15L, timeBankRepository.getTimeBank().earnedMinutes)
         assertNull(evidenceRepository.snapshotFor(attemptId))
+    }
+
+    // ---------- AUTO SETTLE ----------
+
+    @Test
+    fun `a mission nobody closed pays itself ten minutes after its window`() {
+        provider.stepCount = 0
+        assertTrue(startPhysical("quest_walk_20"))
+
+        // The window is done but the grace is not: nothing may be decided yet.
+        now += 21 * 60_000L
+        assertFalse(coordinator.autoSettleDueAttempt())
+        assertEquals(QuestAttemptState.IN_PROGRESS, questRepository.getCurrentAttempt()?.state)
+        assertEquals(0L, timeBankRepository.getTimeBank().earnedMinutes)
+
+        now += 10 * 60_000L
+        assertTrue(coordinator.autoSettleDueAttempt())
+
+        val attempt = questRepository.getCurrentAttempt()!!
+        assertEquals(QuestAttemptState.REWARDED, attempt.state)
+        assertEquals(15L, timeBankRepository.getTimeBank().earnedMinutes)
+        assertTrue("the record must say the clock closed it", attempt.autoSettled)
+        assertTrue(attempt.verificationResult!!.reason.contains("no declaration"))
+    }
+
+    @Test
+    fun `an auto-settled mission is judged on the clock, not on steps read late`() {
+        provider.stepCount = 0
+        assertTrue(startPhysical("quest_walk_20"))
+
+        // Steps that would fail a declaration - "table steps" - must not fail a
+        // mission nobody declared: the counter read ten minutes after the walk is
+        // not evidence about the walk, and ALIVE may not invent a failure from it.
+        provider.stepCount = 5
+        now += 31 * 60_000L
+        assertTrue(coordinator.autoSettleDueAttempt())
+
+        assertEquals(QuestAttemptState.REWARDED, questRepository.getCurrentAttempt()?.state)
+        assertEquals(15L, timeBankRepository.getTimeBank().earnedMinutes)
+    }
+
+    @Test
+    fun `a closed window is never re-stamped by the deadline`() {
+        provider.stepCount = 0
+        assertTrue(startPhysical("quest_walk_20"))
+
+        now += 21 * 60_000L
+        provider.stepCount = 1200
+        assertTrue(coordinator.declarePhysicalAttemptDone())
+        val ended = questRepository.getCurrentAttempt()?.activityEndTimestamp
+
+        now += 30 * 60_000L
+        assertFalse("a settled attempt has no deadline to answer", coordinator.autoSettleDueAttempt())
+        val attempt = questRepository.getCurrentAttempt()!!
+        assertEquals(QuestAttemptState.REWARDED, attempt.state)
+        assertFalse(attempt.autoSettled)
+        assertEquals("the declared moment stays the measured one", ended, attempt.activityEndTimestamp)
+    }
+
+    @Test
+    fun `a watched mission is never closed by this rule`() {
+        assertTrue(questRepository.commitQuest("quest_study_30", VerificationMethod.DIGITAL, 30L))
+        assertTrue(questRepository.startAttempt())
+
+        now += 60 * 60_000L
+        assertFalse(coordinator.autoSettleDueAttempt())
+        assertEquals(QuestAttemptState.IN_PROGRESS, questRepository.getCurrentAttempt()?.state)
+        assertEquals(0L, timeBankRepository.getTimeBank().earnedMinutes)
+    }
+
+    @Test
+    fun `the auto-settled flag survives a restart`() {
+        provider.stepCount = null
+        assertTrue(startPhysical("quest_podcast_30"))
+        now += 41 * 60_000L
+        assertTrue(coordinator.autoSettleDueAttempt())
+
+        // A second repository over the same stored record: the screen that opens
+        // the board later must still be able to tell the two kinds of finish apart.
+        val reopened = QuestRepository(context, timeBankRepository, clock = { now })
+        assertTrue(reopened.getCurrentAttempt()!!.autoSettled)
+    }
+
+    @Test
+    fun `an auto-settled mission is the day's record`() {
+        provider.stepCount = null
+        assertTrue(startPhysical("quest_podcast_30"))
+        now += 41 * 60_000L
+        assertTrue(coordinator.autoSettleDueAttempt())
+
+        val history = QuestHistoryRepository(context)
+        val today = history.day(LockStateManager.dayKeyOf(now))
+        assertNotNull("a payout must land in the log", today)
+        assertEquals(1, today!!.completedCount)
+        assertEquals(20L, today.earnedMinutes)
     }
 }

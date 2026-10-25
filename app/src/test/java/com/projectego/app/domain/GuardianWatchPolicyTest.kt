@@ -8,9 +8,10 @@ import org.junit.Test
 /**
  * When Guardian is allowed to knock.
  *
- * The rule that matters most is the one about restraint: a reminder that fires on
- * every look becomes a flicker, and the whole point of this one is that it is
- * rare enough to be worth reading.
+ * Two rules pull against each other and both have to hold: the knock repeats
+ * while a person stays in an entertainment app (one reminder per sitting is how
+ * the guard stops feeling like it is guarding), and it never becomes a flicker -
+ * the general spacing and the per-app spacing are what keep it readable.
  */
 class GuardianWatchPolicyTest {
 
@@ -45,29 +46,30 @@ class GuardianWatchPolicyTest {
     }
 
     @Test
-    fun `one app gets one interruption per sitting`() {
-        // Past the general cooldown, but the same app again: still no.
-        val soon = decide(
+    fun `the same app is re-knocked while it stays open, at its own spacing`() {
+        // Past the general spacing but inside the app's own: still no.
+        val tooSoon = decide(
             now = 1_000_000L,
-            lastAt = 1_000_000L - 100_000L,
+            lastAt = 1_000_000L - 60_000L,
             lastPackage = tiktok
         )
-        assertFalse("closing and reopening the same app is one sitting", soon.interrupt)
+        assertFalse("one app is interrupted at most every 90 seconds", tooSoon.interrupt)
 
-        // A different app after the general cooldown is a new decision.
-        val other = decide(
-            now = 1_000_000L,
-            lastAt = 1_000_000L - 100_000L,
-            lastPackage = whatsapp
-        )
-        assertTrue(other.interrupt)
-
-        // And the same app is fair game again once its own cooldown has passed.
+        // Past its own spacing: yes - this is the case that used to never happen,
+        // so a sitting in one app heard from the guardian exactly once.
         val later = decide(
             now = 1_000_000L,
             lastAt = 1_000_000L - GuardianWatchPolicy.SAME_APP_COOLDOWN_MILLIS - 1,
             lastPackage = tiktok
         )
-        assertTrue(later.interrupt)
+        assertTrue("staying in the app is a new decision once the spacing is up", later.interrupt)
+
+        // A different app after the general spacing is a new decision too.
+        val other = decide(
+            now = 1_000_000L,
+            lastAt = 1_000_000L - GuardianWatchPolicy.GLOBAL_COOLDOWN_MILLIS - 1,
+            lastPackage = whatsapp
+        )
+        assertTrue(other.interrupt)
     }
 }

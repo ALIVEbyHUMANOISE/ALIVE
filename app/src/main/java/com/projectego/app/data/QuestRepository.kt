@@ -38,6 +38,13 @@ class QuestRepository(
     private val prefs: SharedPreferences =
         context.getSharedPreferences("project_ego_quests", Context.MODE_PRIVATE)
 
+    /**
+     * The seven-day log, written at the one door a reward leaves and opened at
+     * every look at the board. Held as a field because both of those happen on
+     * every render, and a store built per read is a store nobody thought about.
+     */
+    private val history: QuestHistoryRepository by lazy { QuestHistoryRepository(context) }
+
     init {
         migrateLegacyQuestStateIfNeeded()
     }
@@ -94,7 +101,10 @@ class QuestRepository(
         // attemptId and linkedFocusSessionId. LEGACY_ATTEMPT_FIELD_COUNT
         // lets deserializeAttempt() safely migrate records persisted
         // before this step, rather than discarding them.
-        private const val ATTEMPT_FIELD_COUNT = 14
+        // The count grew to 15 for autoSettled, which a record written before it
+        // simply does not have - so 14 is read as "declared by hand".
+        private const val ATTEMPT_FIELD_COUNT = 15
+        private const val IDENTITY_ATTEMPT_FIELD_COUNT = 14
         private const val LEGACY_ATTEMPT_FIELD_COUNT = 12
 
         // The board's quests, by id. The text lives in resources so the board can
@@ -137,6 +147,11 @@ class QuestRepository(
     @Synchronized
     fun rolloverIfNeeded(): Boolean {
         val today = LockStateManager.dayKeyOf(clock())
+        // Opening today in the seven-day log happens on every read of a new day,
+        // not only on a rollover: without that, a day ALIVE was opened on and
+        // nothing was earned would look exactly like a day ALIVE never saw, and
+        // the log would be reporting an idle day as an unknown one.
+        history.ensureDay(today)
         if (prefs.getString(KEY_QUEST_DAY, null) == today) return false
 
         val attempt = getCurrentAttempt()
@@ -462,9 +477,18 @@ class QuestRepository(
      * There is no real verification logic in this phase; [outcome] and
      * [reason] are supplied by the caller. [reason] must describe only
      * what was actually checked, never invented evidence.
+     *
+     * [autoSettled] says the window was closed by the clock rather than by the
+     * person pressing done. It is recorded here because this is the moment a
+     * verdict exists, and once set it is never cleared: a re-verdict after a
+     * crash describes the same window.
      */
     @Synchronized
-    fun verifyQuest(outcome: VerificationOutcome, reason: String): Boolean {
+    fun verifyQuest(
+        outcome: VerificationOutcome,
+        reason: String,
+        autoSettled: Boolean = false
+    ): Boolean {
         val current = getCurrentAttempt() ?: return false
         if (current.state != QuestAttemptState.PENDING_VERIFICATION) return false
 
@@ -478,7 +502,13 @@ class QuestRepository(
         } else {
             QuestAttemptState.FAILED
         }
-        persistAttempt(current.copy(state = newState, verificationResult = result))
+        persistAttempt(
+            current.copy(
+                state = newState,
+                verificationResult = result,
+                autoSettled = current.autoSettled || autoSettled
+            )
+        )
         return true
     }
 
@@ -579,6 +609,15 @@ class QuestRepository(
         // marker can cost a day, it can never grant one.
         LockStateManager.recordQuestCompleted(context)
 
+        // The seven-day log counts the same event, at the same instant, through
+        // the same clock this repository was built with - so a payout that
+        // belongs to yesterday is filed under yesterday even when the rollover
+        // that noticed it runs this morning.
+        history.recordCompletion(
+            dayKey = LockStateManager.dayKeyOf(clock()),
+            minutes = reward
+        )
+
         return reward
     }
 
@@ -646,7 +685,8 @@ class QuestRepository(
             attempt.rewardMinutes?.toString() ?: "",
             attempt.rewardedTimestamp?.toString() ?: "",
             attempt.attemptId,
-            attempt.linkedFocusSessionId ?: ""
+            attempt.linkedFocusSessionId ?: "",
+            if (attempt.autoSettled) "1" else ""
         )
         return fields.joinToString(ATTEMPT_FIELD_SEPARATOR)
     }
@@ -654,11 +694,14 @@ class QuestRepository(
     private fun deserializeAttempt(raw: String): QuestAttempt? {
         val parts = raw.split(ATTEMPT_FIELD_SEPARATOR)
 
-        // Phase 2.3.3 Step 2: accept both the current 14-field format and
-        // the legacy 12-field format persisted before Step 1 introduced
-        // attemptId/linkedFocusSessionId. Anything else is corrupt or
-        // unrecognized data.
-        if (parts.size != ATTEMPT_FIELD_COUNT && parts.size != LEGACY_ATTEMPT_FIELD_COUNT) {
+        // Three shapes are accepted: 15 fields is current; 14 was written before
+        // autoSettled existed, which makes it a hand-declared window rather than
+        // an unknown one; 12 predates attemptId and linkedFocusSessionId
+        // altogether. Anything else is corrupt or unrecognized data.
+        if (parts.size != ATTEMPT_FIELD_COUNT &&
+            parts.size != IDENTITY_ATTEMPT_FIELD_COUNT &&
+            parts.size != LEGACY_ATTEMPT_FIELD_COUNT
+        ) {
             return null
         }
 
@@ -677,19 +720,12 @@ class QuestRepository(
             // Legacy (12-field) records have no attemptId/linkedFocusSessionId
             // at all. Generating a fresh UUID here is the one-time migration
             // fallback for a MISSING legacy field - it is NOT the same as
-            // regenerating an id that was actually stored: a 14-field
-            // record's stored attemptId (parts[12]) is always used as-is,
-            // never replaced.
-            val attemptId = if (parts.size == ATTEMPT_FIELD_COUNT) {
-                parts[12]
-            } else {
-                UUID.randomUUID().toString()
-            }
-            val linkedFocusSessionId = if (parts.size == ATTEMPT_FIELD_COUNT) {
-                parts[13].takeIf { it.isNotEmpty() }
-            } else {
-                null
-            }
+            // regenerating an id that was actually stored: a record's stored
+            // attemptId (parts[12]) is always used as-is, never replaced.
+            val hasIdentity = parts.size != LEGACY_ATTEMPT_FIELD_COUNT
+            val attemptId = if (hasIdentity) parts[12] else UUID.randomUUID().toString()
+            val linkedFocusSessionId =
+                if (hasIdentity) parts[13].takeIf { it.isNotEmpty() } else null
 
             QuestAttempt(
                 attemptId = attemptId,
@@ -703,7 +739,8 @@ class QuestRepository(
                 verificationResult = verificationResult,
                 rewardMinutes = parts[10].takeIf { it.isNotEmpty() }?.toLong(),
                 rewardedTimestamp = parts[11].takeIf { it.isNotEmpty() }?.toLong(),
-                linkedFocusSessionId = linkedFocusSessionId
+                linkedFocusSessionId = linkedFocusSessionId,
+                autoSettled = parts.getOrNull(14) == "1"
             )
         } catch (e: Exception) {
             // Defensive: any parse failure means "no valid attempt" rather

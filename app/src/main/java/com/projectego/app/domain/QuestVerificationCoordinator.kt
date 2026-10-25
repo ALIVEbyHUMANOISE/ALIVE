@@ -181,8 +181,9 @@ class QuestVerificationCoordinator(
      * On resume, finish work a previous session left half-done: a declaration
      * that never reached a verdict, or a verdict that never reached its reward.
      *
-     * A running physical attempt is deliberately left alone. It ends when the
-     * person says it does, and nothing here may say it for them.
+     * A running physical attempt is not closed here. It ends when the person says
+     * it does - or when [autoSettleDueAttempt] finds its grace gone, which is a
+     * different rule with a different voice, said out loud in the reason it writes.
      */
     private fun evaluatePhysicalAttempt(attempt: QuestAttempt): Boolean = when (attempt.state) {
         QuestAttemptState.VERIFIED -> questRepository.claimReward() != null
@@ -190,7 +191,40 @@ class QuestVerificationCoordinator(
         else -> false
     }
 
-    private fun settlePhysicalAttempt(attempt: QuestAttempt): Boolean {
+    /**
+     * The window the person forgot to close.
+     *
+     * Called from the deadline alarm and from every opening of the app, so
+     * "10 minutes" is a promise about the earliest moment it can land, not the
+     * exact one: a phone in deep sleep takes the alarm when it wakes, and a
+     * mission finished while ALIVE was shut pays the moment it is next opened.
+     *
+     * The judgment is the clock and nothing else. The step count and the
+     * open-app check are read at the moment of a declaration, and an auto-settle
+     * has no such moment - ten minutes after the room was cleaned a person may
+     * well be sitting down with their phone, and reading that as proof the
+     * mission did not happen would be ALIVE inventing a failure.
+     *
+     * @return true when the attempt reached VERIFIED and its reward was claimed.
+     */
+    fun autoSettleDueAttempt(): Boolean {
+        val attempt = questRepository.getCurrentAttempt() ?: return false
+        if (!QuestSettlePolicy.isAutoSettleable(attempt, clock())) return false
+
+        // Stamped closed exactly as a declaration would stamp it, so the measured
+        // window is the one that was actually lived.
+        if (!questRepository.requestVerification()) return false
+        return settlePhysicalAttempt(
+            questRepository.getCurrentAttempt() ?: attempt,
+            declared = false
+        )
+    }
+
+    /**
+     * @param declared false when the window closed on the clock instead of on the
+     * person's word. The only difference is what ALIVE is allowed to say it saw.
+     */
+    private fun settlePhysicalAttempt(attempt: QuestAttempt, declared: Boolean = true): Boolean {
         val timeResult = PhysicalQuestVerifier.verify(
             startedAt = attempt.activityStartTimestamp,
             declaredAt = attempt.activityEndTimestamp ?: clock(),
@@ -200,6 +234,7 @@ class QuestVerificationCoordinator(
         val requirement = requirementFor(attempt)
         val signalsResult =
             if (timeResult is PhysicalQuestVerifier.Result.Failed ||
+                !declared ||
                 requirement == null || !requirement.hasAnyCheck
             ) {
                 PhysicalQuestSignalsVerifier.Result.NotApplicable
@@ -219,10 +254,16 @@ class QuestVerificationCoordinator(
             signalsResult is PhysicalQuestSignalsVerifier.Result.Failed ->
                 VerificationOutcome.FAIL to signalsResult.reason
 
-            else -> VerificationOutcome.PASS to composePassReason(timeResult, signalsResult)
+            else -> VerificationOutcome.PASS to
+                if (declared) composePassReason(timeResult, signalsResult)
+                else QuestSettlePolicy.autoSettleReason(attempt.committedDurationMinutes)
         }
 
-        val verified = questRepository.verifyQuest(outcome.first, outcome.second)
+        val verified = questRepository.verifyQuest(
+            outcome.first,
+            outcome.second,
+            autoSettled = !declared
+        )
         // The reward leaves through the one door every quest uses: claimReward()
         // after VERIFIED, and nothing else.
         if (verified) questRepository.claimReward()

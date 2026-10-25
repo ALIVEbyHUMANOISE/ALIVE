@@ -9,15 +9,21 @@ import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import com.projectego.app.R
 import com.projectego.app.data.LockStateManager
+import com.projectego.app.service.InfoPillService
 
 /**
  * Guardian, in the middle of the screen, over whatever app is open.
  *
  * [GuardianWatchService] knocks when an entertainment app comes to the front
  * while the guard is off; this is the knock. It says what is no longer true
- * (nothing is being closed), what it costs (a day over the limit gets marked),
- * and gives the one action that fixes it - and it takes back nothing: back and
- * "Not now" both close it, HOME works, and the copy never calls itself a lock.
+ * (nothing is being closed) and gives the one action that fixes it. It is one
+ * headline, one sentence and one button, because the Guardian is here because of
+ * something the person did themselves - and a lecture under a button reads as
+ * nagging, which is the one tone this app does not use.
+ *
+ * It still takes back nothing: back, HOME and the thirty-second timer all close
+ * it, and the watch knocks again the next time an entertainment app comes
+ * forward. The copy never calls itself a lock.
  *
  * It reads no extras and writes nothing. The state comes from the same two
  * sources the Home card reads, which is what keeps the popup from ever saying
@@ -30,6 +36,11 @@ class GuardianAlertActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // The pill is an application overlay and draws above activities, so the
+        // one screen in this app that must never be covered takes the reading
+        // down before it shows itself.
+        InfoPillService.stop(this)
 
         val today = LockStateManager.dayKeyOf(System.currentTimeMillis())
         val state = Guardian.stateOf(
@@ -72,12 +83,10 @@ class GuardianAlertActivity : AppCompatActivity() {
         card.addView(ui.vgap(ui.dimens.lineGap))
         card.addView(Guardian.inPaper(ui.body(getString(Guardian.bodyFor(state))), ui))
 
-        card.addView(ui.vgap(ui.dimens.groupGap))
-        card.addView(Guardian.inPaper(ui.note(getString(Guardian.noteFor(state))), ui))
-
         // The one action worth taking, in the amber ALIVE keeps for the thing you
-        // are being asked to do - and a way out that costs nothing, because a
-        // reminder you cannot dismiss is a lock, and this is not one.
+        // are being asked to do. There is no second button: "Not now" made the
+        // popup look like a choice between two equal answers, and it never was -
+        // back and the timer are the way out, and both cost nothing.
         card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(
             ui.primary(getString(Guardian.actionFor(state) ?: R.string.guardian_action_restore))
@@ -91,20 +100,6 @@ class GuardianAlertActivity : AppCompatActivity() {
                         finish()
                     }
                 }
-        )
-        card.addView(ui.vgap(ui.dimens.lineGap))
-        card.addView(
-            // A paper chip with an ink edge, not the app's flat "quiet" button:
-            // that one is transparent until it is pressed, and a transparent
-            // button on an ink plate is a button nobody can find. The way out has
-            // to be the clearest thing here.
-            ui.secondary(getString(R.string.guardian_later)).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                setOnClickListener { finish() }
-            }
         )
 
         setContentView(card)

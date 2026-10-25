@@ -134,6 +134,12 @@
             android:name=".service.QuestWatchReceiver"
             android:exported="false" />
 
+        <!-- The mission that closed its own window ten minutes after its time was
+             up. Its only sender is this app's own alarm. -->
+        <receiver
+            android:name=".service.QuestDeadlineReceiver"
+            android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -1,6 +1,8 @@
 package com.projectego.app.ui
 
+import com.projectego.app.model.UsageDay
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
@@ -81,5 +83,82 @@ class UsageChartStatesTest {
         assertEquals(0, UsageChartStates.percentOf(0, 120))
         assertEquals(125, UsageChartStates.percentOf(150, 120))
         assertEquals(0, UsageChartStates.percentOf(30, 0))
+    }
+
+    @Test
+    fun `the three measures read one day three ways`() {
+        val day = UsageDay(
+            date = "2026-10-20",
+            totalMinutes = 30L,
+            limitMinutes = 120L,
+            perAppMinutes = emptyMap(),
+            screenMinutes = 100L
+        )
+        val bar = UsageChartStates.barFor(day.date, day)
+
+        assertEquals(100L, UsageChartStates.metricMinutes(bar, ChartMetric.TOTAL))
+        assertEquals(30L, UsageChartStates.metricMinutes(bar, ChartMetric.ENTERTAINMENT))
+        assertEquals(70L, UsageChartStates.metricMinutes(bar, ChartMetric.PRODUCTIVITY))
+    }
+
+    @Test
+    fun `a day recorded before the screen figure has no total or productivity, not zero`() {
+        val day = UsageDay(
+            date = "2026-10-20",
+            totalMinutes = 30L,
+            limitMinutes = 120L,
+            perAppMinutes = emptyMap()
+        )
+        val bar = UsageChartStates.barFor(day.date, day)
+
+        assertNull(UsageChartStates.metricMinutes(bar, ChartMetric.TOTAL))
+        assertNull(UsageChartStates.metricMinutes(bar, ChartMetric.PRODUCTIVITY))
+        assertEquals(30L, UsageChartStates.metricMinutes(bar, ChartMetric.ENTERTAINMENT))
+    }
+
+    @Test
+    fun `a day ALIVE never saw has no figure in any measure`() {
+        val bar = UsageChartStates.barFor("2026-10-20", null)
+        assertNull(UsageChartStates.metricMinutes(bar, ChartMetric.TOTAL))
+        assertNull(UsageChartStates.metricMinutes(bar, ChartMetric.ENTERTAINMENT))
+        assertNull(UsageChartStates.metricMinutes(bar, ChartMetric.PRODUCTIVITY))
+    }
+
+    @Test
+    fun `a range total skips the days that have no figure`() {
+        val withScreen = UsageDay("2026-10-19", 30L, 120L, emptyMap(), screenMinutes = 100L)
+        val withoutScreen = UsageDay("2026-10-20", 10L, 120L, emptyMap())
+        val bars = UsageChartStates.bars(
+            listOf(withScreen.date, withoutScreen.date, "2026-10-21"),
+            mapOf(withScreen.date to withScreen, withoutScreen.date to withoutScreen)
+        )
+
+        assertEquals(100L, UsageChartStates.metricTotal(bars, ChartMetric.TOTAL))
+        assertEquals(40L, UsageChartStates.metricTotal(bars, ChartMetric.ENTERTAINMENT))
+        assertEquals(70L, UsageChartStates.metricTotal(bars, ChartMetric.PRODUCTIVITY))
+    }
+
+    @Test
+    fun `measure blocks scale to the busiest block and the future stays hollow`() {
+        val values = LongArray(UsageChartStates.HOURS_PER_DAY)
+        values[0] = 30L * 60_000L
+        values[1] = 30L * 60_000L
+        values[3] = 15L * 60_000L
+
+        val bars = UsageChartStates.metricHourBars(values, currentHour = 5)
+
+        assertEquals(60L, bars[0].minutes)
+        assertEquals(1f, bars[0].fraction, 0.0001f)
+        assertEquals(DayBarKind.SPENT, bars[0].kind)
+        assertEquals(15L, bars[1].minutes)
+        assertEquals(0.25f, bars[1].fraction, 0.0001f)
+        assertEquals(DayBarKind.MISSING, bars[2].kind)
+    }
+
+    @Test
+    fun `a past block with nothing in it is a zero, not a missing`() {
+        val bars = UsageChartStates.metricHourBars(LongArray(UsageChartStates.HOURS_PER_DAY), 5)
+        assertEquals(DayBarKind.ZERO, bars[0].kind)
+        assertEquals(DayBarKind.MISSING, bars[2].kind)
     }
 }

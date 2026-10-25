@@ -19,6 +19,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
+import android.widget.HorizontalScrollView
 import android.widget.ScrollView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
@@ -31,16 +32,19 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
 import androidx.core.widget.addTextChangedListener
+import com.projectego.app.data.CharacterGrowthRepository
 import com.projectego.app.data.CustomQuestRepository
 import com.projectego.app.data.FocusSessionManager
 import com.projectego.app.data.LockStateManager
 import com.projectego.app.data.NightContractRepository
 import com.projectego.app.data.QuestEvidenceRepository
+import com.projectego.app.data.QuestHistoryRepository
 import com.projectego.app.data.QuestRepository
 import com.projectego.app.data.TimeBankRepository
 import com.projectego.app.data.UsageHistoryRepository
 import com.projectego.app.data.WelcomeGate
 import com.projectego.app.domain.AndroidPhysicalQuestEvidenceProvider
+import com.projectego.app.domain.CharacterGrowth
 import com.projectego.app.domain.CriticalAlertPolicy
 import com.projectego.app.domain.CustomQuest
 import com.projectego.app.domain.EntertainmentClaimCoordinator
@@ -49,6 +53,7 @@ import com.projectego.app.domain.FocusAppPolicy
 import com.projectego.app.domain.NightContract
 import com.projectego.app.domain.PhysicalQuestPolicy
 import com.projectego.app.domain.PhysicalQuestVerifier
+import com.projectego.app.domain.QuestDayProgress
 import com.projectego.app.domain.QuestStartCoordinator
 import com.projectego.app.domain.QuestVerificationCoordinator
 import com.projectego.app.domain.UsageReport
@@ -62,8 +67,10 @@ import com.projectego.app.model.PhysicalQuestRequirement
 import com.projectego.app.model.Quest
 import com.projectego.app.model.QuestAttempt
 import com.projectego.app.model.QuestAttemptState
+import com.projectego.app.model.QuestHistoryDay
 import com.projectego.app.service.AccessibilityWatch
 import com.projectego.app.service.PromiseWatch
+import com.projectego.app.service.QuestDeadlineWatch
 import com.projectego.app.service.QuestWatch
 import com.projectego.app.model.TimeStatus
 import com.projectego.app.model.UsageDay
@@ -79,6 +86,7 @@ import com.projectego.app.ui.AliveSeries
 import com.projectego.app.ui.AppLabels
 import com.projectego.app.ui.BrutalistBarChart
 import com.projectego.app.ui.BrutalistDonut
+import com.projectego.app.ui.ChartMetric
 import com.projectego.app.ui.ChartRange
 import com.projectego.app.ui.DayBar
 import com.projectego.app.ui.DayBarKind
@@ -132,6 +140,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var nightContractRepository: NightContractRepository
     private lateinit var questRepository: QuestRepository
     private lateinit var customQuestRepository: CustomQuestRepository
+    private lateinit var questHistoryRepository: QuestHistoryRepository
     private lateinit var focusSessionManager: FocusSessionManager
 
     /**
@@ -156,6 +165,9 @@ class MainActivity : AppCompatActivity() {
 
     /** The chart's own store. Side-effect free, so panels may read it directly. */
     private val usageHistory by lazy { UsageHistoryRepository(this) }
+
+    /** The lifetime count. Read when Profile draws; it is three integers. */
+    private val growthRepository by lazy { CharacterGrowthRepository(this) }
 
     private var focusSetupAnchor: View? = null
     private var timeBankAnchor: View? = null
@@ -203,6 +215,7 @@ class MainActivity : AppCompatActivity() {
         // Read before the board is built, because the board's one open slot is
         // whatever words are on file right now.
         customQuestRepository = CustomQuestRepository(this)
+        questHistoryRepository = QuestHistoryRepository(this)
         questRepository = QuestRepository(
             this,
             timeBankRepository,
@@ -315,6 +328,10 @@ class MainActivity : AppCompatActivity() {
             findViewById<View>(R.id.main).visibility = View.VISIBLE
         }
         questVerificationCoordinator.evaluateAttemptOnResume(this)
+        // The mission that outlived its own grace is closed before anything is
+        // drawn, so the board never shows a finished mission as still running
+        // just because the alarm that was set for it arrived late or not at all.
+        questVerificationCoordinator.autoSettleDueAttempt()
         renderDashboard()
         renderQuestSection()
         // Profile draws from the cache those two renders just refreshed.
@@ -341,6 +358,7 @@ class MainActivity : AppCompatActivity() {
         // phone that never opens it has nobody to remind.
         PromiseWatch.arm(this)
         QuestWatch.arm(this)
+        QuestDeadlineWatch.arm(this)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -443,14 +461,40 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun panelHeader(kicker: CharSequence): LinearLayout = ui.row().apply {
+        gravity = Gravity.CENTER_VERTICAL
+        // Its own bottom air, so the tile's hard shadow cannot land on the
+        // first element of the page - the mission page had the exit sitting on
+        // top of the category tile below it.
+        (layoutParams as LinearLayout.LayoutParams).bottomMargin = ui.dimens.groupGap
         addView(
             ui.backButton(getString(R.string.action_back)).apply {
+                layoutParams = LinearLayout.LayoutParams(ui.dimens.touchMin, ui.dimens.touchMin)
                 setOnClickListener { closeOverlay() }
             }
         )
+        // A page's name is a title, not a label on the exit. The section voice
+        // beside a framed button read as the button's caption, so the way out
+        // was louder than the name of the page.
         addView(
-            ui.sectionHeader(kicker).apply {
-                setPadding(ui.dimens.m, 0, 0, 0)
+            ui.headline(kicker).apply {
+                // The remaining width, so a long page name wraps instead of
+                // pushing past the back button's right edge.
+                layoutParams = LinearLayout.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    1f
+                )
+                // Centred on the page, not on what is left after the exit. The
+                // spacer below is the same 48dp box, so the title's centre is
+                // the page's centre - measured, not hoped for.
+                gravity = Gravity.CENTER
+                setPadding(ui.dimens.m, 0, ui.dimens.m, 0)
+                maxLines = 2
+            }
+        )
+        addView(
+            View(this@MainActivity).apply {
+                layoutParams = LinearLayout.LayoutParams(ui.dimens.touchMin, 1)
             }
         )
     }
@@ -583,7 +627,13 @@ class MainActivity : AppCompatActivity() {
                 AliveStates.faceSpriteFor(face),
                 ui.dimens.characterLarge,
                 characterDescription(face)
-            )
+            ).apply {
+                // The growth screen is one tap away, on the thing it is about. The
+                // hint lives in the spoken label too: a clickable sprite with no
+                // words is a sprite nobody knows they can press.
+                contentDescription = characterDescription(face) + ". " + getString(R.string.growth_open_hint)
+                setOnClickListener { openGrowthSheet() }
+            }
         )
         line.addView(
             ui.column().apply {
@@ -1191,7 +1241,7 @@ class MainActivity : AppCompatActivity() {
             // The payout reads as a chip, not as a sentence: the word is the fact,
             // the gold square is the amount, and the line below says where it went.
             val rewardLine = ui.row()
-            rewardLine.addView(ui.lead(getString(R.string.quest_reclaimed_label)))
+            rewardLine.addView(ui.lead(getString(R.string.quest_finished_label)))
             rewardLine.addView(ui.hgap(ui.dimens.m))
             rewardLine.addView(ui.rewardChip(getString(R.string.unit_minutes_gain, attempt.rewardMinutes ?: quest.rewardMinutes)))
             block.addView(rewardLine)
@@ -1237,6 +1287,14 @@ class MainActivity : AppCompatActivity() {
         block.addView(ui.vgap(ui.dimens.lineGap))
         block.addView(ui.note(support))
 
+        // Said once, and only when it is true: a mission the clock closed is not
+        // the same event as a mission the person closed, and the card would be
+        // inventing a press that never happened if it let them read alike.
+        if (attempt.state == QuestAttemptState.REWARDED && attempt.autoSettled) {
+            block.addView(ui.vgap(ui.dimens.pairGap))
+            block.addView(ui.note(getString(R.string.quest_finished_auto)))
+        }
+
         if (attempt.state == QuestAttemptState.FAILED) {
             // A raw engine reason is never shown; only its honest family is.
             // And the family is ruled off from the sentence above it in the
@@ -1264,6 +1322,9 @@ class MainActivity : AppCompatActivity() {
                     )
                     setOnClickListener {
                         if (questVerificationCoordinator.declarePhysicalAttemptDone()) {
+                            // The window has an owner's answer now, so the deadline
+                            // that was waiting to answer for it is stood down.
+                            QuestDeadlineWatch.arm(this@MainActivity)
                             renderDashboard()
                             renderQuestSection()
                         } else {
@@ -1272,6 +1333,13 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             )
+            // Said at the moment it is worth knowing: the button is live now, and
+            // what happens if it never gets pressed is a rule about the next ten
+            // minutes rather than about this one.
+            if (gateLeft == 0L) {
+                block.addView(ui.vgap(ui.dimens.pairGap))
+                block.addView(ui.note(getString(R.string.quest_auto_settle_note)))
+            }
         }
 
         if (!physicalWait && AliveStates.offersAction(attempt.state)) {
@@ -1354,10 +1422,15 @@ class MainActivity : AppCompatActivity() {
                 if (available <= 0L) {
                     addView(ui.note(getString(R.string.time_bank_empty)))
                 } else {
+                    // "30 kembali" was a verb with no unit hanging under a
+                    // figure, and "kembali" is also the way out of a panel. The
+                    // label says what the number is, the unit closes it.
+                    addView(ui.meta(getString(R.string.time_bank_balance_label)))
+                    addView(ui.vgap(ui.dimens.xs))
                     val bankLine = ui.row().apply { gravity = Gravity.BOTTOM }
                     bankLine.addView(ui.timer(getString(R.string.stat_minutes, available)))
                     bankLine.addView(
-                        ui.meta(getString(R.string.stat_reclaimed)).apply {
+                        ui.meta(getString(R.string.unit_minutes_suffix)).apply {
                             setPadding(ui.dimens.m, 0, 0, ui.dimens.m)
                         }
                     )
@@ -1375,12 +1448,14 @@ class MainActivity : AppCompatActivity() {
                 ui.statTile(
                     getString(R.string.stat_bank_earned),
                     getString(R.string.stat_minutes, state.earnedMinutes),
-                    ui.palette.softForest
+                    ui.palette.softForest,
+                    unit = getString(R.string.unit_minutes_suffix)
                 ),
                 ui.statTile(
                     getString(R.string.stat_bank_spent),
                     getString(R.string.stat_minutes, state.spentMinutes),
-                    ui.palette.pinkSoft
+                    ui.palette.pinkSoft,
+                    unit = getString(R.string.unit_minutes_suffix)
                 )
             )
         )
@@ -1418,8 +1493,30 @@ class MainActivity : AppCompatActivity() {
         val card = ui.bentoCard(getString(R.string.night_contract_heading))
 
         if (night) {
-            card.addView(ui.note(getString(R.string.night_contract_invite)))
-            card.addView(ui.annotation(getString(R.string.night_contract_invite_note)))
+            // The night has a picture of its own now: a crescent and its stars,
+            // drawn on the same grid as everything else. It sits beside the words
+            // the way the character sits beside Home's status - the card used to
+            // open with a pixel-caps paragraph, which read as shouting at exactly
+            // the hour the app should be quietest.
+            val hero = ui.row().apply { gravity = Gravity.CENTER_VERTICAL }
+            hero.addView(
+                ui.mark(
+                    R.drawable.ic_alive_night,
+                    ui.dimens.characterLarge,
+                    getString(R.string.night_contract_illustration_description)
+                )
+            )
+            hero.addView(
+                ui.weighted(
+                    ui.column().apply {
+                        setPadding(ui.dimens.l, 0, 0, 0)
+                        addView(ui.body(getString(R.string.night_contract_invite)))
+                        addView(ui.vgap(ui.dimens.lineGap))
+                        addView(ui.note(getString(R.string.night_contract_invite_note)))
+                    }
+                )
+            )
+            card.addView(hero)
             card.addView(ui.vgap(ui.dimens.groupGap))
             card.addView(
                 ui.primary(getString(R.string.night_contract_invite_action)).apply {
@@ -1428,26 +1525,62 @@ class MainActivity : AppCompatActivity() {
             )
         } else {
             inForce?.let { contract ->
-                card.addView(
-                    ui.note(getString(R.string.night_contract_in_force, contract.allowanceMinutes))
-                )
-                contract.reason?.let { reason ->
-                    card.addView(ui.vgap(ui.dimens.lineGap))
-                    card.addView(
-                        ui.annotation(getString(R.string.night_contract_in_force_reason, reason))
+                // The promise is a number, and the old card buried it in a
+                // sentence ("Dijanjikan: 120 mnt") in grey. The night mark says
+                // where the promise came from, the label says what today
+                // stands on, and the figure is allowed to be the thing the eye
+                // lands on.
+                val head = ui.row().apply { gravity = Gravity.CENTER_VERTICAL }
+                head.addView(
+                    ui.mark(
+                        R.drawable.ic_alive_night,
+                        ui.dimens.character,
+                        getString(R.string.night_contract_illustration_description)
                     )
-                }
+                )
+                head.addView(
+                    ui.weighted(
+                        ui.column().apply {
+                            setPadding(ui.dimens.l, 0, 0, 0)
+                            addView(ui.meta(getString(R.string.night_contract_in_force_allowance)))
+                            addView(ui.vgap(ui.dimens.xs))
+                            val line = ui.row().apply { gravity = Gravity.BOTTOM }
+                            line.addView(
+                                ui.number(
+                                    getString(R.string.stat_minutes, contract.allowanceMinutes)
+                                )
+                            )
+                            line.addView(
+                                ui.meta(getString(R.string.unit_minutes_suffix)).apply {
+                                    setPadding(ui.dimens.m, 0, 0, ui.dimens.xs)
+                                }
+                            )
+                            addView(line)
+                        }
+                    )
+                )
+                card.addView(head)
+                card.addView(ui.vgap(ui.dimens.groupGap))
+
+                // One line for the quest, in the reading face. The words the
+                // person wrote keep their own line, quietly. The price note
+                // stays in the sheet that changes the promise: on a day it is
+                // already standing, it was a footnote about another screen.
                 val questTitle = contract.questId?.let { id ->
                     questRepository.getAllQuests().firstOrNull { it.id == id }?.title
                 }
                 card.addView(
-                    ui.annotation(
+                    ui.body(
                         questTitle?.let { getString(R.string.night_contract_in_force_quest, it) }
                             ?: getString(R.string.night_contract_in_force_no_quest)
                     )
                 )
-                card.addView(ui.vgap(ui.dimens.lineGap))
-                card.addView(ui.annotation(getString(R.string.night_contract_price_note)))
+                contract.reason?.let { reason ->
+                    card.addView(ui.vgap(ui.dimens.lineGap))
+                    card.addView(
+                        ui.note(getString(R.string.night_contract_in_force_reason, reason))
+                    )
+                }
             }
         }
 
@@ -1465,7 +1598,6 @@ class MainActivity : AppCompatActivity() {
     private fun openNightContractSheet() {
         val (scroll, column) = panel()
         column.addView(panelHeader(getString(R.string.night_contract_heading)))
-        column.addView(ui.vgap(ui.dimens.groupGap))
         // Body face, not the pixel one. A pixel paragraph six lines long reads as
         // shouting, and this sheet already had three of them competing with the
         // choices they were meant to explain.
@@ -1629,7 +1761,6 @@ class MainActivity : AppCompatActivity() {
 
         val (scroll, column) = panel()
         column.addView(panelHeader(getString(R.string.quest_custom_sheet_heading)))
-        column.addView(ui.vgap(ui.dimens.groupGap))
 
         column.addView(ui.cardTitle(getString(R.string.quest_custom_name_label)))
         column.addView(ui.vgap(ui.dimens.lineGap))
@@ -1823,9 +1954,10 @@ class MainActivity : AppCompatActivity() {
      * the same [EntertainmentClaimPolicy] one the tap would execute.
      */
     private fun renderTimeBankUse(block: LinearLayout) {
+        // No rule here: a thick line above a disabled button cut the card into
+        // "content" and "error", and the claim area is one block with the words
+        // above it, not a separate register.
         block.addView(ui.vgap(ui.dimens.groupGap))
-        block.addView(ui.rule())
-        block.addView(ui.vgap(ui.dimens.lineGap))
 
         val claimedToday = lockStateManager.claimedMinutesToday()
         val decision = EntertainmentClaimPolicy.decide(
@@ -1847,25 +1979,49 @@ class MainActivity : AppCompatActivity() {
             block.addView(ui.vgap(ui.dimens.lineGap))
         }
 
-        when (decision) {
-            // The claim is the one thing on this card you are invited to press,
-            // so it wears the offer colour rather than the paper one.
-            is EntertainmentClaimPolicy.Decision.Claim -> block.addView(
-                ui.primary(getString(R.string.time_bank_claim_action, decision.minutes)).apply {
-                    layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                    )
+        // The claim button is always present, even when it cannot do anything:
+        // a control that vanishes makes a person wonder where it went, while a
+        // grey one says "not now" and names the door that is closed. The reason
+        // is still printed above it, in words.
+        val claimLabel = when (decision) {
+            is EntertainmentClaimPolicy.Decision.Claim ->
+                getString(R.string.time_bank_claim_action, decision.minutes)
+
+            else -> getString(R.string.time_bank_claim_action_off)
+        }
+        val canClaim = decision is EntertainmentClaimPolicy.Decision.Claim
+        block.addView(
+            ui.primary(claimLabel).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                isEnabled = canClaim
+                if (canClaim) {
                     setOnClickListener { confirmAgainstPromise { claimBankMinutes() } }
+                } else {
+                    // The drawable already turns grey when disabled; the label
+                    // follows it so the whole control reads as one state.
+                    setTextColor(ui.palette.inkDisabled)
                 }
-            )
-            EntertainmentClaimPolicy.Decision.DailyCapReached ->
+            }
+        )
+
+        when (decision) {
+            EntertainmentClaimPolicy.Decision.DailyCapReached -> {
+                block.addView(ui.vgap(ui.dimens.lineGap))
                 block.addView(ui.note(getString(R.string.time_bank_claim_full)))
-            EntertainmentClaimPolicy.Decision.RecoveryDay ->
+            }
+
+            EntertainmentClaimPolicy.Decision.RecoveryDay -> {
+                block.addView(ui.vgap(ui.dimens.lineGap))
                 block.addView(ui.note(getString(R.string.time_bank_claim_recovery)))
-            // The head of the card already says the bank is empty; a line here
-            // would only say it twice.
-            EntertainmentClaimPolicy.Decision.BankEmpty -> Unit
+            }
+
+            // The head of the card already says the bank is empty; the grey
+            // button is the whole statement.
+            EntertainmentClaimPolicy.Decision.BankEmpty,
+            is EntertainmentClaimPolicy.Decision.Claim -> Unit
         }
     }
 
@@ -2094,6 +2250,12 @@ class MainActivity : AppCompatActivity() {
         questRepository.rolloverIfNeeded()
 
         val allQuests = questRepository.getAllQuests()
+        // The detail panel looks the card up in this cache, and this screen is
+        // where a quest is tapped. A mission written a second ago is on the board
+        // but not yet in a catalog refreshed only by the dashboard render, so the
+        // tap silently found nothing - the one card you just made was the one card
+        // that would not open.
+        state.questCatalog = allQuests
 
         // The board's active state comes from the live QuestAttempt, never from
         // the legacy KEY_ACTIVE_QUEST_ID, which the start flow no longer writes.
@@ -2111,6 +2273,8 @@ class MainActivity : AppCompatActivity() {
         header.addView(ui.annotation(getString(R.string.quest_subhead)))
         header.addView(ui.vgap(ui.dimens.lineGap))
         header.addView(ui.accents(seed = 2))
+        header.addView(ui.vgap(ui.dimens.groupGap))
+        header.addView(questDayProgress(allQuests))
         questContainer.addView(header)
 
         // On this screen the attempt is the news, so it takes the one heavy frame.
@@ -2163,6 +2327,95 @@ class MainActivity : AppCompatActivity() {
             questContainer.addView(ui.sectionHeader(getString(R.string.quest_yours)))
             questContainer.addView(questGrid(others))
         }
+
+        // The week's record sits under the board rather than beside the day's
+        // number: today is the thing to act on, and the seven rows are the thing
+        // to notice only once that is settled.
+        questContainer.addView(ui.vgap(ui.dimens.groupGap))
+        questContainer.addView(questHistorySection())
+    }
+
+    /**
+     * Today's score, in the one number that cannot be read wrong: how many of
+     * what is on the board have actually paid out.
+     *
+     * The bar is drawn from the same pair of figures as the words beside it, so
+     * the two can never disagree, and the denominator comes from the board as it
+     * stands today - an unwritten mission is not a slot waiting to be filled.
+     */
+    private fun questDayProgress(quests: List<Quest>): View {
+        val progress = QuestDayProgress.of(quests)
+        return ui.column().apply {
+            addView(
+                ui.row().apply {
+                    addView(ui.weighted(ui.annotation(getString(R.string.quest_progress_label))))
+                    addView(
+                        ui.lead(
+                            getString(R.string.quest_progress_value, progress.completed, progress.total)
+                        )
+                    )
+                }
+            )
+            addView(ui.vgap(ui.dimens.lineGap))
+            addView(ui.meter(progress.share, ui.palette.rewardMid))
+        }
+    }
+
+    /**
+     * Seven rows, newest first, with a row for every day in the window.
+     *
+     * A day ALIVE never opened is kept in sight rather than dropped, because the
+     * gap is the information: a log that only lists the good days is a log that
+     * flatters, and this one is not allowed to.
+     */
+    private fun questHistorySection(): View {
+        val todayKey = LockStateManager.dayKeyOf(System.currentTimeMillis())
+        val block = ui.column()
+        block.addView(ui.sectionHeader(getString(R.string.quest_history_heading)))
+        block.addView(ui.vgap(ui.dimens.lineGap))
+        questHistoryRepository.recent(todayKey).forEachIndexed { index, day ->
+            if (index > 0) block.addView(ui.vgap(ui.dimens.pairGap))
+            block.addView(questHistoryRow(day, todayKey))
+        }
+        return block
+    }
+
+    private fun questHistoryRow(day: QuestHistoryDay, todayKey: String): View = ui.row().apply {
+        addView(ui.weighted(ui.tag(questHistoryLabel(day.dayKey, todayKey))))
+        when {
+            !day.recorded -> addView(
+                ui.meta(getString(R.string.quest_history_unrecorded)).apply {
+                    setTextColor(ui.palette.inkDisabled)
+                }
+            )
+
+            day.completedCount == 0 -> addView(
+                ui.meta(getString(R.string.quest_history_empty)).apply {
+                    setTextColor(ui.palette.inkMuted)
+                }
+            )
+
+            else -> addView(
+                ui.tileLabel(
+                    getString(R.string.quest_history_day, day.completedCount, day.earnedMinutes)
+                )
+            )
+        }
+    }
+
+    /** Today is named, yesterday is named, the rest are the weekday - the same
+     *  three voices the usage chart uses for the same job. */
+    private fun questHistoryLabel(dayKey: String, todayKey: String): String = try {
+        when (dayKey) {
+            todayKey -> getString(R.string.quest_history_today)
+            LocalDate.parse(todayKey).minusDays(1).toString() ->
+                getString(R.string.quest_history_yesterday)
+
+            else -> LocalDate.parse(dayKey)
+                .dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+        }
+    } catch (_: Exception) {
+        dayKey
     }
 
     /** Two cards per row, with the same air between them as between the rows. */
@@ -2434,6 +2687,10 @@ class MainActivity : AppCompatActivity() {
                             )
                         )
                     )
+                    // The other half of the deal, before it is taken on: this is a
+                    // mission that can finish without its owner saying so.
+                    column.addView(ui.vgap(ui.dimens.pairGap))
+                    column.addView(ui.note(getString(R.string.quest_auto_settle_note)))
                     if (requirement.needsSteps && activityRecognitionDenied) {
                         column.addView(ui.vgap(ui.dimens.pairGap))
                         column.addView(ui.note(getString(R.string.quest_how_steps_permission)))
@@ -2483,6 +2740,10 @@ class MainActivity : AppCompatActivity() {
     private fun completePhysicalQuestStart(questId: String) {
         val started = questStartCoordinator.startPhysicalQuest(questId)
         if (started) {
+            // The window just got a deadline. Without this the alarm would only
+            // be pointed at it the next time the app was opened, which is
+            // exactly the case this feature exists for.
+            QuestDeadlineWatch.arm(this)
             closeOverlay()
             renderDashboard()
             renderQuestSection()
@@ -2644,10 +2905,12 @@ class MainActivity : AppCompatActivity() {
         val generation = ++chartOpenGeneration
         Thread {
             val hours = usageTracker.hourlyUsedMillisToday()
+            val seen = usageTracker.hourlySeenMillisToday()
             runOnUiThread {
                 // Somebody opened another tab while the hours were being read.
                 if (generation != chartOpenGeneration) return@runOnUiThread
                 state.hourlyUsedMillis = hours
+                state.hourlySeenMillis = seen
                 buildUsageChartPanel()
             }
         }.apply { isDaemon = true }.start()
@@ -2662,7 +2925,6 @@ class MainActivity : AppCompatActivity() {
     private fun buildUsageChartPanel() {
         val (scroll, column) = panel()
         column.addView(panelHeader(getString(R.string.chart_heading)))
-        column.addView(ui.vgap(ui.dimens.groupGap))
         column.addView(ui.annotation(getString(R.string.chart_subhead)))
         column.addView(ui.vgap(ui.dimens.lineGap))
         column.addView(ui.accents(seed = 3))
@@ -2707,6 +2969,7 @@ class MainActivity : AppCompatActivity() {
         body.removeAllViews()
 
         val range = ChartRange.values().getOrNull(state.chartRangeIndex) ?: ChartRange.TODAY
+        val metric = ChartMetric.values().getOrNull(state.chartMetricIndex) ?: ChartMetric.TOTAL
         val today = LocalDate.now()
         val todayKey = today.toString()
         val currentHour = LocalTime.now().hour
@@ -2719,11 +2982,17 @@ class MainActivity : AppCompatActivity() {
         val byHour = range == ChartRange.TODAY && state.dailyLimitMinutes > 0L
 
         body.addView(ui.vgap(ui.dimens.groupGap))
+        // The measure first: the charts below are the same days counted in
+        // whichever of these is chosen, and the chip row replaces the old
+        // six-kind legend that asked people to learn six words before reading a
+        // chart.
+        body.addView(metricSelector(body))
+        body.addView(ui.vgap(ui.dimens.cardGap))
 
         if (byHour) {
             body.addView(hourCoverageBanner(currentHour))
             body.addView(ui.vgap(ui.dimens.cardGap))
-            body.addView(buildHourCard(currentHour))
+            body.addView(buildHourCard(currentHour, metric))
         } else {
             val bars = chartBars(UsageChartStates.dateKeys(range, today), todayKey)
             val (_, recordedCount) = UsageChartStates.totals(bars)
@@ -2734,7 +3003,7 @@ class MainActivity : AppCompatActivity() {
             // allowance", hyphenated across three lines in a sixty-dp column, and a
             // chart whose key is broken is not worth reading.
             body.addView(ui.vgap(ui.dimens.cardGap))
-            body.addView(buildDayCard(range, todayKey, bars))
+            body.addView(buildDayCard(range, todayKey, bars, metric))
         }
 
         // Per-app time is only ever stated for today. It is stored for other
@@ -2814,83 +3083,6 @@ class MainActivity : AppCompatActivity() {
         return banner
     }
 
-    /**
-     * What each bar means, counted, and tappable.
-     *
-     * Choosing a kind dims every bar that is not one, which is the only way to
-     * answer "how many of these did ALIVE never see" without asking somebody to
-     * count stubs by eye. The count is printed in the row and repeated in the
-     * line under it, so the answer is a number and a word - not a colour.
-     *
-     * The entries arrive already built. Days and hours wear the same shapes to
-     * say different things - a hollow stub is "not seen" on one chart and "not
-     * yet" on the other - and only the caller knows which chart is on screen.
-     */
-    private fun kindLegend(
-        entries: List<LegendEntry>,
-        allCopy: String,
-        @StringRes showingCopy: Int,
-        onPick: (DayBarKind?) -> Unit
-    ): LinearLayout {
-        val group = RadioGroup(this).apply { orientation = RadioGroup.VERTICAL }
-        val note = ui.note(allCopy)
-
-        entries.forEachIndexed { index, entry ->
-            group.addView(
-                ui.legendOption(
-                    getString(R.string.chart_legend_row, getString(entry.label), entry.count),
-                    entry.hue
-                ).apply {
-                    id = KIND_FILTER_ID_BASE + index
-                    // "All" is checked on open: the chart starts showing the whole
-                    // range it was asked about, not a slice of it.
-                    isChecked = index == 0
-                }
-            )
-        }
-        group.setOnCheckedChangeListener { _, checkedId ->
-            val entry = entries.getOrNull(checkedId - KIND_FILTER_ID_BASE) ?: return@setOnCheckedChangeListener
-            onPick(entry.kind)
-            note.text = if (entry.kind == null) allCopy
-            else getString(showingCopy, getString(entry.label), entry.count)
-        }
-
-        return ui.column().apply {
-            addView(group)
-            addView(ui.vgap(ui.dimens.lineGap))
-            addView(note)
-        }
-    }
-
-    private data class LegendEntry(
-        val kind: DayBarKind?,
-        @StringRes val label: Int,
-        @ColorInt val hue: Int,
-        val count: Int
-    )
-
-    private fun dayLegendEntries(bars: List<DayBar>): List<LegendEntry> = listOf(
-        LegendEntry(null, R.string.chart_legend_all, ui.palette.white, bars.size),
-        LegendEntry(DayBarKind.SPENT, R.string.chart_kind_spent, ui.palette.softForest, countOf(bars, DayBarKind.SPENT) { it.kind }),
-        LegendEntry(DayBarKind.FULL, R.string.chart_kind_full, ui.palette.shortMid, countOf(bars, DayBarKind.FULL) { it.kind }),
-        LegendEntry(DayBarKind.ZERO, R.string.chart_kind_zero, ui.palette.ink, countOf(bars, DayBarKind.ZERO) { it.kind }),
-        LegendEntry(DayBarKind.RECOVERY, R.string.chart_kind_recovery, ui.palette.warmGray, countOf(bars, DayBarKind.RECOVERY) { it.kind }),
-        LegendEntry(DayBarKind.MISSING, R.string.chart_kind_missing, ui.palette.paper, countOf(bars, DayBarKind.MISSING) { it.kind })
-    )
-
-    /** The same shapes, counted in hours: "not seen" here is "not yet". */
-    private fun hourLegendEntries(bars: List<UsageChartStates.HourBar>): List<LegendEntry> = listOf(
-        LegendEntry(null, R.string.chart_legend_all_hours, ui.palette.white, bars.size),
-        LegendEntry(DayBarKind.SPENT, R.string.chart_kind_spent, ui.palette.softForest, countOf(bars, DayBarKind.SPENT) { it.kind }),
-        LegendEntry(DayBarKind.FULL, R.string.chart_kind_full, ui.palette.shortMid, countOf(bars, DayBarKind.FULL) { it.kind }),
-        LegendEntry(DayBarKind.ZERO, R.string.chart_kind_zero, ui.palette.ink, countOf(bars, DayBarKind.ZERO) { it.kind }),
-        LegendEntry(DayBarKind.MISSING, R.string.chart_kind_future, ui.palette.paper, countOf(bars, DayBarKind.MISSING) { it.kind })
-    )
-
-    /** The range when nothing is chosen, or the kind's own count when something is. */
-    private fun <T> countOf(bars: List<T>, kind: DayBarKind?, kindOf: (T) -> DayBarKind): Int =
-        if (kind == null) bars.size else bars.count { kindOf(it) == kind }
-
     /** The app card with nothing in it - which is still a thing worth saying. */
     private fun emptyAppCard(): LinearLayout {
         val card = ui.bentoCard(getString(R.string.chart_apps_heading), weight = SurfaceWeight.PLAIN)
@@ -2915,29 +3107,110 @@ class MainActivity : AppCompatActivity() {
         ChartRange.THIS_MONTH -> ui.palette.softForest
     }
 
-    /** The days card: bars, what the marks mean, and how much of the range is real. */
-    private fun buildDayCard(range: ChartRange, todayKey: String, bars: List<DayBar>): LinearLayout {
+    /** The three measures, as one row of chips. One is always chosen. */
+    private fun metricSelector(body: LinearLayout): RadioGroup {
+        val group = RadioGroup(this).apply {
+            orientation = RadioGroup.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+        val hues = intArrayOf(ui.palette.workPale, ui.palette.shortPale, ui.palette.softForest)
+        ChartMetric.values().forEachIndexed { index, metric ->
+            group.addView(
+                ui.tileOption(getString(metricLabel(metric)), 0, hues[index]).apply {
+                    id = CHART_METRIC_ID_BASE + index
+                    isChecked = index == state.chartMetricIndex
+                    layoutParams = RadioGroup.LayoutParams(0, RadioGroup.LayoutParams.WRAP_CONTENT, 1f)
+                        .apply { if (index > 0) marginStart = ui.dimens.pairGap }
+                }
+            )
+        }
+        group.setOnCheckedChangeListener { _, checkedId ->
+            state.chartMetricIndex = (checkedId - CHART_METRIC_ID_BASE)
+                .coerceIn(0, ChartMetric.values().lastIndex)
+            renderChartBody(body)
+        }
+        return group
+    }
+
+    @StringRes
+    private fun metricLabel(metric: ChartMetric): Int = when (metric) {
+        ChartMetric.TOTAL -> R.string.chart_metric_total
+        ChartMetric.ENTERTAINMENT -> R.string.chart_metric_entertainment
+        ChartMetric.PRODUCTIVITY -> R.string.chart_metric_productivity
+    }
+
+    /** The bar's fill: the role colour the chip already wears, one step stronger. */
+    private fun metricBarHue(metric: ChartMetric): Int = when (metric) {
+        ChartMetric.TOTAL -> ui.palette.workMid
+        ChartMetric.ENTERTAINMENT -> ui.palette.shortMid
+        ChartMetric.PRODUCTIVITY -> ui.palette.forest
+    }
+
+    /** The plot's tint: the same family, the pale the chip sits on. */
+    private fun metricPlotHue(metric: ChartMetric): Int = when (metric) {
+        ChartMetric.TOTAL -> ui.palette.workPale
+        ChartMetric.ENTERTAINMENT -> ui.palette.shortPale
+        ChartMetric.PRODUCTIVITY -> ui.palette.softForest
+    }
+
+    /**
+     * The days card: bars in the chosen measure, what the marks mean, and how
+     * much of the range is real.
+     */
+    private fun buildDayCard(
+        range: ChartRange,
+        todayKey: String,
+        bars: List<DayBar>,
+        metric: ChartMetric
+    ): LinearLayout {
         val card = ui.bentoCard(
             getString(R.string.chart_days_heading),
             weight = SurfaceWeight.MAJOR
         )
         val detail = ui.note(getString(R.string.chart_tap_hint))
 
+        // Every day is measured against the biggest day in the range, because the
+        // three measures do not share an allowance: a productivity day has no
+        // "full" to be measured against. A day with no figure for the chosen
+        // measure is hollow, exactly like a day ALIVE never saw.
+        val values = bars.map { UsageChartStates.metricMinutes(it, metric) }
+        val largest = values.filterNotNull().maxOrNull()?.coerceAtLeast(1L) ?: 1L
+
+        // A month is one row you can swipe. Wrapped into balanced rows it read as
+        // two charts stacked on each other, and a bar you cannot point at is not
+        // a day you can ask about.
+        val scrollMonth = range == ChartRange.THIS_MONTH
         val chart = BrutalistBarChart(this).apply {
-            // Wrap content, not a fixed height: the chart measures how many rows
-            // its own columns need.
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
+            singleRowScroll = scrollMonth
+            barColor = metricBarHue(metric)
+            layoutParams = if (scrollMonth) {
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+            } else {
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+            }
             contentDescription = getString(R.string.cd_usage_chart)
             setData(
-                bars.map { bar ->
+                bars.mapIndexed { index, bar ->
+                    val value = values[index]
                     BrutalistBarChart.Column(
                         label = chartLabel(bar, todayKey, range),
-                        minutes = bar.minutes,
-                        fraction = bar.fraction,
-                        kind = bar.kind
+                        minutes = value ?: 0L,
+                        fraction = (value ?: 0L).toFloat() / largest,
+                        kind = when {
+                            value == null -> DayBarKind.MISSING
+                            value <= 0L -> DayBarKind.ZERO
+                            else -> DayBarKind.SPENT
+                        },
+                        isNow = bar.date == todayKey
                     )
                 }
             )
@@ -2945,66 +3218,82 @@ class MainActivity : AppCompatActivity() {
                 detail.text = if (index < 0) {
                     getString(R.string.chart_tap_hint)
                 } else {
-                    dayDetail(bars[index])
+                    dayDetail(bars[index], metric)
                 }
             }
         }
-        card.addView(chart)
+        val chartView: View = if (scrollMonth) {
+            HorizontalScrollView(this).apply {
+                isHorizontalScrollBarEnabled = false
+                addView(chart)
+                // The month opens on today, not on the 1st: today is the only day
+                // still moving, and swiping through four weeks to find it made
+                // the chart start on the least interesting end.
+                post {
+                    val childWidth = getChildAt(0)?.width ?: 0
+                    scrollTo((childWidth - width).coerceAtLeast(0), 0)
+                }
+            }
+        } else {
+            chart
+        }
+        // The plot stands on a tint of its own measure, so the chart is a panel
+        // rather than bars floating on the card.
+        card.addView(
+            ui.tintedBlock(metricPlotHue(metric), weight = SurfaceWeight.PLAIN).apply {
+                addView(chartView)
+            }
+        )
         card.addView(ui.vgap(ui.dimens.lineGap))
         card.addView(detail)
 
-        // The key belongs under the picture, not in a card beside it: the question
-        // "what is that hollow one?" is asked while looking at this chart.
+        val total = UsageChartStates.metricTotal(bars, metric)
         card.addView(ui.vgap(ui.dimens.groupGap))
-        card.addView(ui.rule())
-        card.addView(ui.vgap(ui.dimens.lineGap))
         card.addView(
-            kindLegend(
-                entries = dayLegendEntries(bars),
-                allCopy = getString(R.string.chart_legend_showing_all),
-                showingCopy = R.string.chart_legend_showing,
-                onPick = { chart.highlightedKind = it }
+            ui.note(
+                getString(
+                    R.string.chart_metric_line,
+                    getString(metricLabel(metric)),
+                    Durations.of(this, total)
+                )
             )
         )
 
-        val (totalMinutes, _) = UsageChartStates.totals(bars)
-        card.addView(ui.vgap(ui.dimens.groupGap))
-        card.addView(ui.note(getString(R.string.chart_total_minutes, Durations.of(this, totalMinutes))))
-
         card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(ui.note(getString(R.string.chart_axis_note)))
-        // The fills and shapes are named by the rows above, counted; a paragraph
-        // here would be the same sentence twice.
         if (range == ChartRange.THIS_MONTH) {
             card.addView(ui.vgap(ui.dimens.pairGap))
-            // A month has no room for 31 readable labels, so the row is
-            // explained as a whole instead of named day by day.
+            // The row now carries every day's number; the note says how it moves.
             card.addView(ui.note(getString(R.string.chart_month_axis)))
         }
         return card
     }
 
     /**
-     * Today as twenty-four hours.
+     * Today as twenty-four hours, in the chosen measure.
      *
-     * Every bar is measured against the day's own allowance, so a full bar here
-     * means what a full bar means everywhere else in this app: the day is used
-     * up. Scaling the bars to the busiest hour instead would make a quiet day and
-     * a heavy day look identical, which is the opposite of the point.
+     * Each block is measured against the busiest block of the chosen measure, so
+     * the shape answers "when did it happen" rather than "how close to the
+     * allowance". The three measures do not share an allowance - productivity
+     * has no full - so no common denominator exists.
      *
      * The hours still ahead are drawn hollow and never as zeroes. A zero is a
      * fact about the past; 21:00 on a Tuesday afternoon is not a fact.
      */
-    private fun buildHourCard(currentHour: Int): LinearLayout {
+    private fun buildHourCard(currentHour: Int, metric: ChartMetric): LinearLayout {
         val card = ui.bentoCard(
             getString(R.string.chart_hours_heading),
             weight = SurfaceWeight.MAJOR
         )
-        val bars = UsageChartStates.hourBars(
-            state.hourlyUsedMillis,
-            state.dailyLimitMinutes,
-            currentHour
-        )
+        val values = when (metric) {
+            ChartMetric.TOTAL -> state.hourlySeenMillis
+            ChartMetric.ENTERTAINMENT -> state.hourlyUsedMillis
+            ChartMetric.PRODUCTIVITY -> LongArray(UsageChartStates.HOURS_PER_DAY) { hour ->
+                (state.hourlySeenMillis.getOrElse(hour) { 0L } -
+                    state.hourlyUsedMillis.getOrElse(hour) { 0L }).coerceAtLeast(0L)
+            }
+        }
+        val bars = UsageChartStates.metricHourBars(values, currentHour)
         val detail = ui.note(getString(R.string.chart_hours_tap_hint))
 
         val chart = BrutalistBarChart(this).apply {
@@ -3012,6 +3301,7 @@ class MainActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
+            barColor = metricBarHue(metric)
             contentDescription = getString(R.string.cd_usage_chart)
             setData(
                 bars.map { bar ->
@@ -3019,7 +3309,9 @@ class MainActivity : AppCompatActivity() {
                         label = hourAxisLabel(bar.startHour, currentHour),
                         minutes = bar.minutes,
                         fraction = bar.fraction,
-                        kind = bar.kind
+                        kind = bar.kind,
+                        isNow = currentHour >= bar.startHour &&
+                            currentHour < bar.startHour + UsageChartStates.HOURS_PER_BAR
                     )
                 }
             )
@@ -3027,34 +3319,25 @@ class MainActivity : AppCompatActivity() {
                 detail.text = if (index < 0) {
                     getString(R.string.chart_hours_tap_hint)
                 } else {
-                    hourDetail(bars[index])
+                    hourDetail(bars[index], metric)
                 }
             }
         }
-        card.addView(chart)
+        card.addView(
+            ui.tintedBlock(metricPlotHue(metric), weight = SurfaceWeight.PLAIN).apply {
+                addView(chart)
+            }
+        )
         card.addView(ui.vgap(ui.dimens.lineGap))
         card.addView(detail)
 
         card.addView(ui.vgap(ui.dimens.groupGap))
-        card.addView(ui.rule())
-        card.addView(ui.vgap(ui.dimens.lineGap))
-        card.addView(
-            kindLegend(
-                entries = hourLegendEntries(bars),
-                allCopy = getString(R.string.chart_legend_showing_all_hours),
-                showingCopy = R.string.chart_legend_showing_hours,
-                onPick = { chart.highlightedKind = it }
-            )
-        )
-
-        // A share, not a count of minutes: this is the one chart that answers
-        // "how much of the day did that hour cost me".
-        card.addView(ui.vgap(ui.dimens.groupGap))
         card.addView(
             ui.note(
                 getString(
-                    R.string.chart_hours_total,
-                    UsageChartStates.percentOf(bars.sumOf { it.minutes }, state.dailyLimitMinutes)
+                    R.string.chart_metric_line,
+                    getString(metricLabel(metric)),
+                    Durations.of(this, bars.sumOf { it.minutes })
                 )
             )
         )
@@ -3076,15 +3359,23 @@ class MainActivity : AppCompatActivity() {
         }
 
     /** Under a block of hours: which block, and its share of the day. */
-    private fun hourDetail(bar: UsageChartStates.HourBar): String {
+    private fun hourDetail(bar: UsageChartStates.HourBar, metric: ChartMetric): String {
         val name = UsageChartStates.hourBlockDetail(bar.startHour)
-        return when (bar.kind) {
-            DayBarKind.MISSING -> getString(R.string.chart_hour_future_detail, name)
-            DayBarKind.ZERO -> getString(R.string.chart_hour_zero_detail, name)
+        return when {
+            bar.kind == DayBarKind.MISSING ->
+                getString(R.string.chart_hour_future_detail, name)
+
+            metric == ChartMetric.ENTERTAINMENT ->
+                getString(
+                    R.string.chart_hour_detail,
+                    name,
+                    UsageChartStates.percentOf(bar.minutes, state.dailyLimitMinutes)
+                )
+
             else -> getString(
-                R.string.chart_hour_detail,
+                R.string.chart_hour_metric_detail,
                 name,
-                UsageChartStates.percentOf(bar.minutes, state.dailyLimitMinutes)
+                Durations.of(this, bar.minutes)
             )
         }
     }
@@ -3314,17 +3605,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     /** Under a bar: which day it was, and what that day's number means. */
-    private fun dayDetail(bar: DayBar): String {
+    private fun dayDetail(bar: DayBar, metric: ChartMetric): String {
         val date = LocalDate.parse(bar.date)
         val name = getString(
             R.string.chart_day_name,
             date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
             date.dayOfMonth
         )
-        return when (bar.kind) {
-            DayBarKind.MISSING -> getString(R.string.chart_day_missing_detail, name)
-            DayBarKind.RECOVERY -> getString(R.string.chart_day_recovery_detail, name)
-            else -> getString(R.string.chart_day_detail, name, Durations.of(this, bar.minutes), bar.limitMinutes)
+        if (bar.kind == DayBarKind.MISSING) {
+            return getString(R.string.chart_day_missing_detail, name)
+        }
+        val minutes = UsageChartStates.metricMinutes(bar, metric)
+            ?: return getString(R.string.chart_day_metric_unknown, name)
+        return when {
+            metric == ChartMetric.ENTERTAINMENT && bar.kind == DayBarKind.RECOVERY ->
+                getString(R.string.chart_day_recovery_detail, name)
+
+            metric == ChartMetric.ENTERTAINMENT ->
+                getString(R.string.chart_day_detail, name, Durations.of(this, minutes), bar.limitMinutes)
+
+            else -> getString(R.string.chart_day_metric_detail, name, Durations.of(this, minutes))
         }
     }
 
@@ -3367,6 +3667,9 @@ class MainActivity : AppCompatActivity() {
             profileContainer.addView(ui.vgap(ui.dimens.groupGap))
             profileContainer.addView(buildStateCard(signals))
         }
+
+        profileContainer.addView(ui.vgap(ui.dimens.groupGap))
+        profileContainer.addView(buildGrowthCard())
 
         profileContainer.addView(ui.vgap(ui.dimens.groupGap))
         profileContainer.addView(buildBankCard())
@@ -3432,6 +3735,152 @@ class MainActivity : AppCompatActivity() {
             )
         )
         return card
+    }
+
+    /**
+     * How far the body has grown: a level, a bar that carries its own scale, and
+     * one door to the rest.
+     *
+     * The two counters used to sit here as tiles and the card read as a table.
+     * What a person wants from a glance is "which level, how close" - the rest
+     * can wait for the tap.
+     */
+    private fun buildGrowthCard(): LinearLayout {
+        val ledger = growthRepository.ledger(LockStateManager.dayKeyOf(System.currentTimeMillis()))
+        val card = ui.bentoCard(getString(R.string.growth_heading))
+
+        card.addView(ui.body(getString(R.string.growth_level, ledger.stage.ordinal + 1)))
+        card.addView(ui.vgap(ui.dimens.lineGap))
+        card.addView(ui.meter(CharacterGrowth.shareToNext(ledger.points), ui.palette.forest))
+        card.addView(ui.vgap(ui.dimens.lineGap))
+        card.addView(ui.note(growthScaleLine(ledger.points)))
+        card.addView(ui.vgap(ui.dimens.groupGap))
+        card.addView(
+            ui.quiet(getString(R.string.growth_details)).apply {
+                setOnClickListener { openGrowthSheet() }
+            }
+        )
+        return card
+    }
+
+    /**
+     * The bar's scale, or the last-level sentence.
+     *
+     * A bar with no numbers on it is a decoration: "3 dari 7" is what turns it
+     * into a measurement, and it also answers "how far to the next one" without
+     * a second line doing arithmetic out loud.
+     */
+    private fun growthScaleLine(points: Int): String {
+        val progress = CharacterGrowth.progressWithin(points)
+            ?: return getString(R.string.growth_max)
+        return getString(R.string.growth_progress, progress.first, progress.second)
+    }
+
+    /**
+     * The character, up close: today's face, the level, and the three counts the
+     * level is made of - as chips, one row, not six lines.
+     *
+     * Both axes are on purpose. The face resets every night and the level never
+     * goes back; a screen that shows one without the other invites the wrong
+     * conclusion from a tired morning. A small tick marks a kind of day that has
+     * already paid today, which is the only "what now" the numbers can answer.
+     */
+    private fun openGrowthSheet() {
+        val ledger = growthRepository.ledger(LockStateManager.dayKeyOf(System.currentTimeMillis()))
+
+        val (scroll, column) = panel()
+        column.addView(panelHeader(getString(R.string.growth_heading)))
+
+        // The character first: this is a screen about the critter, and numbers
+        // without it are a spreadsheet with a mascot's name in the title. One
+        // body, neutral face, sized by level - the level is the number, the art
+        // stays the critter the person already knows.
+        val hero = ui.row().apply { gravity = Gravity.CENTER_HORIZONTAL }
+        hero.addView(
+            ui.animatedPose(
+                R.drawable.ic_alive_character,
+                ui.dimens.dp(GROWTH_HERO_DP[ledger.stage.ordinal]),
+                getString(R.string.growth_level, ledger.stage.ordinal + 1)
+            )
+        )
+        column.addView(hero)
+        column.addView(ui.vgap(ui.dimens.groupGap))
+
+        column.addView(ui.display(getString(R.string.growth_level, ledger.stage.ordinal + 1)))
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        column.addView(ui.meter(CharacterGrowth.shareToNext(ledger.points), ui.palette.forest))
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        column.addView(ui.note(growthScaleLine(ledger.points)))
+
+        // The four levels as positions, not as four pictures: the same critter in
+        // each slot, reached ones in full, the ones still ahead faded, the current
+        // label in ink. It is a ladder with labels, and it says so.
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        val strip = ui.row()
+        repeat(4) { index ->
+            if (index > 0) strip.addView(ui.hgap(ui.dimens.pairGap))
+            val current = index == ledger.stage.ordinal
+            val reached = index <= ledger.stage.ordinal
+            strip.addView(
+                ui.weighted(
+                    ui.column().apply {
+                        gravity = Gravity.CENTER_HORIZONTAL
+                        addView(
+                            ui.mark(
+                                R.drawable.ic_alive_character,
+                                ui.dimens.dp(48),
+                                getString(R.string.growth_level, index + 1)
+                            ).apply {
+                                alpha = if (reached) 1f else 0.25f
+                            }
+                        )
+                        addView(ui.vgap(ui.dimens.pairGap))
+                        addView(
+                            ui.tag(getString(R.string.growth_strip_level, index + 1)).apply {
+                                setTextColor(
+                                    when {
+                                        current -> ui.palette.ink
+                                        reached -> ui.palette.inkSecondary
+                                        else -> ui.palette.inkDisabled
+                                    }
+                                )
+                            }
+                        )
+                    }
+                )
+            )
+        }
+        column.addView(strip)
+
+        // Three counts, one row. The tick says "already paid today", so the row
+        // answers both "how many" and "is there anything left to earn".
+        column.addView(ui.vgap(ui.dimens.groupGap))
+        val chips = ui.row()
+        listOf(
+            Triple(R.string.growth_chip_quest, ledger.questDays, ledger.questCountedToday),
+            Triple(R.string.growth_chip_focus, ledger.focusDays, ledger.focusCountedToday),
+            Triple(R.string.growth_chip_promise, ledger.promiseDays, ledger.promiseCountedToday)
+        ).forEachIndexed { index, (label, days, countedToday) ->
+            if (index > 0) chips.addView(ui.hgap(ui.dimens.pairGap))
+            chips.addView(
+                ui.weighted(
+                    ui.statTile(
+                        getString(label) + if (countedToday) " ✓" else "",
+                        days.toString(),
+                        when (index) {
+                            0 -> ui.palette.workPale
+                            1 -> ui.palette.rewardPale
+                            else -> ui.palette.pinkSoft
+                        }
+                    )
+                )
+            )
+        }
+        column.addView(chips)
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        column.addView(ui.note(getString(R.string.growth_note)))
+
+        openOverlay(scroll)
     }
 
     /** The bank, as a ledger rather than three stacked sentences. */
@@ -3695,7 +4144,11 @@ class MainActivity : AppCompatActivity() {
 }
 
 /** Kept clear of the focus form's 100/200 offsets, which are also view ids. */
+/** The chart's range selector: today, seven days, this month. Synthetic ids. */
 private const val CHART_RANGE_ID_BASE = 300
+
+/** The bar charts' measure selector: total, entertainment, productivity. */
+private const val CHART_METRIC_ID_BASE = 900
 
 /** The today card's three lenses. Same synthetic-id contract, its own offset. */
 private const val CHART_BUCKET_ID_BASE = 400
@@ -3711,6 +4164,15 @@ private const val NIGHT_QUEST_ID_BASE = 700
 private const val CUSTOM_DURATION_ID_BASE = 800
 
 /**
+ * The character's size on the growth screen, one per level.
+ *
+ * Multiples of 16dp because every sprite in ALIVE sits on a 16-cell grid: a
+ * size off that grid scales the art off its pixels and it goes soft. The step
+ * is big enough to be read as growth and small enough to fit a phone.
+ */
+private val GROWTH_HERO_DP = intArrayOf(96, 128, 160, 192)
+
+/**
  * What tomorrow can be promised, in minutes.
  *
  * Three sizes and no free field: a number someone types at ten at night is a
@@ -3720,7 +4182,6 @@ private const val CUSTOM_DURATION_ID_BASE = 800
 private val NIGHT_ALLOWANCES = longArrayOf(60L, 120L, 180L)
 
 /** The chart's legend rows: "All days" first, then one per kind. */
-private const val KIND_FILTER_ID_BASE = 700
 
 /** The ring is a circle, so it does need a height of its own. */
 private const val DONUT_HEIGHT_DP = 200

@@ -23,7 +23,7 @@ data class FocusWindow(
 )
 
 class FocusSessionManager(
-    context: Context,
+    private val context: Context,
     private val timeBankRepository: TimeBankRepository
 ) {
 
@@ -85,6 +85,14 @@ class FocusSessionManager(
         if (now >= endTimestamp) {
             // Auto mark inactive
             prefs.edit().putBoolean(KEY_IS_ACTIVE, false).apply()
+
+            // A session that reached its own end is a session that finished, and
+            // that is the one thing the character grows on. It is counted on the
+            // day it ended, not the day it was first read about - and it is not
+            // counted at all when a session was replaced before its end, because
+            // a replaced session did not finish.
+            CharacterGrowthRepository(context)
+                .recordFocusDay(LockStateManager.dayKeyOf(endTimestamp))
             return null
         }
 

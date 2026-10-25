@@ -46,6 +46,8 @@ class FocusSessionManagerTest {
             .edit().clear().apply()
         context.getSharedPreferences("project_ego_time_bank", Context.MODE_PRIVATE)
             .edit().clear().apply()
+        context.getSharedPreferences("project_ego_character_growth", Context.MODE_PRIVATE)
+            .edit().clear().apply()
 
         timeBankRepository = TimeBankRepository(context)
         focusSessionManager = FocusSessionManager(context, timeBankRepository)
@@ -132,6 +134,25 @@ class FocusSessionManagerTest {
             setOf("com.spotify.music"),
             focusSessionManager.getTodayWindows().single().approvedOverride
         )
+    }
+
+    @Test
+    fun `a session that reached its end grows the character, one point for the day`() {
+        // A session whose end has already passed: reading it is what notices
+        // that it finished, and finishing is the one thing growth is paid for.
+        focusSessionManager.startTestFocusSession(
+            FocusActivityType.STUDY,
+            "finished session",
+            durationSeconds = 0L
+        )
+        assertNull(focusSessionManager.getFocusSession())
+
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val ledger = com.projectego.app.data.CharacterGrowthRepository(context)
+            .ledger(com.projectego.app.data.LockStateManager.dayKeyOf(System.currentTimeMillis()))
+        assertEquals(1, ledger.focusDays)
+        assertEquals(1, ledger.points)
+        assertTrue(ledger.focusCountedToday)
     }
 
     @Test

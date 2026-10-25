@@ -27,7 +27,6 @@
     <string name="time_last_minute">The last minute.</string>
     <string name="stat_minutes">%1$d</string>
     <string name="stat_min_left">min\nleft</string>
-    <string name="stat_reclaimed">reclaimed</string>
     <string name="time_no_panic">No alarm in this. It is just what is left.</string>
     <string name="time_allowance_support">Your own daily allowance — separate from reclaimed time.</string>
     <string name="today_card_title">Today</string>
@@ -104,17 +103,19 @@
 
     <!-- ============ TIME BANK ============ -->
     <string name="time_bank_heading">Time Bank</string>
+    <string name="time_bank_balance_label">Balance</string>
     <string name="time_bank_empty">Nothing reclaimed yet. A verified session gives you time back.</string>
     <string name="time_bank_claim_action">Claim %1$d minutes</string>
+    <string name="time_bank_claim_action_off">Claim</string>
     <string name="time_bank_claim_status">Claimed today: %1$d of %2$d minutes.</string>
     <string name="time_bank_claim_full">Today\'s claim is used up.</string>
-    <string name="time_bank_claim_recovery">A recovery day closes entertainment, so there is no allowance to add to.</string>
+    <string name="time_bank_claim_recovery">A recovery day closes entertainment.</string>
     <string name="time_bank_claim_toast">%1$d minutes added to today\'s entertainment allowance.</string>
     <string name="time_bank_not_enough">Not enough reclaimed time for that.</string>
     <string name="time_bank_available_total">%1$d min available</string>
     <string name="stat_bank_earned">Earned</string>
     <string name="stat_bank_spent">Spent</string>
-    <string name="time_bank_explain">Verified quests pay minutes in. Claim them onto today\'s entertainment allowance (max %1$d minutes a day), or spend them on a focus extension.</string>
+    <string name="time_bank_explain">Claim them onto today\'s entertainment allowance (max %1$d minutes a day), or spend them on a focus extension.</string>
     <string name="cd_time_bank">Pixel clock: the Time Bank, where reclaimed minutes are kept.</string>
     <!-- The three Home tiles. Each says what it opens, because a glyph alone is a
          guess and a wrong guess costs a tap. -->
@@ -158,6 +159,27 @@
     <string name="quest_yours">Your quests</string>
     <string name="quest_current">Current quest</string>
     <string name="quest_reclaimed_label">Reclaimed</string>
+
+    <!-- ============ TODAY AND THIS WEEK ============ -->
+    <!-- The day's score and the week's record. The finished label is the mission\'s
+         own status, said once when it pays out; "Reclaimed" above stays the small
+         mark on a card that already paid. -->
+    <string name="quest_finished_label">Mission finished</string>
+    <string name="quest_finished_auto">You didn\'t press done, so ALIVE closed the window ten minutes after its time.</string>
+    <string name="quest_progress_label">Missions today</string>
+    <string name="quest_progress_value">%1$d of %2$d</string>
+    <string name="quest_history_heading">Last 7 days</string>
+    <string name="quest_history_today">Today</string>
+    <string name="quest_history_yesterday">Yesterday</string>
+    <string name="quest_history_day">%1$d done · +%2$d min</string>
+    <string name="quest_history_empty">nothing finished</string>
+    <string name="quest_history_unrecorded">not watched</string>
+    <!-- The second half of a physical quest\'s deal, said before it is taken on and
+         again while the button is live: ALIVE can finish what it started counting,
+         but it only ever judges that by the clock. -->
+    <string name="quest_auto_settle_note">If you forget to press done, ALIVE finishes it ten minutes after its time is up — judged on the clock alone.</string>
+    <string name="quest_deadline_title">Mission finished</string>
+    <string name="quest_deadline_body">\"%1$s\" finished on its own — %2$d minutes went to your Time Bank.</string>
     <string name="quest_cannot_start">One thing at a time. Finish what\'s running first.</string>
     <string name="quest_start_failed">ALIVE couldn\'t start that quest.</string>
     <!-- A quest no sensor can see. The rule and the limit are both said here, in
@@ -287,6 +309,27 @@
     <string name="profile_how_title">How ALIVE decides</string>
     <string name="profile_how_body">ALIVE knows which app was on screen and for how long. That is all. It does not open your apps, read their content, or judge what you did in them. A day is kept by finishing one quest — not by using as little screen as possible.</string>
 
+    <!-- ============ GROWTH ============ -->
+    <!-- The character's two axes, named the way a person would: a level that
+         never goes down, and a face that resets every night. The bar always
+         carries its own scale ("3 of 7"), because a bar without one is not a
+         measurement. -->
+    <string name="growth_heading">Character</string>
+    <string name="growth_level">Level %1$d</string>
+    <string name="growth_progress">%1$d of %2$d points</string>
+    <string name="growth_max">The last level. The days still count.</string>
+    <string name="growth_details">See the details</string>
+    <string name="growth_chip_quest">Quests</string>
+    <string name="growth_chip_focus">Focus</string>
+    <string name="growth_chip_promise">Promises</string>
+    <string name="growth_note">One point per kind of day. The level never goes down.</string>
+    <string name="growth_strip_level">Lv %1$d</string>
+    <string name="growth_open_hint">Tap for growth details</string>
+
+    <!-- Lifetime, not a streak: the form is earned from days that happened and
+         never goes backwards, which is why "lifetime" is said out loud. The face
+         is the other axis - today's condition - and the copy keeps them apart. -->
+
     <!-- ============ LOCK ============ -->
     <string name="lock_title_over">Entertainment time is closed</string>
     <string name="lock_title_zero">A no-entertainment day</string>
@@ -382,34 +425,29 @@
     <string name="chart_range_today">Today</string>
     <string name="chart_range_week">Last 7 days</string>
     <string name="chart_range_month">This month</string>
-    <string name="chart_axis_note">Each bar is a share of that day\'s own allowance.</string>
+    <string name="chart_axis_note">Bar heights are compared against the biggest day in this range.</string>
     <!-- The key under the chart: one row per kind of day, counted, and tappable. -->
-    <string name="chart_legend_all">All days</string>
-    <string name="chart_legend_row">%1$s · %2$d</string>
-    <string name="chart_legend_showing_all">Showing every day in this range.</string>
-    <string name="chart_legend_showing">Showing only %1$s days · %2$d</string>
-    <string name="chart_kind_spent">Spent</string>
-    <string name="chart_kind_full">Used it all</string>
-    <string name="chart_kind_zero">Nothing spent</string>
-    <string name="chart_kind_recovery">No allowance</string>
-    <string name="chart_kind_missing">Not seen</string>
     <!-- The banner above both cards. It is a banner because the answer changes
          how every bar should be read, and a footnote is how that gets skipped. -->
     <string name="chart_coverage_eyebrow">Coverage</string>
-    <string name="chart_month_axis">One column per day, left to right, then down to the next row - the 1st to today.</string>
+    <string name="chart_month_axis">One column per day, the 1st to today - swipe sideways for the rest.</string>
+    <!-- The three ranges side by side. Heights are relative, and the note says so. -->
+
+    <string name="chart_average">average</string>
+    <string name="chart_metric_total">Total</string>
+    <string name="chart_metric_entertainment">Entertainment</string>
+    <string name="chart_metric_productivity">Productivity</string>
+    <string name="chart_metric_line">%1$s: %2$s</string>
+    <string name="chart_day_metric_detail">%1$s · %2$s</string>
+    <string name="chart_day_metric_unknown">%1$s · no figure for this measure.</string>
+    <string name="chart_hour_metric_detail">%1$s · %2$s</string>
     <string name="chart_days_heading">Days</string>
     <string name="chart_hours_heading">Hours</string>
     <string name="chart_hours_coverage">%1$d of %2$d hours today have passed. The ones still ahead are drawn hollow, not as zeroes.</string>
     <string name="chart_hours_tap_hint">Tap a bar for that stretch of hours.</string>
     <string name="chart_hour_detail">%1$s — %2$d%% of the daily allowance.</string>
     <string name="chart_hour_future_detail">%1$s — this hour hasn\'t happened yet.</string>
-    <string name="chart_hour_zero_detail">%1$s — nothing spent in this hour.</string>
-    <string name="chart_hours_total">%1$d%% of today\'s allowance is used.</string>
-    <string name="chart_hours_axis_note">Each bar is that hour\'s share of the day\'s allowance.</string>
-    <string name="chart_legend_all_hours">All hours</string>
-    <string name="chart_legend_showing_all_hours">Showing every hour of today.</string>
-    <string name="chart_legend_showing_hours">Showing only %1$s hours · %2$d</string>
-    <string name="chart_kind_future">Not yet</string>
+    <string name="chart_hours_axis_note">Bar heights are compared against the busiest block of this measure.</string>
     <!-- Three glyphs, not five: a week's column is about 32dp wide and "TODAY"
          does not fit a pixel label at the floor size. -->
     <string name="chart_label_today">NOW</string>
@@ -465,7 +503,6 @@
     <string name="widget_stats_empty">Open ALIVE once and this fills itself in.</string>
     <string name="widget_promise">promised %1$d mnt</string>
     <string name="widget_promise_quest">promised %1$d mnt · 1 quest</string>
-    <string name="chart_total_minutes">%1$s across the days ALIVE saw</string>
     <string name="chart_none">ALIVE hasn\'t recorded a day yet.</string>
     <string name="chart_just_started">This is the first day ALIVE has recorded.</string>
     <string name="chart_partial">Only the days ALIVE saw are counted. Nothing is filled in.</string>
@@ -497,15 +534,14 @@
     <string name="guardian_active_heading">The watch is on</string>
     <string name="guardian_active_body">Accessibility is on, so entertainment apps are closed when their time is up.</string>
     <string name="guardian_degraded_heading">Guardian has lost its footing</string>
-    <string name="guardian_degraded_body">Accessibility for ALIVE was switched off, so nothing is being closed. Nothing is marked today yet - turn it back on and it stays that way.</string>
+    <string name="guardian_degraded_body">Accessibility for ALIVE is off, so nothing is being closed. Turn it back on before the day is spent.</string>
     <string name="guardian_recovery_heading">Today needs restoring</string>
-    <string name="guardian_recovery_body">The watch is off and the entertainment allowance was spent anyway. Turn it back on, then finish one quest: the mark clears and the chain holds.</string>
+    <string name="guardian_recovery_body">The watch is off and the allowance was already spent. Turn it on, then finish one quest to clear the mark.</string>
     <string name="guardian_restored_heading">The watch is restored</string>
     <string name="guardian_restored_body">Nothing is being missed any more. Today still shows as having had an unguarded stretch, because that stretch happened.</string>
     <string name="guardian_note_off">ALIVE can\'t tell whether you turned it off or the phone did to save battery. While it is off, nothing is holding the allowance for you.</string>
     <string name="guardian_note_whole">The mark stays on today, and the streak is intact.</string>
     <string name="guardian_action_restore">Restore protection</string>
-    <string name="guardian_later">Not now</string>
     <string name="guardian_why">Why am I seeing this?</string>
     <string name="permissions_overlay_why">One more grant, only for Guardian: "display over other apps". It is what lets the recovery popup appear over an entertainment app - for a moment, while the guard is off - and it is the only thing ALIVE ever draws over anything.</string>
     <string name="permissions_overlay_action">Allow display over other apps</string>
@@ -542,6 +578,7 @@
 
     <string name="night_contract_heading">Tomorrow\u2019s promise</string>
     <string name="night_contract_invite">Night. Promise tomorrow something?</string>
+    <string name="night_contract_illustration_description">A crescent moon and its stars.</string>
     <string name="night_contract_invite_note">Three taps now, while it is quiet, instead of fifty decisions tomorrow.</string>
     <string name="night_contract_invite_action">Make the promise</string>
     <string name="night_contract_allowance_label">Tomorrow\u2019s allowance</string>
@@ -553,12 +590,12 @@
     <string name="night_contract_quest_picked">%1$s · %2$d mnt reward</string>
     <string name="night_contract_quest_note">This is the quest that keeps tomorrow\u2019s allowance.</string>
     <string name="night_contract_no_quest_note">Without a quest, nothing keeps tomorrow\u2019s allowance.</string>
-    <string name="night_contract_price_note">Raising it tomorrow costs minutes from the Time Bank, and those come from quests that paid out.</string>
+    <string name="night_contract_in_force_allowance">Today\u2019s allowance</string>
+    <string name="night_contract_price_note">Raising it tomorrow is paid for from the Time Bank.</string>
     <string name="night_contract_save">Save the promise</string>
     <string name="night_contract_saved">Saved. It starts tomorrow, not tonight.</string>
-    <string name="night_contract_in_force">Promised: %1$d mnt</string>
-    <string name="night_contract_in_force_quest">Quest: %1$s</string>
-    <string name="night_contract_in_force_no_quest">No quest was named for today.</string>
+    <string name="night_contract_in_force_quest">Mission: %1$s</string>
+    <string name="night_contract_in_force_no_quest">No mission was named for today.</string>
     <string name="cd_night_contract">The promise made last night</string>
     <string name="night_contract_reason_label">Why this number?</string>
     <string name="night_contract_reason_hint">One line, in your own words</string>
@@ -577,9 +614,21 @@
     <string name="quest_watch_channel_name">Quest reminder</string>
     <string name="quest_watch_channel_description">Once, mid-afternoon, and only for the quest written in last night’s promise.</string>
     <string name="pill_tile_label">Time pill</string>
-    <string name="pill_line_opens">%1$s · %2$d× today</string>
-    <string name="pill_line_left">%1$s · %2$s left</string>
-    <string name="pill_line_spent">%1$s · spent</string>
+    <string name="pill_traffic_normal">Normal usage</string>
+    <string name="pill_traffic_approaching">Approaching the limit</string>
+    <string name="pill_traffic_limit">Limit reached</string>
+    <string name="pill_traffic_recovery">Recovery day</string>
+    <string name="pill_traffic_unknown">Status unavailable</string>
     <string name="pill_channel_name">Time pill</string>
     <string name="pill_channel_description">Shows while the pill is on screen. Turn the pill off and this goes with it.</string>
+    <string name="pill_panel_total_label">Entertainment today</string>
+    <string name="pill_panel_remaining">%1$d min left</string>
+    <string name="pill_panel_spent">Today’s allowance is used up</string>
+    <string name="pill_panel_apps_label">Most used</string>
+    <string name="pill_panel_more">+%1$d more apps</string>
+    <string name="pill_panel_open">Open ALIVE</string>
+    <string name="pill_panel_unavailable">Today’s usage cannot be read yet.</string>
+    <string name="pill_panel_expand">Open usage details</string>
+    <string name="pill_panel_collapse">Close usage details</string>
+    <string name="pill_panel_description">%1$s. %2$s. %3$s.</string>
 </resources>

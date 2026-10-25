@@ -2,6 +2,8 @@
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityEvent
 import com.projectego.app.data.FocusSessionManager
@@ -12,6 +14,7 @@ import com.projectego.app.data.TimeBankRepository
 import com.projectego.app.domain.AppClassifier
 import com.projectego.app.domain.CriticalAlertPolicy
 import com.projectego.app.domain.FocusAppPolicy
+import com.projectego.app.domain.PillWatchPolicy
 import com.projectego.app.domain.QuestVerificationCoordinator
 import com.projectego.app.domain.UsageReport
 import com.projectego.app.domain.UsageTracker
@@ -26,6 +29,14 @@ import com.projectego.app.ui.LockActivity
  */
 private const val CRITICAL_ALERT_DEBOUNCE_MILLIS = 1500L
 
+/**
+ * How long a confirmed switch to another app waits before the pill is taken
+ * down. A Home bounce or a quick Recents check lands here and back; inside
+ * this window the same reading simply continues, with no blink and no new
+ * 0-minute session. Longer than this is a real leave.
+ */
+private const val PILL_STOP_GRACE_MILLIS = 2_000L
+
 class EgoAccessibilityService : AccessibilityService() {
 
     private lateinit var usageTracker: UsageTracker
@@ -35,6 +46,13 @@ class EgoAccessibilityService : AccessibilityService() {
 
     private var lastInterceptionTime = 0L
     private var lastForegroundPackage: String? = null
+
+    private val graceHandler = Handler(Looper.getMainLooper())
+    private var pillStopScheduled = false
+    private val stopPillAfterGrace = Runnable {
+        pillStopScheduled = false
+        InfoPillService.stop(this@EgoAccessibilityService)
+    }
 
     // The critical note keeps its own throttle. Sharing lastInterceptionTime
     // would let a note suppress a real enforcement pass for 500ms, which on the
@@ -54,13 +72,21 @@ class EgoAccessibilityService : AccessibilityService() {
     }
 
     /**
-     * Up while an entertainment app is in front, down the moment one is not.
+     * Up while an entertainment app is in front, down shortly after one is not.
      *
      * Entertainment only, on purpose: a pill over a bank or a chat app would be
      * a reading nobody asked to see, in a place ALIVE has promised never to
-     * interfere.
+     * interfere. "Shortly" is [PILL_STOP_GRACE_MILLIS]: a Home bounce or a quick
+     * Recents check is not a new sitting, and tearing the session down for it
+     * is what made the number reset by itself.
      */
     private fun syncPill(packageName: String) {
+        // The shade and the volume panel are windows over the app, not apps the
+        // person went to. Treating them as a switch used to take the pill down on
+        // every pull of the shade - and the app's resume after closing it started
+        // a fresh session, which is why the number looked like it reset itself.
+        if (AppClassifier.isTransientWindow(packageName)) return
+
         // The setting decides whether the pill may go UP, never whether it may
         // come DOWN. It used to guard the whole method, which meant that once
         // the switch was off the one event that could take a live pill away -
@@ -69,12 +95,61 @@ class EgoAccessibilityService : AccessibilityService() {
         val wanted =
             AppClassifier.categorize(this, packageName) == AppCategory.ENTERTAINMENT &&
                 PillSettings.isEnabled(this)
+        val watching = InfoPillService.watching
+
+        // A window change is evidence of a window, not of a switch. When the
+        // pill is already up, ask the activity log before moving or closing it:
+        // a keyboard, Game Booster or system panel raises a window over the
+        // app with no new activity, and acting on that restarted the session
+        // at 0 while the person had not gone anywhere.
+        fun confirmed(): Boolean = runCatching {
+            val front = PillForegroundProbe.latest(
+                this,
+                InfoPillService.FOREGROUND_WINDOW_MILLIS
+            )
+            PillWatchPolicy.isConfirmedSwitch(packageName, front?.packageName)
+        }.getOrDefault(false)
+
         when {
-            wanted && InfoPillService.watching != packageName ->
+            // Raising has no evidence to check yet - the person asked for the
+            // pill on an app the log already agrees is in front - and waiting
+            // for the log here would make a fresh start lag behind its app.
+            wanted && watching == null -> {
+                cancelPillStop()
                 InfoPillService.start(this, packageName)
-            !wanted && (InfoPillService.isRunning || InfoPillService.watching != null) ->
-                InfoPillService.stop(this)
+            }
+            // The app whose reading is up came back inside the grace. Nothing
+            // is torn down, so the number never blinks or starts again.
+            wanted && watching == packageName ->
+                cancelPillStop()
+            wanted -> {
+                cancelPillStop()
+                if (confirmed()) InfoPillService.start(this, packageName)
+            }
+            InfoPillService.isRunning || watching != null -> {
+                // Unconfirmed means the pill stays until its own periodic probe
+                // sees a real foreground change, instead of blinking to 0.
+                if (confirmed()) schedulePillStop()
+            }
         }
+    }
+
+    private fun schedulePillStop() {
+        // Measured from the first confirmed leave, not the last window: moving
+        // between non-entertainment apps must not extend the grace.
+        if (pillStopScheduled) return
+        pillStopScheduled = true
+        graceHandler.postDelayed(stopPillAfterGrace, PILL_STOP_GRACE_MILLIS)
+    }
+
+    private fun cancelPillStop() {
+        pillStopScheduled = false
+        graceHandler.removeCallbacks(stopPillAfterGrace)
+    }
+
+    override fun onDestroy() {
+        cancelPillStop()
+        super.onDestroy()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {

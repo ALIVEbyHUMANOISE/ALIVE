@@ -133,6 +133,7 @@ class BrutalistDonut(context: Context) : View(context) {
         var startAngle = -90f
         slices.forEachIndexed { index, slice ->
             val sweep = 360f * slice.minutes / totalMinutes
+            if (sweep <= 0f) return@forEachIndexed
             val isSelected = index == selected
             val dimmed = selected != -1 && !isSelected
             val lift = if (isSelected) dp(6f) else 0f
@@ -149,15 +150,27 @@ class BrutalistDonut(context: Context) : View(context) {
             face.alpha = if (dimmed) DIMMED_ALPHA else FULL_ALPHA
             edge.alpha = if (dimmed) DIMMED_ALPHA else FULL_ALPHA
 
-            // Outer arc out, inner arc back: one closed ring segment, so the ink
-            // edge runs along both radii and separates neighbouring slices even
-            // when their fills are both light.
-            path.reset()
-            path.arcTo(bounds, startAngle, sweep)
             hole.set(bounds)
             hole.inset(bounds.width() * (1f - HOLE_RATIO) / 2f, bounds.height() * (1f - HOLE_RATIO) / 2f)
-            path.arcTo(hole, startAngle + sweep, -sweep, false)
-            path.close()
+
+            path.reset()
+            if (sweep >= FULL_CIRCLE_DEGREES) {
+                // A 360-degree arc starts and ends on the same point, so the two
+                // arcs of the usual wedge collapse into a line - one app in a day
+                // used to be drawn as a hairline. An even-odd annulus is a ring
+                // in every renderer, with no seam to draw.
+                path.fillType = Path.FillType.EVEN_ODD
+                path.addOval(bounds, Path.Direction.CW)
+                path.addOval(hole, Path.Direction.CW)
+            } else {
+                // Outer arc out, inner arc back: one closed ring segment, so the ink
+                // edge runs along both radii and separates neighbouring slices even
+                // when their fills are both light.
+                path.fillType = Path.FillType.WINDING
+                path.arcTo(bounds, startAngle, sweep)
+                path.arcTo(hole, startAngle + sweep, -sweep, false)
+                path.close()
+            }
             canvas.drawPath(path, face)
             canvas.drawPath(path, edge)
             if (slice.hatched) {
@@ -303,6 +316,9 @@ class BrutalistDonut(context: Context) : View(context) {
     private companion object {
         /** The hole as a share of the outer radius. */
         const val HOLE_RATIO = 0.68f
+
+        /** At or above this a "slice" is the whole ring, which needs its own path. */
+        const val FULL_CIRCLE_DEGREES = 359.9f
 
         /** The centre figure at full size; it shrinks only when it has to. */
         const val NUMBER_TEXT_SP = 40f

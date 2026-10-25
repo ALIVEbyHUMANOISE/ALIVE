@@ -38,6 +38,39 @@ class CharacterGrowthRepository(context: Context) {
 
     fun stage(): CharacterGrowth.Stage = CharacterGrowth.stageFor(points())
 
+    /**
+     * One read for every surface that shows growth: the total, the form, the
+     * three lifetime counters, and whether each kind has already paid today.
+     *
+     * The last part is the only date-sensitive question this repository can
+     * answer without a history: it keeps the last day each kind was counted on,
+     * which is exactly what "already today" needs and no more than that.
+     */
+    data class Ledger(
+        val points: Int,
+        val stage: CharacterGrowth.Stage,
+        val questDays: Int,
+        val focusDays: Int,
+        val promiseDays: Int,
+        val questCountedToday: Boolean,
+        val focusCountedToday: Boolean,
+        val promiseCountedToday: Boolean
+    )
+
+    fun ledger(todayKey: String): Ledger {
+        val points = points()
+        return Ledger(
+            points = points,
+            stage = CharacterGrowth.stageFor(points),
+            questDays = prefs.getInt(KEY_QUEST_COUNT, 0),
+            focusDays = prefs.getInt(KEY_FOCUS_COUNT, 0),
+            promiseDays = prefs.getInt(KEY_PROMISE_COUNT, 0),
+            questCountedToday = prefs.getString(KEY_QUEST_DAY, null) == todayKey,
+            focusCountedToday = prefs.getString(KEY_FOCUS_DAY, null) == todayKey,
+            promiseCountedToday = prefs.getString(KEY_PROMISE_DAY, null) == todayKey
+        )
+    }
+
     @Synchronized
     private fun record(dayKeyName: String, countKeyName: String, dayKey: String) {
         if (!CharacterGrowth.owesPoint(prefs.getString(dayKeyName, null), dayKey)) return

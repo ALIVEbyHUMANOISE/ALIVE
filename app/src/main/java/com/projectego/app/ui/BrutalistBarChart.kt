@@ -2,6 +2,7 @@ package com.projectego.app.ui
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.RectF
 import android.util.TypedValue
@@ -43,7 +44,9 @@ class BrutalistBarChart(context: Context) : View(context) {
         val label: String,
         val minutes: Long,
         val fraction: Float,
-        val kind: DayBarKind
+        val kind: DayBarKind,
+        /** The column the person is inside right now; it wears the pink cap. */
+        val isNow: Boolean = false
     )
 
     /** The tapped column's index, or -1 when the tap cleared the selection. */
@@ -66,6 +69,18 @@ class BrutalistBarChart(context: Context) : View(context) {
         style = Paint.Style.STROKE
         strokeWidth = dp(1f)
         color = palette.ink
+    }
+    private val averagePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = dp(1f)
+        color = palette.inkSecondary
+        pathEffect = DashPathEffect(floatArrayOf(dp(4f), dp(4f)), 0f)
+    }
+    private val averageLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = resources.getFont(R.font.manrope_medium)
+        textSize = sp(10f)
+        textAlign = Paint.Align.RIGHT
+        color = palette.inkSecondary
     }
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         typeface = resources.getFont(R.font.manrope_medium)
@@ -97,16 +112,31 @@ class BrutalistBarChart(context: Context) : View(context) {
 
     private var columns: List<Column> = emptyList()
     private var selected = -1
-    private var emphasisAlpha = FULL_ALPHA
 
     /**
-     * The kind of day the screen is asking about, or null for all of them.
+     * One row, as wide as the columns need, meant for a horizontal scroller.
      *
-     * Set from the legend. It never removes bars - the month is the same month
-     * either way - it dims everything that is not the kind asked for, so the
-     * answer stays a shape in the chart instead of a shorter chart.
+     * A month is 31 columns. Wrapped into balanced rows it reads as two charts
+     * stacked on each other, so the card can instead give it a scroller: every
+     * day keeps a thumb-sized slot and the row is swiped. Off by default, because
+     * a week and a day fit.
      */
-    var highlightedKind: DayBarKind? = null
+    var singleRowScroll: Boolean = false
+        set(value) {
+            field = value
+            requestLayout()
+            invalidate()
+        }
+
+    /**
+     * The fill of a bar with minutes in it, over the kind's own colour.
+     *
+     * The measure chips name three different questions; a chart that answers all
+     * of them in the same pale green makes the chip feel like decoration. The
+     * role colours behind the chips - blue for the whole screen, red for the
+     * allowance, green for the rest - are the same ones here.
+     */
+    var barColor: Int? = null
         set(value) {
             field = value
             invalidate()
@@ -140,7 +170,15 @@ class BrutalistBarChart(context: Context) : View(context) {
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val measuredWidth = resolveSize(suggestedMinimumWidth, widthMeasureSpec)
+        // In scroller mode the chart asks for one slot per column instead of
+        // fitting the screen; a HorizontalScrollView measures its child with an
+        // unspecified width, so this is the width it gets.
+        val desiredWidth = if (singleRowScroll && columns.isNotEmpty()) {
+            (paddingLeft + paddingRight + 2f * dimens.s + columns.size * scrollSlotPx()).toInt()
+        } else {
+            suggestedMinimumWidth
+        }
+        val measuredWidth = resolveSize(desiredWidth, widthMeasureSpec)
         val grid = geometryFor(measuredWidth)
         setMeasuredDimension(measuredWidth, resolveSize(ceil(desiredHeight(grid)).toInt(), heightMeasureSpec))
     }
@@ -171,7 +209,6 @@ class BrutalistBarChart(context: Context) : View(context) {
             val row = grid.rowOf(index)
             val centre = left + slot * (index - row * grid.columnsPerRow) + slot / 2f
             val baseline = top + row * pitch + plotHeight
-            setEmphasis(highlightedKind != null && column.kind != highlightedKind)
 
             if (index == selected) {
                 // The selection is a band across the whole slot rather than a
@@ -192,15 +229,25 @@ class BrutalistBarChart(context: Context) : View(context) {
                 ChartGeometry.labelFits(labelPaint.measureText(column.label), slot, labelMargin)
             ) {
                 labelPaint.color = if (index == selected) palette.ink else palette.inkSecondary
-                // Setting a colour resets the alpha, so the emphasis goes back on
-                // after it - otherwise a dimmed column keeps a bright label.
-                labelPaint.alpha = emphasisAlpha
-                canvas.drawText(column.label, centre, baseline + dimens.s - labelPaint.fontMetrics.ascent, labelPaint)
+                val labelBaseline = baseline + dimens.s - labelPaint.fontMetrics.ascent
+                canvas.drawText(column.label, centre, labelBaseline, labelPaint)
+                if (column.isNow) {
+                    // Under the name, not on top of the bar: a cap above a short
+                    // or empty bar reads as a second, stacked mark. An underline
+                    // says "this one" the way the app's own tabs do.
+                    val textWidth = labelPaint.measureText(column.label)
+                    val underlineTop = labelBaseline + labelPaint.fontMetrics.descent + dp(1.5f)
+                    shape.set(
+                        centre - textWidth / 2f - dp(2f),
+                        underlineTop,
+                        centre + textWidth / 2f + dp(2f),
+                        underlineTop + dp(2f)
+                    )
+                    fillWith(palette.pinkSoft)
+                    canvas.drawRoundRect(shape, dp(1f), dp(1f), face)
+                }
             }
         }
-
-        // The axes and the bubble are not part of any kind, so they never dim.
-        setEmphasis(dim = false)
 
         // One ink rule per row, because each row is its own axis: a bar's height
         // is that day's share of its allowance, measured from the line under it.
@@ -209,6 +256,11 @@ class BrutalistBarChart(context: Context) : View(context) {
             val baseline = top + row * pitch + plotHeight
             canvas.drawRect(left, baseline, right, baseline + edge.strokeWidth, face)
         }
+
+        // The average is a comparison, not a bar: a dashed line the eye can
+        // measure every column against. A wrapped month has no single baseline
+        // worth averaging across, so it is only drawn when there is one row.
+        if (grid.rowCount == 1) drawAverage(canvas, left, right, top, plotHeight)
 
         // The number belongs in the sky above a bar, and a wrapped month has no
         // sky - the day line under the chart says it instead.
@@ -223,22 +275,8 @@ class BrutalistBarChart(context: Context) : View(context) {
         }
     }
 
-    /**
-     * Push every stroke of the column being drawn to the background, or pull it
-     * back. The paints are shared, so this is always paired with a call that
-     * restores them - the axes and the bubble are not part of any kind.
-     */
-    private fun setEmphasis(dim: Boolean) {
-        emphasisAlpha = if (dim) DIM_ALPHA else FULL_ALPHA
-        edge.alpha = emphasisAlpha
-        hatchPaint.alpha = emphasisAlpha
-        band.alpha = emphasisAlpha
-    }
-
-    /** The bar paint, at whatever emphasis the column it is being filled for wants. */
     private fun fillWith(@ColorInt color: Int) {
         face.color = color
-        face.alpha = emphasisAlpha
     }
 
     private fun drawColumn(
@@ -296,7 +334,7 @@ class BrutalistBarChart(context: Context) : View(context) {
                 // A day that ran its allowance out goes to the red that already
                 // means "this is running out" everywhere else in the app - the
                 // number under the chart says the same thing, as it always must.
-                fillWith(if (full) palette.shortMid else palette.softForest)
+                fillWith(barColor ?: if (full) palette.shortMid else palette.softForest)
                 canvas.drawRoundRect(shape, corner, corner, face)
                 if (barWidth >= dp(11f)) {
                     texture(canvas, shape, if (full) dotPaper else dotInk)
@@ -332,6 +370,28 @@ class BrutalistBarChart(context: Context) : View(context) {
     }
 
     /** The number, in an ink box over the bar it belongs to. */
+    /** A dashed line at the mean of the columns, labelled once at its right. */
+    private fun drawAverage(
+        canvas: Canvas,
+        left: Float,
+        right: Float,
+        top: Float,
+        plotHeight: Float
+    ) {
+        val data = columns.filter { it.kind != DayBarKind.MISSING }
+        if (data.size < 2) return
+        val average = data.sumOf { it.fraction.toDouble() }.toFloat() / data.size
+        if (average <= 0f) return
+        val y = top + plotHeight - average * plotHeight
+        canvas.drawLine(left, y, right, y, averagePaint)
+        canvas.drawText(
+            context.getString(R.string.chart_average),
+            right - dp(2f),
+            y - dp(4f),
+            averageLabelPaint
+        )
+    }
+
     private fun drawValueBubble(canvas: Canvas, column: Column, centre: Float, top: Float) {
         val text = column.minutes.toString()
         val width = valuePaint.measureText(text) + dp(12f)
@@ -365,16 +425,27 @@ class BrutalistBarChart(context: Context) : View(context) {
     private fun rowGap(): Float = dp(10f)
 
     private fun labelBandHeight(): Float =
-        (labelPaint.fontMetrics.descent - labelPaint.fontMetrics.ascent) + dimens.s
+        // The extra two pixels are the "KINI" underline, which lives under the
+        // label and must not be clipped by the view's own bottom edge.
+        (labelPaint.fontMetrics.descent - labelPaint.fontMetrics.ascent) + dimens.s + dp(4f)
 
     /** The columns this width asks for - and therefore how tall the view wants to be. */
     private fun geometry(): ChartLayout = geometryFor(width)
 
-    private fun geometryFor(viewWidth: Int): ChartLayout = ChartGeometry.layout(
-        viewWidth - paddingLeft - paddingRight - 2f * dimens.s,
-        columns.size,
-        resources.displayMetrics.density
-    )
+    private fun geometryFor(viewWidth: Int): ChartLayout =
+        if (singleRowScroll && columns.isNotEmpty()) {
+            // One row, however wide it becomes: the scroller owns the overflow.
+            ChartLayout(columns.size, 1, columns.size)
+        } else {
+            ChartGeometry.layout(
+                viewWidth - paddingLeft - paddingRight - 2f * dimens.s,
+                columns.size,
+                resources.displayMetrics.density
+            )
+        }
+
+    /** The width one day gets in scroller mode: readable, and a thumb wide. */
+    private fun scrollSlotPx(): Float = dp(SCROLL_SLOT_DP)
 
     /**
      * The height a grid needs, asked for rather than imposed.
@@ -462,11 +533,11 @@ class BrutalistBarChart(context: Context) : View(context) {
         /** One row gets a whole chart's plot height: there is nothing above it. */
         const val SINGLE_ROW_PLOT_DP = 140f
 
+        /** One day's slot in scroller mode: wide enough for its number and a thumb. */
+        const val SCROLL_SLOT_DP = 26f
+
         /** A wrapped month is a grid, and a grid row is a step, not a stage. */
         const val WRAPPED_ROW_PLOT_DP = 48f
 
-        /** A column that is not the kind being asked about. Still a bar, just quiet. */
-        const val DIM_ALPHA = 76
-        const val FULL_ALPHA = 255
     }
 }

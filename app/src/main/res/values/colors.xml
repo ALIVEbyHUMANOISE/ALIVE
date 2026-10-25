@@ -46,6 +46,14 @@
     <color name="alive_red_short_mid">#D9553F</color>
     <color name="alive_red_short_pale">#F3DAD3</color>
 
+    <!-- The LED trio, never text and never a surface: three tiny status lights
+         on the black pill. They are deliberately more saturated than the ink
+         roles - a 10dp light on black needs the brightness to read as lit -
+         and they keep the red / amber / green identities. -->
+    <color name="alive_traffic_red">#FF5F57</color>
+    <color name="alive_traffic_yellow">#FEBC2E</color>
+    <color name="alive_traffic_green">#28C840</color>
+
     <!-- The work itself: a Focus session and what it allowed. -->
     <color name="alive_blue_work_dark">#27537A</color>
     <color name="alive_blue_work_mid">#4E86B4</color>

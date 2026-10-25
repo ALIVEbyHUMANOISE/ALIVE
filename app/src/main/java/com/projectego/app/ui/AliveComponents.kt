@@ -23,6 +23,7 @@ import androidx.annotation.ColorRes
 import androidx.annotation.DrawableRes
 import androidx.annotation.StyleRes
 import androidx.appcompat.widget.AppCompatButton
+import androidx.appcompat.widget.AppCompatImageButton
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import com.projectego.app.R
@@ -985,17 +986,35 @@ class AliveComponents(private val context: Context) {
         button(value, R.drawable.bg_brutal_button_quiet, R.color.text_on_secondary)
 
     /**
-     * The way out of a panel: an ink edge, a pixel arrow and the word.
+     * The way out of a panel: one pixel arrow in the same edged, shadowed tile
+     * as the other controls.
      *
-     * Text alone was easy to miss on a screen made of text, and a panel with no
-     * visible exit reads as a trap rather than a page.
+     * It carried the word "Kembali" until 2026-10-21, which made the chip wider
+     * than the page's own title and pushed that title off the page's centre
+     * line. The arrow alone is still unmistakably a control - it keeps the ink
+     * edge and the hard shadow - and leaves the header free to centre the name
+     * of the page. The word survives as the accessibility label.
      */
-    fun backButton(label: CharSequence): AppCompatButton = secondary(label).apply {
-        val arrow = ContextCompat.getDrawable(context, R.drawable.ic_arrow_back_pixel)?.apply {
-            setBounds(0, 0, dimens.l, dimens.l)
-        }
-        setCompoundDrawablesRelative(arrow, null, null, null)
-        compoundDrawablePadding = dimens.m
+    fun backButton(label: CharSequence): AppCompatImageButton = AppCompatImageButton(context).apply {
+        contentDescription = label
+        setBackgroundResource(R.drawable.bg_brutal_button_secondary)
+        stateListAnimator = null
+        isClickable = true
+        isFocusable = true
+        // ImageButton, not Button: a wide control needs no text, and an empty
+        // TextView still reserves a font line - the first version measured 57dp
+        // tall on a 48dp tile. The image is fitted into a content box that is
+        // exactly one sprite-grid arrow (48px here, 16 cells of 3px).
+        val arrowSize = dimens.spriteDp(24)
+        val face = dimens.touchMin - dimens.shadow
+        minimumWidth = dimens.touchMin
+        minimumHeight = dimens.touchMin
+        val side = ((face - arrowSize) / 2).coerceAtLeast(dimens.xs)
+        // Centred on the face, not the bounds: the hard shadow occupies the
+        // right and bottom inside the box.
+        setPadding(side, side, side + dimens.shadow, side + dimens.shadow)
+        scaleType = ImageView.ScaleType.FIT_CENTER
+        setImageResource(R.drawable.ic_arrow_back_pixel)
     }
 
     // ---------- FORM WIDGETS ----------

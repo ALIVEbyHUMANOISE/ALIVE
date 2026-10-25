@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Pixel arrow pointing left: the way out of a panel. Drawn on the same 16 grid
-     at the same one-pixel ink weight as every other mark in this app. -->
+     as every other mark, but with a two-cell shaft and two-cell head so it stays
+     legible at a glance inside a 48dp tile - the one-cell arrow read as a scratch
+     at the size the back control ended up. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -8,5 +10,5 @@
     android:viewportHeight="16">
     <path
         android:fillColor="@color/alive_ink"
-        android:pathData="M6,5h1v1h-1zM5,6h1v1h-1zM4,7h1v1h-1zM2,8h12v1h-12zM4,9h1v1h-1zM5,10h1v1h-1zM6,11h1v1h-1z" />
+        android:pathData="M2,7h13v2h-13zM6,4h2v2h-2zM4,6h2v2h-2zM4,8h2v2h-2zM6,10h2v2h-2z" />
 </vector>

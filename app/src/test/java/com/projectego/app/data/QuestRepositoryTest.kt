@@ -47,6 +47,9 @@ class QuestRepositoryTest {
     private lateinit var timeBankRepository: TimeBankRepository
     private lateinit var questRepository: QuestRepository
 
+    /** ASCII unit separator - the character the attempt codec joins its fields with. */
+    private val unitSeparator = String(Character.toChars(0x1F))
+
     @Before
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
@@ -526,6 +529,33 @@ class QuestRepositoryTest {
         assertEquals("fixed-attempt-id", attempt?.attemptId)
         assertNull(attempt?.linkedFocusSessionId)
     }
+
+    @Test
+    fun `an attempt written before the auto-settle field existed reads as hand-declared`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        // Fourteen fields is the shape this repository wrote before autoSettled
+        // existed: an upgrade must neither lose a mission that is genuinely
+        // running nor claim a press that never happened.
+        val previousRaw = previousFieldShapeAttempt()
+
+        context.getSharedPreferences("project_ego_quests", Context.MODE_PRIVATE)
+            .edit()
+            .putString("key_current_quest_attempt", previousRaw)
+            .apply()
+
+        val attempt = questRepository.getCurrentAttempt()
+
+        assertEquals("fixed-attempt-id", attempt?.attemptId)
+        assertEquals(QuestAttemptState.IN_PROGRESS, attempt?.state)
+        assertFalse("no field means no auto-settle", attempt?.autoSettled ?: true)
+    }
+
+    /** The 14-field record, joined with the unit separator the codec uses. */
+    private fun previousFieldShapeAttempt(): String = listOf(
+        "quest_walk_20", "PHYSICAL", "IN_PROGRESS", "1000", "20",
+        "1000", "", "", "", "", "", "",
+        "fixed-attempt-id", ""
+    ).joinToString(unitSeparator)
 
     @Test
     fun `a legacy 12-field attempt persisted before Step 1 is migrated safely on read`() {

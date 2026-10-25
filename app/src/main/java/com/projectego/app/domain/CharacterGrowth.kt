@@ -37,6 +37,43 @@ object CharacterGrowth {
         else -> Stage.ONE
     }
 
+    /** The three points where a form changes, for a screen that shows the ladder. */
+    val THRESHOLDS = listOf(STAGE_TWO_POINTS, STAGE_THREE_POINTS, STAGE_FOUR_POINTS)
+
+    /** The points at which the next form begins, or null at the last form. */
+    fun nextThresholdFor(points: Int): Int? = THRESHOLDS.firstOrNull { points < it }
+
+    /** How many points are still missing, or null at the last form. */
+    fun pointsToNext(points: Int): Int? = nextThresholdFor(points)?.let { it - points }
+
+    /**
+     * The bar's own scale: how far into the current form [points] is, and how
+     * long this form is - `3 to 7`, `8 to 30`. Null at the last form, which has
+     * no next threshold to be measured against.
+     *
+     * The screen shows this as "3 dari 7 poin" under the bar, because a bar
+     * without its range is a decoration rather than a measurement.
+     */
+    fun progressWithin(points: Int): Pair<Int, Int>? {
+        val next = nextThresholdFor(points) ?: return null
+        val floor = THRESHOLDS.lastOrNull { points >= it } ?: 0
+        return (points - floor) to (next - floor)
+    }
+
+    /**
+     * How full the bar towards the next form is, from 0 to 1.
+     *
+     * Each stage's bar starts empty at its own threshold, so 7 points reads as a
+     * new bar rather than a nearly-full one - the same reason a level bar in a
+     * game resets: what it measures is the distance to the next form, not the
+     * distance from the beginning.
+     */
+    fun shareToNext(points: Int): Float {
+        val next = nextThresholdFor(points) ?: return 1f
+        val floor = THRESHOLDS.lastOrNull { points >= it } ?: 0
+        return ((points - floor).toFloat() / (next - floor)).coerceIn(0f, 1f)
+    }
+
     /**
      * Whether a day that ended on [lastCountedDay] still owes a point for
      * [todayKey].

@@ -41,6 +41,15 @@ class GuardianWatchService : Service() {
     private var lastInterruptAt = 0L
     private var lastInterruptedPackage: String? = null
 
+    // The app currently in front, carried between looks. The usage log only
+    // reports switches, so without this the watch would forget what is open the
+    // moment the person stops switching - and a sitting in one app would never be
+    // knocked again.
+    private var foreground: String? = null
+
+    /** How far the last look read the log. Null before the first look. */
+    private var lastLookAt: Long? = null
+
     private val look = object : Runnable {
         override fun run() {
             // The guard came back: the reason this service exists is gone.
@@ -76,17 +85,27 @@ class GuardianWatchService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    /** One look: what came to the front since the last one, and is it entertainment? */
+    /**
+     * One look: refresh what is in front, then decide whether it is worth
+     * interrupting - even when nobody switched apps since the last look.
+     *
+     * The first look reads the last minute, so a person who was already in an
+     * entertainment app when the guard went off is seen immediately instead of
+     * having to switch apps for the reminder to find them.
+     */
     private fun watchOnce() {
         val now = System.currentTimeMillis()
-        val foreground = lastForegroundPackage(now - GuardianWatchPolicy.LOOKBACK_MILLIS, now)
-            ?: return
-        if (foreground == packageName) return
+        val from = lastLookAt ?: (now - GuardianWatchPolicy.STARTUP_LOOKBACK_MILLIS)
+        lastLookAt = now
+
+        lastForegroundPackage(from, now)?.let { foreground = it }
+        val inFront = foreground ?: return
+        if (inFront == packageName) return
 
         val decision = GuardianWatchPolicy.decide(
             now = now,
-            foregroundPackage = foreground,
-            isEntertainment = AppClassifier.categorize(this, foreground) == AppCategory.ENTERTAINMENT,
+            foregroundPackage = inFront,
+            isEntertainment = AppClassifier.categorize(this, inFront) == AppCategory.ENTERTAINMENT,
             lastInterruptAt = lastInterruptAt,
             lastInterruptedPackage = lastInterruptedPackage
         )
@@ -116,7 +135,10 @@ class GuardianWatchService : Service() {
         val event = android.app.usage.UsageEvents.Event()
         while (stream.hasNextEvent()) {
             stream.getNextEvent(event)
-            if (event.eventType != EVENT_RESUMED && event.eventType != EVENT_MOVE_TO_FOREGROUND) continue
+            // MOVE_TO_FOREGROUND is ACTIVITY_RESUMED (both 1). The number 23 used
+            // to sit here too, and it is ACTIVITY_STOPPED - a stopped app is not
+            // an app that came forward.
+            if (event.eventType != android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND) continue
             if (event.timeStamp < latestAt) continue
             latest = event.packageName ?: continue
             latestAt = event.timeStamp
@@ -126,10 +148,4 @@ class GuardianWatchService : Service() {
 
     private fun isInteractive(): Boolean =
         (getSystemService(Context.POWER_SERVICE) as? PowerManager)?.isInteractive ?: false
-
-    private companion object {
-        /** ACTIVITY_RESUMED and its pre-29 name: the same two events the tracker reads. */
-        const val EVENT_RESUMED = 23
-        const val EVENT_MOVE_TO_FOREGROUND = 1
-    }
 }

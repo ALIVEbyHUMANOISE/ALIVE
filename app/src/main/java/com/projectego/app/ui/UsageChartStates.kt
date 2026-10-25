@@ -36,8 +36,32 @@ data class DayBar(
     val limitMinutes: Long,
     val kind: DayBarKind,
     /** Share of that day's own allowance, 0f..1f. */
-    val fraction: Float
+    val fraction: Float,
+    /**
+     * Everything ALIVE saw that day, or null for a day recorded before the
+     * figure existed. The chart's "Total" and "Productivity" measures read it;
+     * null is unknown, never zero.
+     */
+    val screenMinutes: Long? = null
 )
+
+/**
+ * Which measure a bar chart is drawn in.
+ *
+ * The chart used to be one thing only - the allowance spent - so a day of work
+ * and a day of scrolling looked identical. These three are the day counted three
+ * ways, and the same three the ring above already uses.
+ */
+enum class ChartMetric {
+    /** Everything ALIVE saw: entertainment plus the apps it never blocks. */
+    TOTAL,
+
+    /** Only what spends the allowance. */
+    ENTERTAINMENT,
+
+    /** Everything that is not entertainment. */
+    PRODUCTIVITY
+}
 
 /**
  * The maths behind the usage chart.
@@ -75,7 +99,8 @@ object UsageChartStates {
         minutes = day?.totalMinutes ?: 0L,
         limitMinutes = day?.limitMinutes ?: 0L,
         kind = kindOf(day),
-        fraction = day?.let { fractionOf(it.totalMinutes, it.limitMinutes) } ?: 0f
+        fraction = day?.let { fractionOf(it.totalMinutes, it.limitMinutes) } ?: 0f,
+        screenMinutes = day?.screenMinutes
     )
 
     /**
@@ -154,6 +179,55 @@ object UsageChartStates {
     fun totals(bars: List<DayBar>): Pair<Long, Int> {
         val recorded = bars.filter { it.kind != DayBarKind.MISSING }
         return recorded.sumOf { it.minutes } to recorded.size
+    }
+
+    /**
+     * What one bar is worth under [metric], or null when the day has no figure
+     * for it.
+     *
+     * A day recorded before the screen total existed has no "total" and no
+     * "productivity" - those are unknown, not zero, and the chart must draw them
+     * the same hollow way it draws a day it never saw.
+     */
+    fun metricMinutes(bar: DayBar, metric: ChartMetric): Long? {
+        if (bar.kind == DayBarKind.MISSING) return null
+        return when (metric) {
+            ChartMetric.TOTAL -> bar.screenMinutes
+            ChartMetric.ENTERTAINMENT -> bar.minutes
+            ChartMetric.PRODUCTIVITY ->
+                bar.screenMinutes?.let { (it - bar.minutes).coerceAtLeast(0L) }
+        }
+    }
+
+    /** The sum of one measure across the days that have a figure for it. */
+    fun metricTotal(bars: List<DayBar>, metric: ChartMetric): Long =
+        bars.sumOf { metricMinutes(it, metric) ?: 0L }
+
+    /**
+     * The hour chart's blocks for one measure, scaled to the busiest block.
+     *
+     * A measure chart compares hours with each other, so the busiest block is the
+     * full height. A block still ahead stays [DayBarKind.MISSING]; a past block
+     * with nothing in it is a zero, which is a fact about the past.
+     */
+    fun metricHourBars(values: LongArray, currentHour: Int): List<HourBar> {
+        val blocks = (0 until HOURS_PER_DAY step HOURS_PER_BAR).map { start ->
+            start to (start until minOf(start + HOURS_PER_BAR, HOURS_PER_DAY))
+                .sumOf { values.getOrElse(it) { 0L } }
+        }
+        val largest = blocks.maxOfOrNull { it.second }?.coerceAtLeast(1L) ?: 1L
+        return blocks.map { (start, millis) ->
+            HourBar(
+                startHour = start,
+                minutes = millis / 60_000L,
+                fraction = (millis.toFloat() / largest).coerceIn(0f, 1f),
+                kind = when {
+                    start > currentHour -> DayBarKind.MISSING
+                    millis <= 0L -> DayBarKind.ZERO
+                    else -> DayBarKind.SPENT
+                }
+            )
+        }
     }
 
     /**

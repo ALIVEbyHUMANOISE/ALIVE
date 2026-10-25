@@ -132,6 +132,30 @@ object AppClassifier {
     )
 
     /**
+     * System windows that sit *over* an app without the person leaving it.
+     *
+     * The notification shade, the volume panel and system dialogs belong to
+     * `com.android.systemui` or `android`. They are not apps, and treating them
+     * as one makes a reading that follows the foreground close itself every time
+     * somebody pulls the shade down - and the app's resume after the shade closes
+     * looks like a new visit.
+     *
+     * Samsung's screenshot preview is the same kind of window: taking a
+     * screenshot raises `com.samsung.android.app.smartcapture` over the app, and
+     * on 2026-10-23 that took the pill down and restarted it at 0 minutes when
+     * the person came straight back to Instagram. It is a capture tool, never a
+     * place the person went.
+     */
+    val TRANSIENT_WINDOW_PACKAGES = setOf(
+        "android",
+        "com.android.systemui",
+        "com.samsung.android.app.smartcapture"
+    )
+
+    fun isTransientWindow(packageName: String?): Boolean =
+        packageName != null && packageName in TRANSIENT_WINDOW_PACKAGES
+
+    /**
      * The curated lists only, without a Context: null means "nothing here names
      * this package".
      *

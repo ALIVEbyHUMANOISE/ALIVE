@@ -106,7 +106,16 @@ data class QuestAttempt(
     val verificationResult: VerificationResult? = null,
     val rewardMinutes: Long? = null,
     val rewardedTimestamp: Long? = null,
-    val linkedFocusSessionId: String? = null
+    val linkedFocusSessionId: String? = null,
+    /**
+     * True when the window closed on the clock rather than on a declaration.
+     *
+     * Kept as its own field instead of being inferred from [verificationResult],
+     * because the screen has to be able to say which of the two happened without
+     * reading the engine's sentence - and a mission that finished itself must
+     * never be shown as one the person confirmed.
+     */
+    val autoSettled: Boolean = false
 ) {
     companion object {
         /**

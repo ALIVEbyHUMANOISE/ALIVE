@@ -2,6 +2,7 @@ package com.projectego.app.domain
 
 import com.projectego.app.model.AppCategory
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -55,6 +56,16 @@ class AppClassifierTest {
         val seen = HashSet<String>()
         val duplicates = entries.map { it.first }.filter { !seen.add(it) }
         assertTrue("named twice: $duplicates", duplicates.isEmpty())
+    }
+
+    @Test
+    fun `a screenshot preview is a window over the app, not a place`() {
+        // Measured on the phone: the preview raised SmartCapture after the
+        // capture, the pill read that as leaving, and the return to Instagram
+        // started a new 0-minute session. The capture tool is not a destination.
+        assertTrue(AppClassifier.isTransientWindow("com.samsung.android.app.smartcapture"))
+        assertTrue(AppClassifier.isTransientWindow("com.android.systemui"))
+        assertFalse(AppClassifier.isTransientWindow("com.instagram.android"))
     }
 
     @Test

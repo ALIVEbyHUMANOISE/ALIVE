@@ -107,6 +107,20 @@ class AliveRenderState {
     var hourlyUsedMillis: LongArray = LongArray(24)
 
     /**
+     * The same hours, but the whole screen rather than the charged part:
+     * entertainment, messaging and work together. Read in the same pass as
+     * [hourlyUsedMillis], so the two series always describe one day.
+     */
+    var hourlySeenMillis: LongArray = LongArray(24)
+
+    /**
+     * Which measure the bar charts are drawn in: total, entertainment, or
+     * productivity. Kept across panel visits like the selected range, because a
+     * person who switched to "productivity" once is asking for productivity.
+     */
+    var chartMetricIndex: Int = 0
+
+    /**
      * Today's guard state, read from `LockStateManager` during the render that
      * already happens. [guardGapOpen] is true while the accessibility service is
      * off and the repair has not landed yet; [guardGapRepairedToday] is the same

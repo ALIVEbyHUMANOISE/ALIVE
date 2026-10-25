@@ -2,6 +2,7 @@ package com.projectego.app.data
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.projectego.app.domain.QuestDayProgress
 import com.projectego.app.model.QuestAttemptState
 import com.projectego.app.model.QuestStatus
 import com.projectego.app.model.VerificationMethod
@@ -43,6 +44,8 @@ class QuestRolloverTest {
         context.getSharedPreferences("project_ego_quests", Context.MODE_PRIVATE)
             .edit().clear().apply()
         context.getSharedPreferences("project_ego_time_bank", Context.MODE_PRIVATE)
+            .edit().clear().apply()
+        context.getSharedPreferences(QuestHistoryRepository.PREFS_NAME, Context.MODE_PRIVATE)
             .edit().clear().apply()
         timeBankRepository = TimeBankRepository(context)
     }
@@ -132,5 +135,41 @@ class QuestRolloverTest {
         today.commitQuest(today.getAllQuests().first().id, VerificationMethod.DIGITAL, 30L)
         assertFalse(today.rolloverIfNeeded())
         assertNotNull(today.getCurrentAttempt())
+    }
+
+    @Test
+    fun `the score is back to nothing on a new day`() {
+        repositoryAt(dayOne).rewardFirstQuest()
+        assertEquals(1, repositoryAt(dayOne).getAllQuests().count { it.status == QuestStatus.COMPLETED })
+
+        val today = repositoryAt(dayTwo)
+        today.rolloverIfNeeded()
+
+        assertEquals(
+            "yesterday's finished missions are not today's",
+            0,
+            QuestDayProgress.of(today.getAllQuests()).completed
+        )
+    }
+
+    @Test
+    fun `a new day opens its own row in the log`() {
+        val today = repositoryAt(dayTwo)
+        today.rolloverIfNeeded()
+
+        val history = QuestHistoryRepository(context)
+        val row = history.day(LockStateManager.dayKeyOf(dayTwo))
+        assertNotNull("the board cannot say a day was idle unless it saw it", row)
+        assertEquals(0, row!!.completedCount)
+    }
+
+    @Test
+    fun `yesterday's payout stays counted on yesterday`() {
+        repositoryAt(dayOne).rewardFirstQuest()
+        repositoryAt(dayTwo).rolloverIfNeeded()
+
+        val history = QuestHistoryRepository(context)
+        assertEquals(1, history.day(LockStateManager.dayKeyOf(dayOne))!!.completedCount)
+        assertEquals(0, history.day(LockStateManager.dayKeyOf(dayTwo))!!.completedCount)
     }
 }

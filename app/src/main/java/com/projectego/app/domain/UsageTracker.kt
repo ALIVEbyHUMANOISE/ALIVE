@@ -276,30 +276,68 @@ class UsageTracker(private val context: Context) {
         )
 
     /**
-     * How many times [packageName] came to the front today.
+     * Today's whole screen, hour by hour: what the allowance spent, the tools it
+     * never touched, and the focus time in between.
+     *
+     * Same set the day's screen total adds up - entertainment, messaging, work -
+     * so the total chart and the total card cannot disagree. Unknown apps are
+     * still excluded, exactly as they are from the day's screen figure.
+     */
+    fun hourlySeenMillisToday(): LongArray {
+        val dayStart = getTodayStartTimestamp()
+        val now = System.currentTimeMillis()
+
+        val spans = Foreground.spans(readEvents(dayStart, now) { true }, now).filter {
+            when (categoryOf(it.id)) {
+                AppCategory.ENTERTAINMENT, AppCategory.TRACKED, AppCategory.WORK -> true
+                else -> false
+            }
+        }
+        // No exemption cut here: focusing still happened on this screen.
+        return HourlyUsage.bucketSpans(dayStart, spans)
+    }
+
+    /**
+     * How many times one app was actually entered today.
      *
      * The pill's second sentence, and the one number people are wrong about:
      * nearly everyone knows roughly how long they have been in an app, and
-     * almost nobody knows how often they went back in. Counted from the same
-     * event stream the totals use, so the two can never disagree.
+     * almost nobody knows how often they went back in. One visit is one entry,
+     * not one activity resume - the folding rule lives in [ForegroundVisits] so
+     * it can be tested without the platform. Counted from the same event stream
+     * the totals use, so the two can never disagree.
      */
     fun opensToday(packageName: String): Int {
         val startTime = getTodayStartTimestamp()
         val now = System.currentTimeMillis()
         val stream = (context.getSystemService(AppCompatActivity.USAGE_STATS_SERVICE) as? UsageStatsManager)
             ?.queryEvents(startTime, now) ?: return 0
+
+        val events = mutableListOf<ForegroundVisits.Event>()
         val event = UsageEvents.Event()
-        var opens = 0
         while (stream.hasNextEvent()) {
             stream.getNextEvent(event)
-            if (event.eventType != EVENT_RESUMED &&
-                event.eventType != UsageEvents.Event.MOVE_TO_FOREGROUND
-            ) {
-                continue
+            // MOVE_TO_FOREGROUND is ACTIVITY_RESUMED (both 1); it is the only
+            // resume event. The old code also matched the number 23, which the
+            // platform defines as ACTIVITY_STOPPED - so leaving an app counted as
+            // one more visit to it, and a round trip added two.
+            when (event.eventType) {
+                UsageEvents.Event.MOVE_TO_FOREGROUND ->
+                    events += ForegroundVisits.Event(
+                        ForegroundVisits.Kind.RESUMED,
+                        event.packageName
+                    )
+
+                UsageEvents.Event.SCREEN_NON_INTERACTIVE,
+                UsageEvents.Event.KEYGUARD_SHOWN ->
+                    events += ForegroundVisits.Event(ForegroundVisits.Kind.SCREEN_OFF)
             }
-            if (event.packageName == packageName) opens += 1
         }
-        return opens
+        return ForegroundVisits.count(
+            events,
+            packageName,
+            ignoredPackages = AppClassifier.TRANSIENT_WINDOW_PACKAGES
+        )
     }
 
     /** Today's focus windows, with the packages each session said were allowed. */
@@ -346,8 +384,13 @@ class UsageTracker(private val context: Context) {
         while (stream.hasNextEvent()) {
             stream.getNextEvent(event)
             val kind = when (event.eventType) {
-                UsageEvents.Event.MOVE_TO_FOREGROUND, EVENT_RESUMED -> HourlyUsage.Kind.RESUMED
-                UsageEvents.Event.MOVE_TO_BACKGROUND, EVENT_PAUSED -> HourlyUsage.Kind.PAUSED
+                // Named constants only. The numbers 23 and 24 used here before are
+                // ACTIVITY_STOPPED and ACTIVITY_DESTROYED: treating a stop as a
+                // resume opened a phantom foreground span for the app that had
+                // just been left, and treating a destroy as a pause used a
+                // lifecycle event as a boundary it is not.
+                UsageEvents.Event.MOVE_TO_FOREGROUND -> HourlyUsage.Kind.RESUMED
+                UsageEvents.Event.MOVE_TO_BACKGROUND -> HourlyUsage.Kind.PAUSED
                 UsageEvents.Event.SCREEN_NON_INTERACTIVE,
                 UsageEvents.Event.KEYGUARD_SHOWN -> HourlyUsage.Kind.SCREEN_OFF
                 else -> continue
@@ -364,10 +407,6 @@ class UsageTracker(private val context: Context) {
     }
 
     private companion object {
-        /** ACTIVITY_RESUMED and ACTIVITY_PAUSED: the same two events, renamed in API 29. */
-        const val EVENT_RESUMED = 23
-        const val EVENT_PAUSED = 24
-
         /**
          * How far before midnight the event log is read, to catch the session
          * that was still running when the day changed. Longer than any plausible

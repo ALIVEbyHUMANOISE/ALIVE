@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ALIVE night art: a crescent and its stars, transparent, on the same 16-cell
+     grid as every sprite. Drawn for the promise card, which used to open with a
+     pixel paragraph instead of a picture. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:fillColor="@color/alive_ink"
+        android:pathData="M10,1h3v1h-3zM9,2h4v1h-4zM9,3h3v1h-3zM9,4h2v1h-2zM9,5h2v1h-2zM9,6h3v1h-3zM10,7h3v1h-3z" />
+    <path
+        android:fillColor="@color/alive_gold_reward_mid"
+        android:pathData="M3,3h1v1h-1zM5,7h1v1h-1zM2,9h1v1h-1zM13,12h1v1h-1z" />
+    <path
+        android:fillColor="@color/alive_forest"
+        android:pathData="M6,12h1v1h-1z" />
+</vector>

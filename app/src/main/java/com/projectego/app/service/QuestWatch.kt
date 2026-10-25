@@ -32,7 +32,9 @@ import java.util.Calendar
  */
 object QuestWatch {
 
-    private const val CHANNEL_ID = "alive_quest"
+    /** Shared with [QuestDeadlineWatch]: both notes are about quests, so both
+     *  belong on the one channel the person can already switch off as a whole. */
+    const val CHANNEL_ID = "alive_quest"
     private const val NOTIFICATION_ID = 7501
     private const val REQUEST_CODE = 7502
 
@@ -69,7 +71,7 @@ object QuestWatch {
         )
     }
 
-    private fun ensureChannel(context: Context) {
+    fun ensureChannel(context: Context) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.createNotificationChannel(
             NotificationChannel(
