@@ -202,6 +202,25 @@ class InfoPillService : Service() {
             }
         }
     }
+    /**
+     * The panel's first attention, paid while the pill idles.
+     *
+     * The first tap used to pay for everything the panel had never done - the
+     * app labels, the text layout, the character's sprite, the first measure -
+     * and that measured 77 ms against 4 ms on every later tap, which is a
+     * hitch exactly once and always on the open people see first. Doing it
+     * here, after the arrival has finished, moves that cost to a moment
+     * nobody is looking at; the panel stays hidden and the next tap finds a
+     * panel that has already been measured.
+     */
+    private val warm = Runnable {
+        val panel = panel ?: return@Runnable
+        if (!isRunning || expanded || pill == null) return@Runnable
+        trace("pill.warm") {
+            renderPanel(lastReport, usageTracker.lockStateManager.isLocked())
+            measurePanel(panel, panelWidthPx())
+        }
+    }
     private val screenOff = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == Intent.ACTION_SCREEN_OFF) dismiss()
@@ -237,6 +256,7 @@ class InfoPillService : Service() {
         // restarted after a screen-off never read the day again.
         ticker.removeCallbacks(tick)
         ticker.removeCallbacks(arrive)
+        ticker.removeCallbacks(warm)
         removeWindow()
         stopSelf()
     }
@@ -308,6 +328,9 @@ class InfoPillService : Service() {
             // nobody can see it. Any earlier arrival is cleared first, so a quick
             // app switch cannot queue two.
             ticker.postDelayed(arrive, ARRIVE_DELAY_MILLIS)
+            // Deferred past the arrival, so the warm-up can never stutter the
+            // entrance it is meant to protect.
+            ticker.postDelayed(warm, WARM_DELAY_MILLIS)
         }
         return START_NOT_STICKY
     }
@@ -862,6 +885,7 @@ class InfoPillService : Service() {
         val header = header ?: return
         val panel = panel ?: return
         if (expanded) return
+        ticker.removeCallbacks(warm)
         discardPreviousDayReport()
         expanded = true
         // A reading is requested, never waited for: the first frame of the morph
@@ -1729,6 +1753,9 @@ class InfoPillService : Service() {
         private const val NOTIFICATION_ID = 7401
         private const val TICK_MILLIS = 20_000L
         private const val ARRIVE_DELAY_MILLIS = 800L
+
+        /** After the arrival's 240 ms, with room for a slow first frame. */
+        private const val WARM_DELAY_MILLIS = 1_200L
 
         /**
          * The morph's own clock: a slightly longer open than the old 230ms, so

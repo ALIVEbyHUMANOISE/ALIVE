@@ -16,6 +16,8 @@ import java.util.concurrent.AbstractExecutorService
 import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -147,6 +149,16 @@ class PillPanelTest {
         assertTrue("the sprite must not crowd its tile: $spriteWidth in $tileWidth",
             spriteWidth in dp(40) until tileWidth)
         assertEquals("every sprite size snaps to whole 16-cell device pixels", 0, spriteWidth % 16)
+    }
+
+    @Test
+    fun `the panel is warmed while the pill idles, without showing itself`() {
+        val panel = service.field<View>("panel")
+        val character = service.field<ImageView>("panelCharacter")
+        assertNull("nothing of the panel has been drawn yet", character.drawable)
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(1_400))
+        assertEquals("the warm-up must not reveal the panel", View.GONE, panel.visibility)
+        assertNotNull("the character must be ready before the first tap", character.drawable)
     }
 
     private fun header(): View = service.field("header")

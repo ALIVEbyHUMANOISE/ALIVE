@@ -51,6 +51,10 @@ Pengukuran perangkat terakhir yang bisa diandalkan (E3, CPU idle, 90 Hz): 13 tra
 - Layar mati / Activity ALIVE muncul → overlay dilepas seketika (receiver + lifecycle callback).
 - Cache laporan ber-`dayKey`; tidak ada angka kemarin yang tampil sebagai hari ini.
 
+**Bukaan pertama tidak lagi tersendat**
+- Panel diukur sekali saat pill menganggur (`pill.warm`, 11 ms, 1,2 s setelah pill tiba), bukan pada tap pertama.
+- Terukur di perangkat: `pill.expand` **2,75–4,68 ms** pada semua tap (sebelumnya tap pertama **76,9 ms**, sisanya 3,8–5,9 ms).
+
 **Visual**
 - Tiga lampu tetap penuh warna dengan halo 4 dp; shader di-cache (tanpa alokasi per denyut).
 - Header 48 dp (target sentuh), jarak simetris 14 dp, panel maks 320 dp, tile karakter 64 dp.
@@ -67,10 +71,11 @@ Pengukuran perangkat terakhir yang bisa diandalkan (E3, CPU idle, 90 Hz): 13 tra
 ## 5. Batasan yang tetap ada
 
 1. **Tutup belum punya bobot.** Masih ease 210 ms; kalau nanti terasa "berat buka, ringan tutup", itu eksperimen berikutnya, bukan kelalaian.
-2. Trace perangkat untuk build final belum diambil; angka puncak/settle berasal dari integrator yang sama + test.
-3. Stall `relayoutWindow` (pernah 50–84 ms) bersifat lingkungan; run bersih terakhir 0 frame >32 ms.
-4. Refresh perangkat berpindah 90↔60 Hz antar sesi; semua perbandingan dipisah per rate.
-5. Rekaman 30 fps tidak bisa menangkap puncak selebar 1–2 frame pada 90 Hz.
+2. Warm-up panel berjalan 1,2 detik setelah pill tiba; kalau seseorang mengetuk lebih cepat dari itu, tap pertama masih membayar sebagian biaya dingin (terukur 11 ms, bukan 77 ms).
+3. Trace perangkat untuk irama final belum diambil; angka puncak/settle berasal dari integrator yang sama + test. Yang terukur di perangkat adalah biaya setup (`pill.expand`) dan warm-up.
+4. Stall `relayoutWindow` (pernah 50–84 ms) bersifat lingkungan; run bersih terakhir 0 frame >32 ms.
+5. Refresh perangkat berpindah 90↔60 Hz antar sesi; semua perbandingan dipisah per rate.
+6. Rekaman 30 fps tidak bisa menangkap puncak selebar 1–2 frame pada 90 Hz.
 
 ## 6. Rollback
 
