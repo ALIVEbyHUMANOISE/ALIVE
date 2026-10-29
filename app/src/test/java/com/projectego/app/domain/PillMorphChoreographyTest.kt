@@ -101,18 +101,18 @@ class PillMorphChoreographyTest {
     }
 
     @Test
-    fun `the content is at rest before the expansion finishes, the shell is not`() {
-        // The last stretch is a settle for the content and the home stretch for
-        // the radius: by 85% of the morph every readable thing has arrived, and
-        // the corner alone is still travelling to its expanded softness.
-        val frame = PillMorphChoreography.expand(0.85f)
-        val rest = PillMorphChoreography.rest(true)
-        assertEquals(rest.panelAlpha, frame.panelAlpha, 0.0001f)
-        assertEquals(rest.characterAlpha, frame.characterAlpha, 0.0001f)
-        assertEquals(rest.characterScale, frame.characterScale, 0.0001f)
-        assertEquals(rest.rowsAlpha, frame.rowsAlpha, 0.0001f)
-        assertEquals(rest.actionAlpha, frame.actionAlpha, 0.0001f)
-        assertEquals(0.85f, frame.radius, 0.0001f)
+    fun `the content finishes with the shell, not long before it`() {
+        // Rows and the way out are still arriving while the shell settles, so the
+        // last third of the clock is not a dead picture. Fractions here are
+        // progress; the ease turns them into 70% of the elapsed run.
+        val frame = PillMorphChoreography.expand(PillMorphEngine.decelerate(0.70f))
+        assertTrue("rows at ${frame.rowsAlpha}", frame.rowsAlpha in 0.5f..0.99f)
+        assertTrue("the way out at ${frame.actionAlpha}", frame.actionAlpha in 0.5f..0.99f)
+        assertEquals(
+            "and everything lands together with the shell",
+            PillMorphChoreography.rest(true),
+            PillMorphChoreography.expand(1f)
+        )
     }
 
     @Test
@@ -169,18 +169,20 @@ class PillMorphChoreographyTest {
 
     @Test
     fun `the arrival still lands in reading order at its halfway mark`() {
-        // Not a shape test, a drift guard: these are the fractions the staggered
-        // entrance has always produced, and a retargetable morph has no business
-        // changing what a normal expansion looks like.
-        val frame = PillMorphChoreography.expand(0.5f)
-        assertEquals(0.5f, frame.radius, EPS)
+        // Not a shape test, a drift guard: at half the clock the panel and the
+        // character are in, the rows are on their way, and the way out waits -
+        // measured through the ease, because the staging lives in progress.
+        val frame = PillMorphChoreography.expand(PillMorphEngine.decelerate(0.5f))
         assertEquals(1f, frame.panelAlpha, EPS)
         assertEquals(1f, frame.characterAlpha, EPS)
-        assertEquals(1f, frame.characterScale, EPS)
-        assertEquals(0.5556f, frame.rowsAlpha, 0.001f)
-        assertEquals(2.4f, frame.rowsShiftDp, 0.001f)
-        assertEquals(0.1667f, frame.actionAlpha, 0.001f)
-        assertEquals(7.2727f, frame.actionShiftDp, 0.001f)
+        assertTrue("rows at ${frame.rowsAlpha}", frame.rowsAlpha in 0.3f..0.8f)
+        assertEquals(0f, frame.actionAlpha, EPS)
+        assertTrue(
+            "reading order",
+            frame.panelAlpha >= frame.characterAlpha &&
+                frame.characterAlpha >= frame.rowsAlpha &&
+                frame.rowsAlpha >= frame.actionAlpha
+        )
     }
 
     @Test

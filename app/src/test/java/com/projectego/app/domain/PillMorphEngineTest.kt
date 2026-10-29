@@ -413,6 +413,61 @@ class PillMorphEngineTest {
         assertEquals("while the answer holds at the run's own start", 0f, firstFrame, 0f)
     }
 
+    // ---------- the launch: an open with weight ----------
+
+    @Test
+    fun `a launch starts from rest, not from full speed`() {
+        val engine = PillMorphEngine.launchRun(LAUNCH_CAP_MILLIS)
+        val at20 = engine.tick(20L)
+        assertTrue("20 ms in it had already moved $at20", at20 < 0.35f)
+        assertTrue("but it does move", engine.tick(60L) > at20)
+    }
+
+    @Test
+    fun `a launch passes its target by a few percent and peaks around the middle`() {
+        val engine = PillMorphEngine.launchRun(LAUNCH_CAP_MILLIS)
+        var peak = 0f
+        var peakAt = 0L
+        var t = 0L
+        while (t <= LAUNCH_CAP_MILLIS) {
+            val v = engine.tick(t)
+            if (v > peak) {
+                peak = v
+                peakAt = t
+            }
+            t += 2L
+        }
+        assertTrue("peak was $peak", peak in 1.06f..1.11f)
+        val at = peakAt.toFloat() / LAUNCH_CAP_MILLIS
+        assertTrue("peak at ${at * 100}% of the cap", at in 0.30f..0.60f)
+    }
+
+    @Test
+    fun `a launch lands exactly on its target`() {
+        val engine = PillMorphEngine.launchRun(LAUNCH_CAP_MILLIS)
+        var t = 0L
+        while (t <= LAUNCH_CAP_MILLIS && !engine.isSettled) {
+            engine.tick(t)
+            t += 4L
+        }
+        assertTrue("the spring must arrive inside its cap", engine.isSettled)
+        assertEquals(1f, engine.morph, 0.002f)
+        assertEquals(1f, engine.tick(LAUNCH_CAP_MILLIS), 0f)
+    }
+
+    @Test
+    fun `a launch hands a reversal its live position and speed`() {
+        val launch = PillMorphEngine.launchRun(LAUNCH_CAP_MILLIS)
+        launch.tick(150L)
+        val m = launch.morph
+        val v = launch.velocity
+        assertTrue("a launch is already moving at 150 ms", v > 0f)
+        val back = PillMorphEngine.springRun(m, v, 0f, SPRING_CAP_MILLIS)
+        assertEquals("the seam starts on the live frame", 0f, back.tick(0L), 0f)
+        assertEquals("and on the live position", m, back.morph, 0f)
+        assertTrue("the reversal keeps its trailing speed, bounded", back.velocity > 0f)
+    }
+
     private fun runOut(engine: PillMorphEngine, step: Long = 16L): List<Float> {
         val frames = mutableListOf(engine.tick(0L))
         var elapsed = step
@@ -425,9 +480,10 @@ class PillMorphEngineTest {
 
     private companion object {
         /** The service's two morph clocks, kept literal here so a change fails loudly. */
-        const val EXPAND_MILLIS = 260L
+        const val EXPAND_MILLIS = 420L
         const val COLLAPSE_MILLIS = 210L
         const val SPRING_CAP_MILLIS = 900L
+        const val LAUNCH_CAP_MILLIS = 740L
 
         /** The engine's own knobs, restated literally for the same reason. */
         const val RATE = 40f

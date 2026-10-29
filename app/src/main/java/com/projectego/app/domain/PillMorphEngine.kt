@@ -45,8 +45,14 @@ class PillMorphEngine private constructor(
     private val startM: Float,
     private val targetM: Float,
     initialVelocity: Float,
-    private val isSpring: Boolean
+    private val isSpring: Boolean,
+    dampingRatio: Float = 1f,
+    springRate: Float = SPRING_RATE_PER_SECOND,
+    maxFraction: Float = 1f
 ) {
+    private val damping: Float = dampingRatio
+    private val rate: Float = springRate
+    private val ceiling: Float = maxFraction
 
     private var m = startM
     private var velocityPerSecond = initialVelocity
@@ -89,7 +95,7 @@ class PillMorphEngine private constructor(
             settleAtTarget()
             return 1f
         }
-        return if (isSettled) 1f else ((m - startM) / span).coerceIn(0f, 1f)
+        return if (isSettled) 1f else ((m - startM) / span).coerceIn(0f, ceiling)
     }
 
     private fun advanceEase(elapsedMillis: Long) {
@@ -112,7 +118,7 @@ class PillMorphEngine private constructor(
     private fun integrate(frameMillis: Long) {
         val elapsed = frameMillis.coerceAtMost(MAX_FRAME_MILLIS)
         if (elapsed <= 0L) return
-        val targetStepMillis = SUBSTEP_STABILITY / SPRING_RATE_PER_SECOND * 1000f
+        val targetStepMillis = SUBSTEP_STABILITY / rate * 1000f
         val steps = ceil(elapsed.toFloat() / targetStepMillis)
             .coerceAtMost(MAX_SUBSTEPS.toFloat())
             .toInt()
@@ -120,8 +126,8 @@ class PillMorphEngine private constructor(
         val h = elapsed.toFloat() / steps / 1000f
         repeat(steps) {
             val acceleration =
-                -SPRING_RATE_PER_SECOND * SPRING_RATE_PER_SECOND * (m - targetM) -
-                    2f * SPRING_RATE_PER_SECOND * velocityPerSecond
+                -rate * rate * (m - targetM) -
+                    2f * damping * rate * velocityPerSecond
             velocityPerSecond += acceleration * h
             m += velocityPerSecond * h
         }
@@ -228,5 +234,31 @@ class PillMorphEngine private constructor(
             val powered = Math.pow((1f - progress).toDouble(), exponent.toDouble())
             return (1.0 - powered).toFloat()
         }
+
+        /**
+         * The run an expansion starts: a step response from rest, not an ease.
+         *
+         * An ease is already at its top speed on the first frame, which reads as
+         * weightless - the island simply appears at the new size. A spring starts
+         * from zero speed and has to be accelerated, which is the difference
+         * between "it appeared" and "it opened". Damping below 1 lets the step pass
+         * its target by a few percent before settling, and [maxFraction] lets that
+         * overshoot reach the window instead of being clamped into a hold.
+         *
+         * Rate and damping are chosen so the peak lands around 270 ms - past the
+         * target by ~8% - with a second, smaller rebound before it rests at ~700 ms:
+         * the weight of a spring, and enough jelly in the landing to be felt.
+         */
+        const val LAUNCH_RATE_PER_SECOND = 15f
+        const val LAUNCH_DAMPING = 0.62f
+
+        fun launchRun(
+            durationMillis: Long,
+            targetM: Float = 1f,
+            rate: Float = LAUNCH_RATE_PER_SECOND,
+            damping: Float = LAUNCH_DAMPING
+        ): PillMorphEngine = PillMorphEngine(
+            durationMillis, 0f, targetM, 0f, true, damping, rate, 1.12f
+        )
     }
 }

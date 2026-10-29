@@ -153,6 +153,10 @@ class LockStateManager(private val context: Context) {
 
     private fun getTodayDateString(): String = dayKeyOf(System.currentTimeMillis())
 
+    /** Whether rollover has already established [dayKey]; never initializes state. */
+    fun isTrackingDay(dayKey: String): Boolean =
+        prefs.getString(KEY_LAST_TRACKED_DATE, null) == dayKey
+
     /**
      * Checks if a new day has arrived, and judges the one that just went.
      *

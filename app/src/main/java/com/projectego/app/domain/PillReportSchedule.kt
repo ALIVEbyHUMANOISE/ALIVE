@@ -39,9 +39,8 @@ class PillReportSchedule {
      * already applied, and for one older than the newest applied.
      */
     fun complete(token: Long): Boolean {
-        if (inFlight == token) inFlight = null
-        if (closed) return false
-        if (token <= newestApplied) return false
+        if (closed || inFlight != token || token <= newestApplied) return false
+        inFlight = null
         newestApplied = token
         return true
     }

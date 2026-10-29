@@ -16,6 +16,20 @@ class PillReportScheduleTest {
     private val schedule = PillReportSchedule()
 
     @Test
+    fun `an unissued token cannot publish or steal the active slot`() {
+        val active = schedule.request()!!
+        assertFalse(schedule.complete(active + 1))
+        assertTrue(schedule.isBusy)
+        assertTrue(schedule.complete(active))
+    }
+
+    @Test
+    fun `completion without a request cannot publish`() {
+        assertFalse(schedule.complete(1L))
+        assertFalse(schedule.isBusy)
+    }
+
+    @Test
     fun `a request yields a token`() {
         val token = schedule.request()
         assertTrue(token != null)

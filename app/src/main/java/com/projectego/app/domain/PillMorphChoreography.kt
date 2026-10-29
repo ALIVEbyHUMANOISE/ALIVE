@@ -134,16 +134,24 @@ object PillMorphChoreography {
         actionShiftDp = -ACTION_LIFT_DP
     )
 
-    /** When each property starts and finishes travelling, on the way out. */
+    /**
+     * When each property starts and finishes travelling, on the way out.
+     *
+     * Fractions of the run's progress, not of its time: the ease covers most of
+     * its distance early, so the late values map to the long part of the clock.
+     * On the current 420 ms open these land at roughly:
+     * panel 15-66 ms, character 60-170 ms, rows 150-350 ms, action 220-420 ms -
+     * the rows and the way out are still arriving while the shell settles.
+     */
     private val ARRIVAL = Ramps(
         radius = Span(0f, 1f),
         panel = Span(0.08f, 0.38f),
-        character = Span(0.16f, 0.46f),
-        scale = Span(0.14f, 0.48f),
-        rows = Span(0.30f, 0.66f),
-        rowsShift = Span(0.26f, 0.66f),
-        action = Span(0.44f, 0.80f),
-        actionShift = Span(0.38f, 0.82f)
+        character = Span(0.44f, 0.84f),
+        scale = Span(0.42f, 0.84f),
+        rows = Span(0.80f, 0.998f),
+        rowsShift = Span(0.76f, 0.995f),
+        action = Span(0.93f, 1f),
+        actionShift = Span(0.90f, 0.999f)
     )
 
     /** On the way back everything finishes early: the shell gets the last stretch. */

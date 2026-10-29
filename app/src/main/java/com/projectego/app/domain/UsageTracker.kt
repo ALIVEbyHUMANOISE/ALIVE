@@ -109,6 +109,34 @@ class UsageTracker(private val context: Context) {
         return read
     }
 
+    /** Display-only read: never resets the day, moves the latch, or records history. */
+    fun readTodayEntertainmentSnapshot(): UsageRead {
+        val startTime = getTodayStartTimestamp()
+        val endTime = System.currentTimeMillis()
+        val dayKey = LockStateManager.dayKeyOf(startTime)
+        fun isAligned(): Boolean =
+            dayKey == LockStateManager.dayKeyOf(System.currentTimeMillis()) &&
+                lockStateManager.isTrackingDay(dayKey)
+
+        // Pending rollover must not price today's usage with yesterday's allowance.
+        if (!isAligned()) return UsageRead.ProcessingFailed
+        val read = UsageReadGuard.read(
+            permissionGranted = PermissionChecks.hasUsageAccess(context),
+            query = { todaysSpansOrNull(startTime, endTime) },
+            build = { spans ->
+                check(isAligned())
+                computeReport(
+                    startTime, endTime, spans,
+                    recordHistory = false,
+                    mutatesLock = false,
+                    resetDailyState = false
+                )
+            },
+            log = { message, error -> Log.w(TAG, message, error) }
+        )
+        return if (isAligned()) read else UsageRead.ProcessingFailed
+    }
+
     private fun readWindow(startTime: Long, endTime: Long): UsageRead =
         UsageReadGuard.read(
             permissionGranted = PermissionChecks.hasUsageAccess(context),
@@ -148,10 +176,11 @@ class UsageTracker(private val context: Context) {
         endTime: Long,
         spans: List<Foreground.Span>,
         recordHistory: Boolean,
-        mutatesLock: Boolean = true
+        mutatesLock: Boolean = true,
+        resetDailyState: Boolean = true
     ): UsageReport {
-        // Ensure day rollover is checked and evaluated
-        lockStateManager.checkAndPerformDailyReset()
+        // Ensure day rollover is checked and evaluated for authoritative/fallback reads.
+        if (resetDailyState) lockStateManager.checkAndPerformDailyReset()
 
         // The window this report describes and the day it is applied to differ
         // only when the query crossed midnight. The rollover above has already

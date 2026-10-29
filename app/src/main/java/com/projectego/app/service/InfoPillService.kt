@@ -3,13 +3,17 @@ package com.projectego.app.service
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
+import android.app.Activity
+import android.app.Application
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.PixelFormat
@@ -17,6 +21,8 @@ import android.graphics.Rect
 import android.graphics.drawable.GradientDrawable
 import android.hardware.display.DisplayManager
 import android.os.Build
+import android.os.Bundle
+import android.util.Log
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
@@ -174,15 +180,79 @@ class InfoPillService : Service() {
     // tick pace.
     private var lastReportAtElapsed = 0L
     private var lastReport: UsageReport? = null
+    private var lastReportDay: String? = null
 
     private val usageTracker by lazy { UsageTracker(this) }
 
     private val ticker = Handler(Looper.getMainLooper())
     private val tick = object : Runnable {
         override fun run() {
+            if (!isRunning) return
             trace("pill.refresh") { refresh() }
-            ticker.postDelayed(this, TICK_MILLIS)
+            if (isRunning && pill != null) ticker.postDelayed(this, TICK_MILLIS)
         }
+    }
+    private val arrive = Runnable {
+        if (isRunning) {
+            if (screenInteractive()) {
+                show()
+                if (pill != null) ticker.post(tick)
+            } else {
+                dismiss()
+            }
+        }
+    }
+    private val screenOff = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action == Intent.ACTION_SCREEN_OFF) dismiss()
+        }
+    }
+    private val activityCallbacks = object : Application.ActivityLifecycleCallbacks {
+        override fun onActivityStarted(activity: Activity) { dismiss() }
+        override fun onActivityCreated(activity: Activity, state: Bundle?) = Unit
+        override fun onActivityResumed(activity: Activity) = Unit
+        override fun onActivityPaused(activity: Activity) = Unit
+        override fun onActivityStopped(activity: Activity) = Unit
+        override fun onActivitySaveInstanceState(activity: Activity, state: Bundle) = Unit
+        override fun onActivityDestroyed(activity: Activity) = Unit
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        ContextCompat.registerReceiver(
+            this, screenOff, IntentFilter(Intent.ACTION_SCREEN_OFF), ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+        application.registerActivityLifecycleCallbacks(activityCallbacks)
+    }
+
+    private fun screenInteractive(): Boolean =
+        (getSystemService(Context.POWER_SERVICE) as? PowerManager)?.isInteractive != false
+
+    private fun dismiss() {
+        isRunning = false
+        watching = null
+        // Only the pill's own clocks are stopped. Sweeping the whole queue here used
+        // to drop a report completion that was already on its way, and the schedule
+        // would keep the slot busy for the rest of the service's life - so a pill
+        // restarted after a screen-off never read the day again.
+        ticker.removeCallbacks(tick)
+        ticker.removeCallbacks(arrive)
+        removeWindow()
+        stopSelf()
+    }
+
+    private fun removeWindow() {
+        stopMorph()
+        morphEngine = null
+        arrival.release()
+        stopTrafficPulse()
+        panel?.animate()?.cancel()
+        panelCharacter?.animate()?.cancel()
+        crossfadePlacement = false
+        val leaving = pill
+        pill = null
+        leaving?.animate()?.cancel()
+        if (leaving != null) runCatching { window?.removeViewImmediate(leaving) }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -193,8 +263,10 @@ class InfoPillService : Service() {
         // by re-showing the pill is how a reading nobody asked for appeared on
         // the home screen.
         val asked = intent?.getStringExtra(EXTRA_PACKAGE)
-        if (asked == null || !PillSettings.isEnabled(this) || !Settings.canDrawOverlays(this)) {
-            stopSelf()
+        if (asked == null || !PillSettings.isEnabled(this) || !Settings.canDrawOverlays(this) ||
+            !screenInteractive()
+        ) {
+            dismiss()
             return START_NOT_STICKY
         }
         // The number belongs to the app named beside it: moving to another app
@@ -202,6 +274,7 @@ class InfoPillService : Service() {
         // showing TikTok's twenty minutes would be a lie. What was wrong before
         // was the *spurious* reset - the shade, a dialog, a stop event - not a
         // real switch.
+        discardPreviousDayReport()
         val previousPackage = watchedPackage
         watchedPackage = asked
         if (previousPackage == null || previousPackage != asked) {
@@ -212,31 +285,29 @@ class InfoPillService : Service() {
             startForeground(NOTIFICATION_ID, ongoingNote())
         }.isSuccess
         if (!foregroundStarted) {
-            stopSelf()
+            dismiss()
             return START_NOT_STICKY
         }
 
         isRunning = true
         watching = watchedPackage
 
+        // Only this run's own callbacks are cancelled: a report completion already
+        // queued on this handler belongs to the reading, not to the arrival, and
+        // clearing the whole queue used to strand the schedule with a read that
+        // could never publish.
+        ticker.removeCallbacks(tick)
+        ticker.removeCallbacks(arrive)
         if (pill != null) {
-            // The reading is already on screen. A switch between entertainment
-            // apps changes the label, not the arrival - so it is not animated in
-            // again and the number never blinks.
-            ticker.removeCallbacksAndMessages(null)
+            // A switch between entertainment apps changes the label, not the
+            // arrival - so it is not animated in again and the number never blinks.
             ticker.post(tick)
         } else {
             // The press that summons it happens in the shade, and an overlay is
-            // drawn below the shade - so arriving immediately would mean arriving
-            // while nobody can see it. Half a second is enough for that, and short
-            // enough that it still feels like the press caused it. Any earlier
-            // arrival is cleared first, so a quick app switch cannot queue two.
-            ticker.removeCallbacksAndMessages(null)
-            ticker.postDelayed({
-                if (!isRunning) return@postDelayed
-                show()
-                ticker.post(tick)
-            }, ARRIVE_DELAY_MILLIS)
+            // drawn below the shade, so arriving at once would mean arriving while
+            // nobody can see it. Any earlier arrival is cleared first, so a quick
+            // app switch cannot queue two.
+            ticker.postDelayed(arrive, ARRIVE_DELAY_MILLIS)
         }
         return START_NOT_STICKY
     }
@@ -245,24 +316,13 @@ class InfoPillService : Service() {
         isRunning = false
         watching = null
         ticker.removeCallbacksAndMessages(null)
-        stopMorph()
-        morphEngine = null
-        // Nothing may outlive the window it was waiting for.
+        unregisterReceiver(screenOff)
+        application.unregisterActivityLifecycleCallbacks(activityCallbacks)
         reportSchedule.close()
         reportExecutor.shutdownNow()
-        arrival.release()
+        removeWindow()
         headerText.clear()
-        pulseAnimator?.cancel()
-        pulseAnimator = null
-        pill?.animate()?.cancel()
-        panel?.animate()?.cancel()
-        panelCharacter?.animate()?.cancel()
-        crossfadePlacement = false
         expanded = false
-        // It leaves the way it arrived: shrinking back towards the top edge,
-        // rather than vanishing between two frames.
-        val leaving = pill
-        pill = null
         root = null
         header = null
         numberView = null
@@ -289,17 +349,7 @@ class InfoPillService : Service() {
         renderedRows = emptyList()
         renderedCurrent = null
         rowViews = emptyList()
-        if (leaving != null) {
-            val density = resources.displayMetrics.density
-            leaving.animate()
-                .alpha(0f)
-                .scaleX(0.8f)
-                .scaleY(0.8f)
-                .translationY(-10 * density)
-                .setDuration(160L)
-                .withEndAction { runCatching { window?.removeView(leaving) } }
-                .start()
-        }
+        window = null
         super.onDestroy()
     }
 
@@ -341,7 +391,7 @@ class InfoPillService : Service() {
         // for.
         val added = runCatching { manager.addView(view, params) }.isSuccess
         if (!added) {
-            stopSelf()
+            dismiss()
             return
         }
         pill = view
@@ -487,10 +537,12 @@ class InfoPillService : Service() {
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            // 14dp on the timer side, 12dp on the lights side; the lights'
-            // 12dp slots keep their cores 2dp inside, so both visible edges
-            // are 14dp.
-            setPadding(px(14), px(8), px(12), px(8))
+            // Equal air on both sides: the timer's ink starts 14dp in, and the
+            // last light's halo ends 14dp before the pill's edge.
+            setPadding(px(14), px(8), px(14), px(8))
+            // The whole island is the control; a 36dp-tall one is below the
+            // platform's touch target and a thumb misses it at the screen edge.
+            minimumHeight = px(48)
             isClickable = true
             isFocusable = true
             contentDescription = getString(R.string.pill_panel_expand)
@@ -552,13 +604,13 @@ class InfoPillService : Service() {
             // tile would erase everything except the ink details. The pale tile
             // is the window the character is drawn in.
             background = rounded(colour(R.color.alive_paper), px(14))
-            // 72dp against the day's 24sp figure: the character is a companion
+            // 64dp against the day's 24sp figure: the character is a companion
             // to the number, not a poster above it.
-            layoutParams = LinearLayout.LayoutParams(px(72), px(72))
+            layoutParams = LinearLayout.LayoutParams(px(64), px(64))
         }
         val character = ImageView(this).apply {
             scaleType = ImageView.ScaleType.FIT_CENTER
-            layoutParams = FrameLayout.LayoutParams(spritePx(56), spritePx(56), Gravity.CENTER)
+            layoutParams = FrameLayout.LayoutParams(spritePx(48), spritePx(48), Gravity.CENTER)
         }
         panelCharacter = character
         tile.addView(character)
@@ -810,6 +862,7 @@ class InfoPillService : Service() {
         val header = header ?: return
         val panel = panel ?: return
         if (expanded) return
+        discardPreviousDayReport()
         expanded = true
         // A reading is requested, never waited for: the first frame of the morph
         // must not sit behind a UsageStats query. Until it lands the panel shows
@@ -854,6 +907,11 @@ class InfoPillService : Service() {
         headerSpacer?.requestLayout()
 
         val toW = panelWidthPx()
+        // The content is laid out once at the width it will rest at and clipped
+        // by the growing shell. Left as MATCH_PARENT it would re-measure and
+        // re-wrap its labels on every morph frame, which is exactly the drift
+        // between the shell and its content this morph exists to prevent.
+        holdPanelWidth(panel, toW)
         // The target is the header plus the panel it carries, measured the same
         // way [resizePanelToContent] measures a settled one - not the current
         // window height plus the panel, which would count a half-open shell's
@@ -891,8 +949,10 @@ class InfoPillService : Service() {
         ) {
             panel.visibility = View.GONE
             panel.alpha = 1f
-            // The compact row ends at the timer + lights; the spacer only
-            // exists to pin them to the expanded panel's right edge.
+            // Only now does the panel give its width back: the compact row ends at
+            // the timer + lights, and the spacer exists solely to pin them to the
+            // expanded panel's right edge.
+            releasePanelWidth()
             (headerSpacer?.layoutParams as? LinearLayout.LayoutParams)?.weight = 0f
             headerSpacer?.requestLayout()
             val back = root.layoutParams as? WindowManager.LayoutParams ?: return@animateWindow
@@ -958,11 +1018,14 @@ class InfoPillService : Service() {
         val interrupted = morphEngine?.takeUnless { it.isSettled }
         val engine = interrupted?.let {
             PillMorphEngine.springRun(it.morph, it.velocity, targetMorph, SPRING_MILLIS)
-        } ?: PillMorphEngine.easeRun(
-            if (expanding) EXPAND_MILLIS else COLLAPSE_MILLIS,
-            if (expanding) 0f else 1f,
-            targetMorph
-        )
+        } ?: if (expanding) {
+            // An open starts from rest on a spring: it has to be accelerated, and
+            // that is what gives it weight. The collapse keeps the ease - leaving
+            // should feel decided, not heavy.
+            PillMorphEngine.launchRun(EXPAND_CAP_MILLIS, targetMorph)
+        } else {
+            PillMorphEngine.easeRun(COLLAPSE_MILLIS, 1f, targetMorph)
+        }
         morphEngine = engine
         val duration = engine.durationMillis
         var discarded = false
@@ -989,6 +1052,9 @@ class InfoPillService : Service() {
             this.duration = duration
             addUpdateListener { value ->
                 val f = engine.tick(value.currentPlayTime)
+                // The launch runs past its target on its own, so the window follows
+                // the run's fraction directly; the corner keeps the same clock but
+                // is held at its target so the radius never exceeds its token.
                 params.width = (fromW + (toW - fromW) * f).toInt()
                 params.height = (fromH + (toH - fromH) * f).toInt()
                 runCatching { manager.updateViewLayout(root, params) }
@@ -996,7 +1062,7 @@ class InfoPillService : Service() {
                     if (expanding) PillMorphChoreography.expand(f, startFrame)
                     else PillMorphChoreography.collapse(f, startFrame)
                 )
-                applyRadius(f, fromRadius, toRadius)
+                applyRadius(f.coerceIn(0f, 1f), fromRadius, toRadius)
                 // A continuation is over when its spring arrives, not when its cap
                 // runs out. Ending it here with end() would be the elegant move and
                 // is a crash: ValueAnimator.end() dispatches another update frame
@@ -1074,6 +1140,23 @@ class InfoPillService : Service() {
     private fun animationsAllowed(): Boolean =
         runCatching { ValueAnimator.areAnimatorsEnabled() }.getOrDefault(true)
 
+    private fun holdPanelWidth(panel: View, width: Int) {
+        val params = panel.layoutParams as? LinearLayout.LayoutParams ?: return
+        if (params.width == width) return
+        params.width = width
+        panel.layoutParams = params
+    }
+
+    /**
+     * Gives the panel's width back to the window. Called when the island closes:
+     * while it is open the panel stays pinned at the window's own width, which is
+     * what keeps a refresh from re-wrapping the rows.
+     */
+    private fun releasePanelWidth() {
+        val panel = panel ?: return
+        holdPanelWidth(panel, LinearLayout.LayoutParams.MATCH_PARENT)
+    }
+
     private fun measurePanel(panel: View, width: Int): Int {
         panel.measure(
             View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
@@ -1099,17 +1182,22 @@ class InfoPillService : Service() {
     private fun requestReport() {
         val token = reportSchedule.request() ?: return
         val tracker = usageTracker
+        val day = LockStateManager.dayKeyOf(System.currentTimeMillis())
+        val readAt = SystemClock.elapsedRealtime()
         runCatching {
             reportExecutor.execute {
-                val report = trace("pill.refresh.report") {
-                    when (val read = tracker.readTodayEntertainmentUsage()) {
-                        is UsageRead.Success -> read.report
-                        // Display keeps the last good numbers: an unreadable day
-                        // is not repainted as zero.
-                        else -> null
+                val report = try {
+                    trace("pill.refresh.report") {
+                        (tracker.readTodayEntertainmentSnapshot() as? UsageRead.Success)?.report
                     }
+                } catch (failure: RuntimeException) {
+                    Log.w(TAG, "Report unavailable: ${failure.javaClass.simpleName}")
+                    null
                 }
-                ticker.post { applyReport(token, report) }
+                // Published on the main thread only: the schedule is not
+                // synchronised, and this worker must never be the one to retire a
+                // slot the UI thread is also checking.
+                ticker.post { applyReport(token, report, day, readAt) }
             }
         }.onFailure { reportSchedule.complete(token) }
     }
@@ -1123,11 +1211,17 @@ class InfoPillService : Service() {
      * lie the person could act on. Nothing here touches enforcement: the guard
      * keeps its own reads, and the pill's numbers never decide anything.
      */
-    private fun applyReport(token: Long, report: UsageReport?) {
-        if (!reportSchedule.complete(token)) return
+    private fun applyReport(token: Long, report: UsageReport?, day: String, readAt: Long) {
+        if (!reportSchedule.complete(token) || !isRunning) return
+        discardPreviousDayReport()
+        if (day != LockStateManager.dayKeyOf(System.currentTimeMillis())) {
+            requestReport()
+            return
+        }
         if (report != null) {
             lastReport = report
-            lastReportAtElapsed = SystemClock.elapsedRealtime()
+            lastReportDay = day
+            lastReportAtElapsed = readAt
         }
         if (pill == null) return
         trace("pill.refresh.apply") {
@@ -1137,6 +1231,14 @@ class InfoPillService : Service() {
                 renderPanel(lastReport, usageTracker.lockStateManager.isLocked())
                 if (sizeAnimator == null) resizePanelToContent()
             }
+        }
+    }
+
+    private fun discardPreviousDayReport() {
+        if (lastReportDay != LockStateManager.dayKeyOf(System.currentTimeMillis())) {
+            lastReport = null
+            lastReportDay = null
+            lastReportAtElapsed = 0L
         }
     }
 
@@ -1355,6 +1457,7 @@ class InfoPillService : Service() {
         // cutout on the new orientation.
         val width = panelWidthPx()
         val y = topOffsetPx()
+        holdPanelWidth(panel, width)
         val headerHeight = header.height.takeIf { it > 0 } ?: header.measuredHeight
         val height = headerHeight + measurePanel(panel, width)
         if (params.width == width && params.height == height && params.y == y) return
@@ -1382,9 +1485,7 @@ class InfoPillService : Service() {
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
         }
-        // The pill is an overlay over activities; leaving it up while ALIVE
-        // comes forward would draw the pill over its own app.
-        stopSelf()
+        dismiss()
     }
 
     // ---------- the words ----------
@@ -1396,7 +1497,7 @@ class InfoPillService : Service() {
         // A pill that cannot draw or cannot read must not stay up. Both grants can
         // be revoked while the service runs, and neither sends a callback.
         if (!Settings.canDrawOverlays(this) || !PermissionChecks.hasUsageAccess(this)) {
-            stopSelf()
+            dismiss()
             return
         }
 
@@ -1404,12 +1505,13 @@ class InfoPillService : Service() {
         // pill that waits through the night wakes up as a ghost over the launcher.
         val power = getSystemService(Context.POWER_SERVICE) as? PowerManager
         if (power?.isInteractive == false) {
-            stopSelf()
+            dismiss()
             return
         }
 
         val nowWall = System.currentTimeMillis()
         val nowElapsed = SystemClock.elapsedRealtime()
+        discardPreviousDayReport()
 
         // A session does not outlive its day: at midnight the number and the
         // allowance beside it would otherwise describe two different days.
@@ -1439,7 +1541,7 @@ class InfoPillService : Service() {
             )
             when (decision) {
                 PillWatchPolicy.Decision.Stop -> {
-                    stopSelf()
+                    dismiss()
                     return
                 }
 
@@ -1622,6 +1724,7 @@ class InfoPillService : Service() {
         var watching: String? = null
             private set
 
+        private const val TAG = "InfoPillService"
         private const val CHANNEL_ID = "alive_pill"
         private const val NOTIFICATION_ID = 7401
         private const val TICK_MILLIS = 20_000L
@@ -1630,9 +1733,10 @@ class InfoPillService : Service() {
         /**
          * The morph's own clock: a slightly longer open than the old 230ms, so
          * the staggered content has room to settle, and a shorter close, because
-         * leaving should never feel like it is asking permission.
+         * leaving should never feel like it is asking permission. The open is the
+         * one with a settle at the end - the close lands and stops.
          */
-        private const val EXPAND_MILLIS = 260L
+        private const val EXPAND_CAP_MILLIS = 740L
         private const val COLLAPSE_MILLIS = 210L
 
         /**
@@ -1658,12 +1762,12 @@ class InfoPillService : Service() {
         private const val EXPANDED_RADIUS_DP = 34
 
         /**
-         * One light is a 14dp slot holding a 10dp core and a 2dp halo; the
-         * slots touch, so the cores sit 14dp apart with 4dp of visible gap.
-         * The group's leading pad is the gap from the timer.
+         * One light is an 18dp slot holding a 10dp core and the 4dp of halo
+         * that makes it read as lit. The slots touch, and the group carries the
+         * same 14dp from the timer that the pill carries on its outer edges.
          */
-        private const val TRAFFIC_SLOT_DP = 14
-        private const val TRAFFIC_GAP_DP = 10
+        private const val TRAFFIC_SLOT_DP = 18
+        private const val TRAFFIC_GAP_DP = 14
 
         /**
          * One full pulse is 1.2s: 600ms down, 600ms back. The halo dims, the
@@ -1677,7 +1781,7 @@ class InfoPillService : Service() {
         private const val SPRITE_HALF = 8
 
         /** The expanded island stays a panel, not a page. */
-        private const val PANEL_MAX_WIDTH_DP = 360
+        private const val PANEL_MAX_WIDTH_DP = 320
         private const val PANEL_MIN_WIDTH_DP = 280
 
         /** How old the day's report may be before the pill reads it again. */
