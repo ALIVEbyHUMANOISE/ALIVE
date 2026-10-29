@@ -28,8 +28,13 @@
     <string name="stat_minutes">%1$d</string>
     <string name="stat_min_left">min\nleft</string>
     <string name="time_no_panic">No alarm in this. It is just what is left.</string>
-    <string name="time_allowance_support">Your own daily allowance — separate from reclaimed time.</string>
+    <string name="time_allowance_support">The effective allowance today.</string>
     <string name="today_card_title">Today</string>
+    <string name="score_tag">SCORE</string>
+    <string name="score_state_normal">Normal</string>
+    <string name="score_state_critical">Critical</string>
+    <string name="score_state_closed">Closed</string>
+    <string name="score_state_last">Last</string>
     <!-- Ledger labels. Deliberately one word: a tile is about 88dp wide on a
          320dp screen, and "Allowance · min" wrapped while its neighbour did not,
          which made a ruled table of numbers come out uneven. The unit rides
@@ -41,12 +46,15 @@
     <string name="stat_bank">Bank</string>
     <string name="unit_minutes">%1$d min</string>
     <string name="unit_minutes_suffix">min</string>
+    <string name="unit_days_suffix">days</string>
     <string name="duration_hours">%1$d hr</string>
     <string name="duration_hours_minutes">%1$d hr %2$d min</string>
     <string name="duration_hours_short">%1$dh</string>
     <string name="duration_hours_minutes_short">%1$dh%2$d</string>
     <string name="unit_minutes_gain">+%1$d min</string>
     <string name="time_hero_line">Entertainment minutes left before ALIVE closes them.</string>
+    <string name="home_remaining_label">Entertainment left</string>
+    <string name="home_tomorrow_label">Tomorrow</string>
     <string name="time_of_allowance">of %1$d</string>
     <string name="time_closed">Entertainment time is closed for today.</string>
     <string name="time_closed_support">It opens again tomorrow. Nothing needs fixing tonight.</string>
@@ -54,8 +62,8 @@
     <string name="zero_day_support">By design: no quest landed yesterday. Productive things still work.</string>
     <!-- The rule, said on the day it still applies to. One quest is the whole
          requirement, and the card says which side of it today is on. -->
-    <string name="today_kept">One quest has landed today — tomorrow\'s allowance is kept.</string>
-    <string name="today_not_kept">Nothing has landed today. Finish one quest and tomorrow\'s allowance stands.</string>
+    <string name="today_kept">Today\'s quest is done — tomorrow is safe.</string>
+    <string name="today_not_kept">Finish one quest to keep tomorrow.</string>
 
     <!-- ============ HOME: CURRENT ACTION ============ -->
     <string name="action_start_focus">Start focus</string>
@@ -169,8 +177,14 @@
     <string name="quest_progress_label">Missions today</string>
     <string name="quest_progress_value">%1$d of %2$d</string>
     <string name="quest_history_heading">Last 7 days</string>
+    <string name="quest_history_subhead">Seven days, and the missions that actually paid.</string>
+    <string name="quest_history_open">Mission history</string>
+    <string name="quest_history_entry_count">%1$d missions finished in the last 7 days.</string>
+    <string name="quest_history_entry_none">Nothing finished in the last 7 days yet.</string>
+    <string name="quest_history_names_missing">Recorded before ALIVE kept mission names.</string>
     <string name="quest_history_today">Today</string>
     <string name="quest_history_yesterday">Yesterday</string>
+    <string name="quest_history_day_label">%1$s %2$d</string>
     <string name="quest_history_day">%1$d done · +%2$d min</string>
     <string name="quest_history_empty">nothing finished</string>
     <string name="quest_history_unrecorded">not watched</string>

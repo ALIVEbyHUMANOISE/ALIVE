@@ -8,10 +8,13 @@ package com.projectego.app.model
  * opened, or one that happened before this log existed - and saying "empty"
  * about it would be the same lie the usage chart already refuses, where a
  * missing day is drawn apart from a zero one.
+ *
+ * [completions] names what was finished, in the order it was finished.
  */
 data class QuestHistoryDay(
     val dayKey: String,
     val completedCount: Int,
     val earnedMinutes: Long,
-    val recorded: Boolean
+    val recorded: Boolean,
+    val completions: List<QuestCompletion> = emptyList()
 )

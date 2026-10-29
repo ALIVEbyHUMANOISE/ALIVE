@@ -45,7 +45,6 @@ import com.projectego.app.data.UsageHistoryRepository
 import com.projectego.app.data.WelcomeGate
 import com.projectego.app.domain.AndroidPhysicalQuestEvidenceProvider
 import com.projectego.app.domain.CharacterGrowth
-import com.projectego.app.domain.CriticalAlertPolicy
 import com.projectego.app.domain.CustomQuest
 import com.projectego.app.domain.EntertainmentClaimCoordinator
 import com.projectego.app.domain.EntertainmentClaimPolicy
@@ -58,6 +57,7 @@ import com.projectego.app.domain.QuestStartCoordinator
 import com.projectego.app.domain.QuestVerificationCoordinator
 import com.projectego.app.domain.UsageReport
 import com.projectego.app.domain.UsageBuckets
+import com.projectego.app.domain.UsageRead
 import com.projectego.app.domain.UsageTracker
 import com.projectego.app.model.DayType
 import com.projectego.app.model.QuestStatus
@@ -84,6 +84,7 @@ import com.projectego.app.ui.AliveSignals
 import com.projectego.app.ui.AliveStates
 import com.projectego.app.ui.AliveSeries
 import com.projectego.app.ui.AppLabels
+import com.projectego.app.ui.ArcadeTodayCard
 import com.projectego.app.ui.BrutalistBarChart
 import com.projectego.app.ui.BrutalistDonut
 import com.projectego.app.ui.ChartMetric
@@ -104,7 +105,6 @@ import com.projectego.app.ui.SurfaceWeight
 import com.projectego.app.ui.UsageChartStates
 import com.projectego.app.ui.VerificationReasonClass
 import com.projectego.app.ui.WelcomeActivity
-import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.TextStyle
@@ -135,6 +135,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private lateinit var usageTracker: UsageTracker
+
+    // The last report this screen could actually read. A failed read draws this
+    // instead of a zero it did not measure; nothing here decides a lock - the
+    // guard has its own read for that.
+    private var lastGoodReport: UsageReport? = null
     private lateinit var lockStateManager: LockStateManager
     private lateinit var timeBankRepository: TimeBankRepository
     private lateinit var nightContractRepository: NightContractRepository
@@ -236,7 +241,11 @@ class MainActivity : AppCompatActivity() {
             physicalEvidenceProvider = physicalEvidenceProvider,
             questEvidenceRepository = questEvidenceRepository
         )
-        claimCoordinator = EntertainmentClaimCoordinator(lockStateManager, timeBankRepository, usageTracker)
+        claimCoordinator = EntertainmentClaimCoordinator(
+            lockStateManager,
+            timeBankRepository,
+            usageTracker::readTodayEntertainmentUsage
+        )
 
         setContentView(R.layout.activity_main)
 
@@ -513,7 +522,21 @@ class MainActivity : AppCompatActivity() {
 
         // Four reads - the same four this dashboard always performed, hoisted so
         // one render cannot quietly poll twice. Everything below uses these.
-        val report = usageTracker.calculateTodayEntertainmentUsage()
+        val usageRead = usageTracker.readTodayEntertainmentUsage()
+        val freshReport = (usageRead as? UsageRead.Success)?.report
+        if (freshReport != null) lastGoodReport = freshReport
+        val report = freshReport ?: lastGoodReport
+        if (report == null) {
+            // The source has never answered in this session, so there is no honest
+            // number to draw. The screen shows the notice it already owns instead
+            // of a zero nobody measured.
+            renderPermissionsNotice(
+                usageMissing = true,
+                guardMissing = !isAccessibilityServiceEnabled()
+            )
+            statusContainer.addView(ui.note(getString(R.string.pill_panel_unavailable)))
+            return
+        }
         val quests = questRepository.getAllQuests()
         val attempt = questRepository.getCurrentAttempt()
         val focusSession = focusSessionManager.getFocusSession()
@@ -553,13 +576,20 @@ class MainActivity : AppCompatActivity() {
         state.questDoneToday = lockStateManager.isQuestCompletedOn(
             LockStateManager.dayKeyOf(System.currentTimeMillis())
         )
-        evaluateGuardState(report)
+        // Only a report this render actually read may move the guard's own state
+        // (the gap mark and the notification). A kept-over report is display.
+        if (freshReport != null) evaluateGuardState(freshReport)
 
         // Read once per render and handed down: these reach AppOps and Settings,
         // and calling them again inside each block would poll the system twice
         // for the same frame.
         val usageMissing = !hasUsageAccess()
         val guardMissing = !isAccessibilityServiceEnabled()
+
+        // Returning from the system's Usage Access screen lands here, so this is
+        // also where the out-of-app note is taken down the moment the grant is
+        // back - no restart, no app switch of any other kind.
+        com.projectego.app.service.UsageAccessWatch.sync(this, granted = !usageMissing)
 
         // Home gets exactly one heavy frame, and what earns it is what is broken
         // or in flight - not whatever happens to be rendered first.
@@ -590,7 +620,7 @@ class MainActivity : AppCompatActivity() {
             renderPermissionsNotice(usageMissing, guardMissing && guardian == GuardianState.ACTIVE)
         }
 
-        renderTodayCard(report, signals)
+        renderTodayCard(report)
         renderCurrentAction(signals)
         renderCurrentQuestBlock(attempt, quests)
         renderTimeBank(signals)
@@ -952,151 +982,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * The day, in one heavy card: the four numbers that explain what ALIVE
-     * tracks, then the figure that matters right now.
+     * The day, in one Arcade card.
      *
-     * The number always comes from remainingMinutes and the critical-zone tier
-     * only picks the wording, because dev-test mode collapses the tier scale -
-     * copy inferred from a tier would then lie. A recovery day never prints its
-     * zero limit as if it were an allowance; the grid still shows the zero,
-     * because hiding it would hide the reason the day is closed.
+     * The card itself lives in [ArcadeTodayCard], where the scoreboard, the four
+     * score cells and the three day states can be measured without an Activity.
+     * This method owns only the weight the screen grants it and the navigation
+     * the usage button opens.
      */
-    private fun renderTodayCard(report: UsageReport, signals: AliveSignals) {
-        val card = ui.bentoCard(
-            getString(R.string.today_card_title),
-            weight = if (homeMajor == HomeMajor.TODAY) SurfaceWeight.MAJOR else SurfaceWeight.MINOR,
-            tone = AliveStates.timeTone(report.timeStatus)
-        )
-
-        card.addView(statGrid(signals))
-        card.addView(ui.vgap(ui.dimens.groupGap))
-        card.addView(ui.rule())
-        card.addView(ui.vgap(ui.dimens.groupGap))
-
-        val headlineRes = AliveStates.timeHeadline(
-            report.timeStatus,
-            report.criticalZoneTier,
-            report.remainingMinutes
-        )
-        val printsANumber = headlineRes == R.string.time_minutes_left ||
-            headlineRes == R.string.time_minutes_left_critical
-
-        if (printsANumber) {
-            // Say what the big number is before showing it: a bare 75 means
-            // nothing to someone who opened the app for the first time.
-            card.addView(ui.note(getString(R.string.time_hero_line)))
-            card.addView(ui.vgap(ui.dimens.lineGap))
-
-            // The figure and its total are one sentence: "21 of 140". This row used
-            // to be a number, a badge repeating what the line above it just said,
-            // and a total pushed to the far edge of the row - three pieces of one
-            // fact that had to be reassembled by eye.
-            val timeLine = ui.row().apply { gravity = Gravity.BOTTOM }
-            timeLine.addView(ui.timer(getString(R.string.stat_minutes, report.remainingMinutes)))
-            timeLine.addView(ui.hgap(ui.dimens.s))
-            timeLine.addView(
-                ui.meta(getString(R.string.time_of_allowance, report.limitMinutes)).apply {
-                    setPadding(0, 0, 0, ui.dimens.xs)
-                }
-            )
-            card.addView(timeLine)
-            card.addView(ui.vgap(ui.dimens.pairGap))
-            // The same fact the number states, in a second channel: red appears
-            // exactly where the critical note would, because it is the same
-            // threshold - not a new one invented for the picture.
-            card.addView(
-                ui.timeBar(
-                    report.remainingMinutes,
-                    report.limitMinutes,
-                    fill = if (report.remainingMinutes in 1..CriticalAlertPolicy.REMAINING_WINDOW_MINUTES) {
-                        ui.palette.shortMid
-                    } else {
-                        ui.palette.forest
-                    }
-                )
-            )
-        } else {
-            // No big number: the day is locked (ALIVE is angry at the phone),
-            // in recovery (ALIVE naps), or down to its last minute.
-            val face = AliveStates.faceFor(signals)
-            card.addView(ui.headline(getString(headlineRes)))
-            card.addView(ui.vgap(ui.dimens.lineGap))
-            card.addView(
-                ui.mark(
-                    AliveStates.faceSpriteFor(face),
-                    ui.dimens.character,
-                    getString(AliveStates.faceDescription(face))
-                )
-            )
-        }
-
-        // The figure and its bar are one group; these two lines are the next one,
-        // so the air above them is group air. Equal gaps everywhere is a screen
-        // where nothing groups.
-        card.addView(ui.vgap(ui.dimens.groupGap))
-        card.addView(
-            ui.note(
-                getString(AliveStates.timeSupportLine(report.timeStatus, report.criticalZoneTier))
-            )
-        )
-
-        // The rule, said on the day it still applies to - not for the first time
-        // on the morning it bites.
-        card.addView(ui.vgap(ui.dimens.lineGap))
-        card.addView(
-            ui.note(
-                getString(if (state.questDoneToday) R.string.today_kept else R.string.today_not_kept)
-            )
-        )
-
-        // The chart opens from here because this is where the eye is already on
-        // the number the chart then explains.
-        card.addView(ui.vgap(ui.dimens.groupGap))
-        card.addView(
-            ui.secondary(getString(R.string.chart_open)).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                setOnClickListener { openUsageChartPanel() }
-            }
-        )
-
-        statusContainer.addView(card)
-    }
-
-    /**
-     * The four facts a first run has no other way to learn: how many clean days
-     * in a row, what today's allowance is, how much of it went, and how much
-     * reclaimed time is banked. Ruled like a table so the numbers read as a
-     * ledger, not as decoration.
-     */
-    private fun statGrid(signals: AliveSignals): LinearLayout = ui.stack(ui.dimens.pairGap).apply {
-        addView(
-            statRow(
-                streakTile(signals.currentStreak),
-                ui.statTile(
-                    getString(R.string.stat_allowance),
-                    getString(R.string.stat_minutes, state.dailyLimitMinutes),
-                    ui.palette.workPale,
-                    unit = getString(R.string.unit_minutes_suffix)
-                )
-            )
-        )
-        addView(
-            statRow(
-                ui.statTile(
-                    getString(R.string.stat_used),
-                    getString(R.string.stat_minutes, state.usedMinutesToday),
-                    ui.palette.softForest,
-                    unit = getString(R.string.unit_minutes_suffix)
-                ),
-                ui.statTile(
-                    getString(R.string.stat_bank),
-                    getString(R.string.stat_minutes, signals.reclaimedAvailableMinutes),
-                    ui.palette.rewardPale,
-                    unit = getString(R.string.unit_minutes_suffix)
-                )
+    private fun renderTodayCard(report: UsageReport) {
+        statusContainer.addView(
+            ArcadeTodayCard.build(
+                context = this,
+                ui = ui,
+                report = report,
+                weight = if (homeMajor == HomeMajor.TODAY) SurfaceWeight.MAJOR else SurfaceWeight.MINOR,
+                questDoneToday = state.questDoneToday,
+                onOpenUsage = { openUsageChartPanel() }
             )
         )
     }
@@ -1107,7 +1008,8 @@ class MainActivity : AppCompatActivity() {
      * [AliveComponents.EqualRow] rather than MATCH_PARENT children: inside a panel
      * - a ScrollView that fills its own viewport - a match-parent height means the
      * whole screen, and the pair then pushes the description and the Start button
-     * off it. A streak tile carrying pips is taller, and the row levels to that.
+     * off it. The Time Bank's Earned/Spent pair uses this; the Today card owns
+     * its own Arcade score strip.
      */
     private fun statRow(left: View, right: View): LinearLayout = ui.equalRow().apply {
         listOf(left, right).forEachIndexed { index, tile ->
@@ -1119,28 +1021,6 @@ class MainActivity : AppCompatActivity() {
             )
         }
     }
-
-    /**
-     * The run twice over: as a number, and as the shape of that number.
-     *
-     * Seven gold cells filled from the left, and nothing else - the pips cannot
-     * say a bigger streak than seven, so the figure above them stays the one that
-     * is true. A run is worth showing as a shape because it is the only thing in
-     * this app that takes more than a day to build.
-     */
-    private fun streakTile(streak: Int): View = ui.statTile(
-        getString(R.string.stat_streak),
-        getString(R.string.stat_minutes, streak),
-        ui.palette.rewardPale,
-        // A flame only for a run that exists: fire beside a zero would be a lie
-        // about the number it is standing next to.
-        mark = if (streak > 0) R.drawable.ic_alive_flame else null
-    ).apply {
-            if (streak > 0) {
-                addView(ui.vgap(ui.dimens.lineGap))
-                addView(ui.streakPips(streak))
-            }
-        }
 
     /**
      * The single thing Home invites.
@@ -2328,11 +2208,11 @@ class MainActivity : AppCompatActivity() {
             questContainer.addView(questGrid(others))
         }
 
-        // The week's record sits under the board rather than beside the day's
-        // number: today is the thing to act on, and the seven rows are the thing
-        // to notice only once that is settled.
+        // The week's record is a page of its own now, and this is its only door:
+        // the entry sits under the board it belongs to, and says what is waiting
+        // inside instead of making a person open it to find out.
         questContainer.addView(ui.vgap(ui.dimens.groupGap))
-        questContainer.addView(questHistorySection())
+        questContainer.addView(questHistoryEntry())
     }
 
     /**
@@ -2362,57 +2242,126 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Seven rows, newest first, with a row for every day in the window.
+     * The way into the history: what is waiting inside, then one button.
      *
-     * A day ALIVE never opened is kept in sight rather than dropped, because the
-     * gap is the information: a log that only lists the good days is a log that
-     * flatters, and this one is not allowed to.
+     * The count is the week's, not today's - the point of the entry is to say
+     * whether the page has anything in it before it costs a tap to find out.
      */
-    private fun questHistorySection(): View {
+    private fun questHistoryEntry(): View {
         val todayKey = LockStateManager.dayKeyOf(System.currentTimeMillis())
-        val block = ui.column()
-        block.addView(ui.sectionHeader(getString(R.string.quest_history_heading)))
-        block.addView(ui.vgap(ui.dimens.lineGap))
-        questHistoryRepository.recent(todayKey).forEachIndexed { index, day ->
-            if (index > 0) block.addView(ui.vgap(ui.dimens.pairGap))
-            block.addView(questHistoryRow(day, todayKey))
-        }
-        return block
-    }
-
-    private fun questHistoryRow(day: QuestHistoryDay, todayKey: String): View = ui.row().apply {
-        addView(ui.weighted(ui.tag(questHistoryLabel(day.dayKey, todayKey))))
-        when {
-            !day.recorded -> addView(
-                ui.meta(getString(R.string.quest_history_unrecorded)).apply {
-                    setTextColor(ui.palette.inkDisabled)
-                }
-            )
-
-            day.completedCount == 0 -> addView(
-                ui.meta(getString(R.string.quest_history_empty)).apply {
-                    setTextColor(ui.palette.inkMuted)
-                }
-            )
-
-            else -> addView(
-                ui.tileLabel(
-                    getString(R.string.quest_history_day, day.completedCount, day.earnedMinutes)
+        val finished = questHistoryRepository.recent(todayKey).sumOf { it.completedCount }
+        return ui.column().apply {
+            addView(
+                ui.note(
+                    getString(
+                        if (finished > 0) R.string.quest_history_entry_count
+                        else R.string.quest_history_entry_none,
+                        finished
+                    )
                 )
             )
+            addView(ui.vgap(ui.dimens.lineGap))
+            addView(
+                ui.rewardButton(getString(R.string.quest_history_open)).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    setOnClickListener { openQuestHistoryPanel() }
+                }
+            )
         }
     }
 
-    /** Today is named, yesterday is named, the rest are the weekday - the same
-     *  three voices the usage chart uses for the same job. */
+    /**
+     * The history page: seven days, newest first, each naming what paid.
+     *
+     * A day ALIVE never opened keeps its row, because the gap is the information:
+     * a log that only lists the good days is a log that flatters.
+     */
+    private fun openQuestHistoryPanel() {
+        state.panel = AlivePanel.QUEST_HISTORY
+        val (scroll, column) = panel()
+        column.addView(panelHeader(getString(R.string.quest_history_heading)))
+        column.addView(ui.annotation(getString(R.string.quest_history_subhead)))
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        column.addView(ui.accents(seed = 4))
+
+        val todayKey = LockStateManager.dayKeyOf(System.currentTimeMillis())
+        questHistoryRepository.recent(todayKey).forEach { day ->
+            column.addView(ui.vgap(ui.dimens.groupGap))
+            column.addView(questHistoryDayBlock(day, todayKey))
+        }
+        openOverlay(scroll)
+    }
+
+    /**
+     * One day of the record: its own name, the day's total, and the missions
+     * that earned it - each with the minutes it actually paid.
+     */
+    private fun questHistoryDayBlock(day: QuestHistoryDay, todayKey: String): View =
+        ui.block(SurfaceWeight.MINOR).apply {
+            addView(
+                ui.row().apply {
+                    addView(ui.weighted(ui.lead(questHistoryLabel(day.dayKey, todayKey))))
+                    addView(
+                        ui.meta(
+                            when {
+                                !day.recorded -> getString(R.string.quest_history_unrecorded)
+                                day.completedCount == 0 -> getString(R.string.quest_history_empty)
+                                else -> getString(
+                                    R.string.quest_history_day,
+                                    day.completedCount,
+                                    day.earnedMinutes
+                                )
+                            }
+                        ).apply {
+                            setTextColor(
+                                if (day.recorded && day.completedCount > 0) ui.palette.ink
+                                else ui.palette.inkMuted
+                            )
+                        }
+                    )
+                }
+            )
+            day.completions.forEach { completion ->
+                addView(ui.vgap(ui.dimens.pairGap))
+                addView(
+                    ui.row().apply {
+                        addView(ui.weighted(ui.body(completion.title)))
+                        addView(ui.hgap(ui.dimens.m))
+                        addView(
+                            ui.tag(getString(R.string.unit_minutes_gain, completion.minutes)).apply {
+                                setTextColor(ui.palette.rewardDark)
+                            }
+                        )
+                    }
+                )
+            }
+            // A day recorded before names were kept is not a day without missions:
+            // it says what it has, and says what it never had.
+            if (day.recorded && day.completions.isEmpty() && day.completedCount > 0) {
+                addView(ui.vgap(ui.dimens.pairGap))
+                addView(ui.note(getString(R.string.quest_history_names_missing)))
+            }
+        }
+
+    /** Today is named, yesterday is named, and everything older is its weekday
+     *  plus its date - a bare "Fri" on a seven-row page names nothing. */
     private fun questHistoryLabel(dayKey: String, todayKey: String): String = try {
         when (dayKey) {
             todayKey -> getString(R.string.quest_history_today)
             LocalDate.parse(todayKey).minusDays(1).toString() ->
                 getString(R.string.quest_history_yesterday)
 
-            else -> LocalDate.parse(dayKey)
-                .dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+            else -> {
+                val date = LocalDate.parse(dayKey)
+                getString(
+                    R.string.quest_history_day_label,
+                    date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+                    date.dayOfMonth
+                )
+            }
         }
     } catch (_: Exception) {
         dayKey
@@ -4123,7 +4072,7 @@ class MainActivity : AppCompatActivity() {
     private fun yesterday(): String {
         val calendar = Calendar.getInstance()
         calendar.add(Calendar.DATE, -1)
-        return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)
+        return LockStateManager.dayKeyOf(calendar.timeInMillis)
     }
 
     // ------------------------------------------------------------------

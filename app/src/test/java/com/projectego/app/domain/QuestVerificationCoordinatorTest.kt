@@ -388,5 +388,11 @@ class QuestVerificationCoordinatorTest {
         assertNotNull("a payout must land in the log", today)
         assertEquals(1, today!!.completedCount)
         assertEquals(20L, today.earnedMinutes)
+        // By name: the history page has to say what was finished, not only how
+        // many, and the record is read from the same payout.
+        assertEquals(
+            "Watch a Podcast for 30 Minutes",
+            today.completions.single().title
+        )
     }
 }

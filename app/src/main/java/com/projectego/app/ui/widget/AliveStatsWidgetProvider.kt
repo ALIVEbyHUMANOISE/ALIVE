@@ -253,7 +253,10 @@ class AliveStatsWidgetProvider : AppWidgetProvider() {
                 .putExtra(EXTRA_OPEN_STATS, true)
             return PendingIntent.getActivity(
                 context,
-                0,
+                // filterEquals ignores extras, so code 0 was the same token as the
+                // pill's plain MainActivity intent and UPDATE_CURRENT rewrote this
+                // one's extra away.
+                1,
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )

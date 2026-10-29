@@ -22,13 +22,13 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
+import android.os.Trace
 import android.provider.Settings
 import android.text.TextUtils
 import android.view.Display
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
-import android.view.animation.DecelerateInterpolator
 import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -43,14 +43,21 @@ import com.projectego.app.R
 import com.projectego.app.data.LockStateManager
 import com.projectego.app.data.PillSettings
 import com.projectego.app.domain.AppClassifier
+import com.projectego.app.domain.PillArrival
+import com.projectego.app.domain.PillHeaderText
 import com.projectego.app.domain.PillMood
+import com.projectego.app.domain.PillMorphChoreography
+import com.projectego.app.domain.PillMorphEngine
 import com.projectego.app.domain.PillPanelPolicy
 import com.projectego.app.domain.PillPose
 import com.projectego.app.domain.PillPosePolicy
+import com.projectego.app.domain.PillReportSchedule
+import com.projectego.app.domain.PillRowUpdate
 import com.projectego.app.domain.PillTrafficPolicy
 import com.projectego.app.domain.PillWatchPolicy
 import com.projectego.app.domain.TrafficLight
 import com.projectego.app.domain.TrafficLightState
+import com.projectego.app.domain.UsageRead
 import com.projectego.app.domain.UsageReport
 import com.projectego.app.domain.UsageTracker
 import com.projectego.app.model.AppCategory
@@ -112,16 +119,56 @@ class InfoPillService : Service() {
     private var expanded = false
     private var sizeAnimator: ValueAnimator? = null
 
+    // The frame the content is wearing right now. A morph starts from here, so
+    // reversing direction continues the picture instead of resetting it - the
+    // one clock owns the shell *and* the content, and both have to be able to
+    // pick up mid-flight.
+    private var currentFrame = PillMorphChoreography.rest(false)
+
+    // The clock of the morph that owns the window right now, or null when none
+    // does. It is the only place the morph's position and speed live, which is
+    // what lets an interrupted run hand both to the next one.
+    private var morphEngine: PillMorphEngine? = null
+
+    // The one string whose width decides the window's, and therefore the one
+    // that waits while a morph owns the measuring. See [PillHeaderText].
+    private val headerText = PillHeaderText()
+
+    // Who owns the arrival transform, and whether a tap has already shortened it.
+    private val arrival = PillArrival()
+
+    /** True while a face swap is waiting for its dip to land. See [applyCharacter]. */
+    private var crossfadePlacement = false
+
+    // The one moving part of the shape: the corner travels between the pill's
+    // radius and the panel's while the window resizes, so the shape morphs
+    // instead of a box growing inside another box. Tracked across interruption
+    // and rotation so it can never snap.
+    private var rootBackground: GradientDrawable? = null
+    private var currentRadiusPx = 0
+
     // What the panel already shows, so a 20-second refresh does not rebuild
     // views that did not change (and cannot flicker while it is open).
     private var renderedFace: AliveFace? = null
     private var renderedRows: List<Pair<String, Long>> = emptyList()
     private var renderedCurrent: String? = null
 
+    // The rows that are already on screen, so a minute turning over writes two
+    // numbers instead of rebuilding the list. See [renderPanel].
+    private var rowViews: List<RowHolder> = emptyList()
+
     // Two clocks for two questions: elapsed time for the session (a manual clock
     // change must not move it), wall time for the day it belongs to.
     private var startedAtElapsed = 0L
     private var startedAtWall = 0L
+
+    // The day's report is expensive (a day of usage events plus a classification
+    // per package), so it is read on its own thread: one read at a time, newest
+    // wins, nothing after teardown. See [PillReportSchedule].
+    private val reportSchedule = PillReportSchedule()
+    private val reportExecutor = java.util.concurrent.Executors.newSingleThreadExecutor { work ->
+        Thread(work, "alive-pill-report").apply { isDaemon = true }
+    }
 
     // The day's report is expensive; the pill needs it at a human pace, not at a
     // tick pace.
@@ -133,7 +180,7 @@ class InfoPillService : Service() {
     private val ticker = Handler(Looper.getMainLooper())
     private val tick = object : Runnable {
         override fun run() {
-            refresh()
+            trace("pill.refresh") { refresh() }
             ticker.postDelayed(this, TICK_MILLIS)
         }
     }
@@ -198,12 +245,19 @@ class InfoPillService : Service() {
         isRunning = false
         watching = null
         ticker.removeCallbacksAndMessages(null)
-        sizeAnimator?.cancel()
-        sizeAnimator = null
+        stopMorph()
+        morphEngine = null
+        // Nothing may outlive the window it was waiting for.
+        reportSchedule.close()
+        reportExecutor.shutdownNow()
+        arrival.release()
+        headerText.clear()
         pulseAnimator?.cancel()
         pulseAnimator = null
+        pill?.animate()?.cancel()
         panel?.animate()?.cancel()
         panelCharacter?.animate()?.cancel()
+        crossfadePlacement = false
         expanded = false
         // It leaves the way it arrived: shrinking back towards the top edge,
         // rather than vanishing between two frames.
@@ -229,9 +283,12 @@ class InfoPillService : Service() {
         progressTrack = null
         progressFill = null
         lastProgress = null
+        rootBackground = null
+        currentRadiusPx = 0
         renderedFace = null
         renderedRows = emptyList()
         renderedCurrent = null
+        rowViews = emptyList()
         if (leaving != null) {
             val density = resources.displayMetrics.density
             leaving.animate()
@@ -289,14 +346,21 @@ class InfoPillService : Service() {
         }
         pill = view
 
+        // Read the day while the pill is still arriving, so the numbers are
+        // usually there before anyone taps - and the first tap never waits.
+        requestReport()
+
         // It arrives the way an island does: growing out of the top rather than
         // appearing at full size. Overshoot, not ease - the arrival is a moment,
-        // and the same curve the navbar's circle travels on.
+        // and the same curve the navbar's circle travels on. These three
+        // properties belong to the arrival alone; the morph owns the window and
+        // the content, so the only thing a tap can do is shorten the trip.
         view.apply {
             alpha = 0f
             scaleX = 0.72f
             scaleY = 0.72f
             translationY = -(12 * resources.displayMetrics.density)
+            arrival.started()
             animate()
                 .alpha(1f)
                 .scaleX(1f)
@@ -304,8 +368,37 @@ class InfoPillService : Service() {
                 .translationY(0f)
                 .setDuration(240L)
                 .setInterpolator(OvershootInterpolator(1.05f))
+                .withEndAction { arrival.finished() }
                 .start()
         }
+    }
+
+    /**
+     * Finishes an arrival a tap interrupted, from the pose it is actually in. The
+     * transform stays with its owner - this is the same properties, a shorter
+     * trip - so nothing is cancelled mid-fade and nothing is snapped.
+     */
+    private fun shortenArrival() {
+        val view = pill ?: return
+        view.animate()
+            .alpha(1f)
+            .scaleX(1f)
+            .scaleY(1f)
+            .translationY(0f)
+            .setDuration(ARRIVAL_FINISH_MILLIS)
+            .withEndAction { arrival.finished() }
+            .start()
+    }
+
+    /** Reduced motion: the arrival's answer without the trip. */
+    private fun settleArrivalNow() {
+        arrival.release()
+        val view = pill ?: return
+        view.animate().cancel()
+        view.alpha = 1f
+        view.scaleX = 1f
+        view.scaleY = 1f
+        view.translationY = 0f
     }
 
     /**
@@ -335,12 +428,16 @@ class InfoPillService : Service() {
         // Pure black, not the app's ink: the island is its own surface, and on
         // an OLED the camera hole and the pill become one uninterrupted dark.
         // The expanded panel and the compact reading share it, so the state
-        // change never flips the colour under the header.
+        // change never flips the colour under the header. The drawable is held
+        // separately: its corner is the one part of the shape that moves.
+        val surface = rounded(Color.BLACK, px(COMPACT_RADIUS_DP))
+        rootBackground = surface
+        currentRadiusPx = px(COMPACT_RADIUS_DP)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             clipChildren = true
             clipToPadding = true
-            background = rounded(Color.BLACK, px(26))
+            background = surface
         }
         this.root = root
 
@@ -607,6 +704,19 @@ class InfoPillService : Service() {
         number.setPadding(0, maxOf(0, top), 0, maxOf(0, -top))
     }
 
+    /**
+     * Writes the newest timer reading unless a morph owns the measuring, and
+     * re-inks the digits when it does. Called on every tick and again the instant
+     * a morph commits, so a reading that arrived mid-morph is on screen the
+     * moment the shell is at rest - never a frame earlier.
+     */
+    private fun writeHeaderText() {
+        val text = headerText.flush(morphing = sizeAnimator != null) ?: return
+        numberView?.text = text
+        applyTimerInkPadding()
+        updateHeaderDescription()
+    }
+
     private fun smallText(value: String, sizeSp: Float, alpha: Float): TextView =
         text(value, sizeSp, R.font.manrope_medium, R.color.alive_paper).apply {
             this.alpha = alpha
@@ -647,11 +757,52 @@ class InfoPillService : Service() {
 
     private fun toggleExpanded() {
         if (root == null) return
+        // A tap during the arrival does not cancel it: cancelling freezes the root
+        // at a half-done scale and alpha, and snapping to the end jumps. It
+        // finishes from where it is instead. With motion off it is simply over.
+        if (!animationsAllowed()) {
+            settleArrivalNow()
+        } else if (arrival.tap() == PillArrival.OnTap.SHORTEN) {
+            shortenArrival()
+        }
         // An interrupted animation is not stacked: the next state starts from
-        // wherever the window currently is.
-        sizeAnimator?.cancel()
+        // wherever the window and the content currently are.
+        stopMorph()
+        // The morph owns the content's alpha from here, so a face swap that is
+        // still dipping finishes now rather than fading in behind the shell.
+        settleCharacterCrossfade()
+        if (expanded) trace("pill.collapse") { collapse() } else trace("pill.expand") { expand() }
+    }
+
+    /**
+     * A named slice in the system trace, and nothing else.
+     *
+     * Coarse on purpose - one slice per interaction or per tick, never per frame:
+     * when nobody is tracing, a section costs two native flag checks, and when
+     * somebody is, it is what separates the pill's own work from the process's.
+     */
+    private inline fun <T> trace(section: String, block: () -> T): T {
+        Trace.beginSection(section)
+        return try {
+            block()
+        } finally {
+            Trace.endSection()
+        }
+    }
+
+    /**
+     * Stops the running morph without letting it finish.
+     *
+     * The reference is dropped *before* the cancel: [ValueAnimator.cancel] calls
+     * onAnimationEnd on the spot, and with the old animator still registered as
+     * the current one an interrupted run used to commit the end state of a
+     * transition nobody wanted any more - a half-open pill snapped fully open
+     * before it started closing.
+     */
+    private fun stopMorph() {
+        val running = sizeAnimator
         sizeAnimator = null
-        if (expanded) collapse() else expand()
+        running?.cancel()
     }
 
     private fun expand() {
@@ -660,38 +811,38 @@ class InfoPillService : Service() {
         val panel = panel ?: return
         if (expanded) return
         expanded = true
-        ensureReport()
-        renderTraffic()
+        // A reading is requested, never waited for: the first frame of the morph
+        // must not sit behind a UsageStats query. Until it lands the panel shows
+        // the last good report, or the honest "no numbers yet" state.
+        requestReport()
         // The opening sets the pose directly and lets the entrance carry it;
-        // only changes while open crossfade.
-        renderedFace = null
-        renderPanel(lastReport, usageTracker.lockStateManager.isLocked())
+        // only changes while open crossfade. This is the first-use-heavy part:
+        // labels, the sprite and the row views are all built here, on the tap.
+        trace("pill.expand.content") {
+            renderTraffic()
+            renderedFace = null
+            renderPanel(lastReport, usageTracker.lockStateManager.isLocked())
+        }
         panel.visibility = View.VISIBLE
 
-        val animate = animationsAllowed()
-        if (animate) {
-            panel.alpha = 0f
-            panelCharacter?.apply {
-                alpha = 0f
-                scaleX = 0.72f
-                scaleY = 0.72f
-            }
-        } else {
-            panel.alpha = 1f
-            panelCharacter?.apply {
-                alpha = 1f
-                scaleX = 1f
-                scaleY = 1f
-            }
-        }
+        // The whole picture answers one clock. The opening frame is the frame the
+        // content is already wearing, and animateWindow carries it to rest - so a
+        // reversal continues where the eye left it, and a fresh expansion still
+        // starts with everything hidden where the choreography wants it. The
+        // independent view animators this used to run each kept their own watch,
+        // which is how the content and the shell fell out of step.
+        applyFrame(PillMorphChoreography.expand(0f, currentFrame))
 
-        val fromW = root.width.takeIf { it > 0 } ?: header.measuredWidth
-        val fromH = root.height.takeIf { it > 0 } ?: header.measuredHeight
+        val windowParams = root.layoutParams as? WindowManager.LayoutParams
+        // The size the last morph frame wrote when it was interrupted, ahead of
+        // the size the layout pass has caught up with: an expansion that starts
+        // out of a half-collapsed pill has to leave from the half.
+        val fromW = morphSize(windowParams?.width, root.width, header.measuredWidth)
+        val fromH = morphSize(windowParams?.height, root.height, header.measuredHeight)
 
-        // Freeze the window at the compact size *before* the spacer gains its
+        // Freeze the window at that size *before* the spacer gains its
         // weight: a weighted child in a wrap_content window measures against
         // the whole screen, which is how the pill became a bar once.
-        val windowParams = root.layoutParams as? WindowManager.LayoutParams
         if (windowParams != null) {
             windowParams.width = fromW
             windowParams.height = fromH
@@ -703,47 +854,14 @@ class InfoPillService : Service() {
         headerSpacer?.requestLayout()
 
         val toW = panelWidthPx()
-        val toH = fromH + measurePanel(panel, toW)
+        // The target is the header plus the panel it carries, measured the same
+        // way [resizePanelToContent] measures a settled one - not the current
+        // window height plus the panel, which would count a half-open shell's
+        // leftover twice and hand back a panel with a strip of empty ink under it.
+        val headerHeight = header.height.takeIf { it > 0 } ?: header.measuredHeight
+        val toH = headerHeight + trace("pill.expand.measure") { measurePanel(panel, toW) }
 
-        if (animate) {
-            panel.animate().alpha(1f).setDuration(220L).start()
-            panelCharacter?.animate()
-                ?.alpha(1f)?.scaleX(1f)?.scaleY(1f)
-                ?.setStartDelay(50L)
-                ?.setDuration(240L)
-                ?.start()
-            // The character and the day's figure first, then the app rows, then
-            // the way out. Modest stagger only: the panel is already unfolding,
-            // so each extra delay is a small settle, not a performance.
-            panelRows?.apply {
-                alpha = 0f
-                translationY = px(4).toFloat()
-                animate().alpha(1f).translationY(0f)
-                    .setStartDelay(60L)
-                    .setDuration(200L)
-                    .start()
-            }
-            panelAction?.apply {
-                alpha = 0f
-                translationY = px(6).toFloat()
-                animate().alpha(1f).translationY(0f)
-                    .setStartDelay(100L)
-                    .setDuration(220L)
-                    .start()
-            }
-        } else {
-            panelRows?.apply {
-                alpha = 1f
-                translationY = 0f
-                animate().cancel()
-            }
-            panelAction?.apply {
-                alpha = 1f
-                translationY = 0f
-                animate().cancel()
-            }
-        }
-        animateWindow(fromW, fromH, toW, toH)
+        animateWindow(fromW, fromH, toW, toH, expanding = true)
     }
 
     private fun collapse() {
@@ -753,20 +871,24 @@ class InfoPillService : Service() {
         if (!expanded) return
         expanded = false
         updateHeaderDescription()
-        if (animationsAllowed()) {
-            panel.animate().alpha(0f).setDuration(180L).start()
-        } else {
-            panel.alpha = 0f
-        }
+        // Fraction zero of a collapse is the frame the content is wearing now,
+        // not the full panel: the same clock that shrinks the window takes what
+        // is actually on screen from there to gone.
+        applyFrame(PillMorphChoreography.collapse(0f, currentFrame))
 
         val params = root.layoutParams as? WindowManager.LayoutParams
-        val fromW = params?.width?.takeIf { it > 0 } ?: root.width
-        val fromH = params?.height?.takeIf { it > 0 } ?: root.height
-        header.measure(
-            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
-            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-        )
-        animateWindow(fromW, fromH, header.measuredWidth, header.measuredHeight) {
+        val fromW = morphSize(params?.width, root.width, header.measuredWidth)
+        val fromH = morphSize(params?.height, root.height, header.measuredHeight)
+        trace("pill.collapse.measure") {
+            header.measure(
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+            )
+        }
+        animateWindow(
+            fromW, fromH, header.measuredWidth, header.measuredHeight,
+            expanding = false
+        ) {
             panel.visibility = View.GONE
             panel.alpha = 1f
             // The compact row ends at the timer + lights; the spacer only
@@ -787,43 +909,166 @@ class InfoPillService : Service() {
      * grow with the panel or the island would be drawn at its new size in one
      * frame. The panel's content is already laid out at the final width and is
      * simply clipped by the smaller window on the way there.
+     *
+     * One animator owns the whole transition: its fraction moves the window size,
+     * the corner radius and every piece of content together, so nothing can
+     * finish before the surface it lives on. Every start is read from where the
+     * picture is now - [fromW]/[fromH] and [currentRadiusPx] for the shell,
+     * [currentFrame] for the content, both captured here so a running morph
+     * cannot feed on its own output - which is what lets a reversed direction
+     * carry on instead of jumping. The fraction comes from [PillMorphEngine]:
+     * the pill's own curve and duration when the morph starts from rest, and a
+     * continuation that keeps the interrupted run's speed when a tap cuts in.
      */
-    private fun animateWindow(fromW: Int, fromH: Int, toW: Int, toH: Int, onEnd: () -> Unit = {}) {
+    private fun animateWindow(
+        fromW: Int,
+        fromH: Int,
+        toW: Int,
+        toH: Int,
+        expanding: Boolean,
+        onEnd: () -> Unit = {}
+    ) {
         val root = root ?: return
         val manager = window ?: return
         val params = root.layoutParams as? WindowManager.LayoutParams ?: return
+        val fromRadius = currentRadiusPx
+        val startFrame = currentFrame
+        val toRadius = px(if (expanding) EXPANDED_RADIUS_DP else COMPACT_RADIUS_DP)
+        val targetMorph = if (expanding) 1f else 0f
         if (!animationsAllowed()) {
-            sizeAnimator?.cancel()
-            sizeAnimator = null
+            stopMorph()
+            morphEngine = null
             params.width = toW
             params.height = toH
             runCatching { manager.updateViewLayout(root, params) }
+            // Reduced motion goes to the answer, not through the morph, and never
+            // waits for a callback that will not come.
+            applyFrame(PillMorphChoreography.rest(expanding))
+            applyRadius(1f, fromRadius, toRadius)
+            writeHeaderText()
             onEnd()
             return
         }
+        // [morphEngine] is only ever set while a run owns the window, and every
+        // path that stops owning it - completion, reduced motion, teardown -
+        // clears it, so a live one here means this tap interrupted a morph. That
+        // run's position and speed carry into the new one, which is what keeps a
+        // reversal from restarting at the curve's maximum slope. A run from rest
+        // keeps the pill's own curve and duration, unchanged.
+        val interrupted = morphEngine?.takeUnless { it.isSettled }
+        val engine = interrupted?.let {
+            PillMorphEngine.springRun(it.morph, it.velocity, targetMorph, SPRING_MILLIS)
+        } ?: PillMorphEngine.easeRun(
+            if (expanding) EXPAND_MILLIS else COLLAPSE_MILLIS,
+            if (expanding) 0f else 1f,
+            targetMorph
+        )
+        morphEngine = engine
+        val duration = engine.durationMillis
+        var discarded = false
+        var committed = false
+        // The run's answer, written once. Both the animator's own end and a
+        // continuation that arrives early go through here, and the flag is what
+        // keeps a deferred callback from writing it a second time.
+        fun commit() {
+            if (committed) return
+            committed = true
+            sizeAnimator = null
+            morphEngine = null
+            params.width = toW
+            params.height = toH
+            runCatching { manager.updateViewLayout(root, params) }
+            applyFrame(PillMorphChoreography.rest(expanding))
+            applyRadius(1f, fromRadius, toRadius)
+            // The boundary the deferred reading was waiting for: whatever minute
+            // arrived while the shell was moving is written now, at rest.
+            writeHeaderText()
+            onEnd()
+        }
         val anim = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration = EXPAND_MILLIS
-            interpolator = DecelerateInterpolator(1.6f)
+            this.duration = duration
             addUpdateListener { value ->
-                val f = value.animatedFraction
+                val f = engine.tick(value.currentPlayTime)
                 params.width = (fromW + (toW - fromW) * f).toInt()
                 params.height = (fromH + (toH - fromH) * f).toInt()
                 runCatching { manager.updateViewLayout(root, params) }
+                applyFrame(
+                    if (expanding) PillMorphChoreography.expand(f, startFrame)
+                    else PillMorphChoreography.collapse(f, startFrame)
+                )
+                applyRadius(f, fromRadius, toRadius)
+                // A continuation is over when its spring arrives, not when its cap
+                // runs out. Ending it here with end() would be the elegant move and
+                // is a crash: ValueAnimator.end() dispatches another update frame
+                // from inside this one, the frame calls end() again, and the stack
+                // runs out (measured on the phone: StackOverflowError, the whole
+                // process taking the pill and the guard down with it). So the run
+                // commits its own answer, then cancels the ticker, whose callbacks
+                // arrive after this frame and find nothing left to write.
+                if (engine.isSettled && value.currentPlayTime < value.duration) {
+                    commit()
+                    value.cancel()
+                }
             }
         }
         anim.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationCancel(animation: Animator) {
+                discarded = true
+            }
+
             override fun onAnimationEnd(animation: Animator) {
-                // A cancelled run belongs to a state that is already gone.
-                if (sizeAnimator !== anim) return
-                sizeAnimator = null
-                params.width = toW
-                params.height = toH
-                runCatching { manager.updateViewLayout(root, params) }
-                onEnd()
+                // A cancelled run belongs to a state that is already gone, and a
+                // run that is no longer the current one must not overwrite the
+                // next: either way it commits nothing.
+                if (discarded || sizeAnimator !== anim) return
+                commit()
             }
         })
         sizeAnimator = anim
         anim.start()
+    }
+
+    /**
+     * The pixel size the morph last wrote, or the laid-out size once the window
+     * is back to wrapping its content, or the measured size before a layout pass.
+     */
+    private fun morphSize(paramsSize: Int?, layoutSize: Int, measureSize: Int): Int =
+        paramsSize?.takeIf { it > 0 } ?: layoutSize.takeIf { it > 0 } ?: measureSize
+
+    /** Sets every animated part of the content to the frame the clock says. */
+    private fun applyFrame(frame: PillMorphChoreography.Frame) {
+        currentFrame = frame
+        panel?.alpha = frame.panelAlpha
+        panelCharacter?.apply {
+            alpha = frame.characterAlpha
+            scaleX = frame.characterScale
+            scaleY = frame.characterScale
+        }
+        val density = resources.displayMetrics.density
+        panelRows?.apply {
+            alpha = frame.rowsAlpha
+            translationY = (frame.rowsShiftDp * density).toInt().toFloat()
+        }
+        panelAction?.apply {
+            alpha = frame.actionAlpha
+            translationY = (frame.actionShiftDp * density).toInt().toFloat()
+            // A control that cannot be seen is not a control. The panel only
+            // leaves the window at the end of a collapse, so through every morph -
+            // and through a chain of reversals - this button is invisible and
+            // still the first thing a stray tap finds. Tapping it opens ALIVE,
+            // opening ALIVE stops the pill, and that is how a burst of taps made
+            // the pill disappear.
+            val presented = expanded && sizeAnimator == null && frame.actionAlpha >= 1f
+            isClickable = presented
+            isFocusable = presented
+        }
+    }
+
+    private fun applyRadius(fraction: Float, from: Int, to: Int) {
+        val surface = rootBackground ?: return
+        currentRadiusPx = (from + (to - from) * fraction).toInt()
+        surface.cornerRadius = currentRadiusPx.toFloat()
+        root?.invalidate()
     }
 
     private fun animationsAllowed(): Boolean =
@@ -843,10 +1088,56 @@ class InfoPillService : Service() {
         return capped.coerceAtLeast(px(PANEL_MIN_WIDTH_DP))
     }
 
-    private fun ensureReport() {
-        if (lastReport != null) return
-        lastReportAtElapsed = SystemClock.elapsedRealtime()
-        lastReport = runCatching { usageTracker.calculateTodayEntertainmentUsage() }.getOrNull()
+    /**
+     * Starts a background read of the day's report, unless one is already out.
+     *
+     * The tracker is touched here, on the main thread, so its lazy construction
+     * never happens on the worker; only the read itself is moved. The executor is
+     * single-threaded on purpose: the schedule already refuses a second read, and
+     * one thread means a slow query cannot turn into a queue.
+     */
+    private fun requestReport() {
+        val token = reportSchedule.request() ?: return
+        val tracker = usageTracker
+        runCatching {
+            reportExecutor.execute {
+                val report = trace("pill.refresh.report") {
+                    when (val read = tracker.readTodayEntertainmentUsage()) {
+                        is UsageRead.Success -> read.report
+                        // Display keeps the last good numbers: an unreadable day
+                        // is not repainted as zero.
+                        else -> null
+                    }
+                }
+                ticker.post { applyReport(token, report) }
+            }
+        }.onFailure { reportSchedule.complete(token) }
+    }
+
+    /**
+     * Publishes a finished read on the main thread - if it is still the newest and
+     * the pill is still up.
+     *
+     * A failed read keeps the last good report instead of blanking the pill: "no
+     * data yet" and "no usage" are different sentences, and the second one is a
+     * lie the person could act on. Nothing here touches enforcement: the guard
+     * keeps its own reads, and the pill's numbers never decide anything.
+     */
+    private fun applyReport(token: Long, report: UsageReport?) {
+        if (!reportSchedule.complete(token)) return
+        if (report != null) {
+            lastReport = report
+            lastReportAtElapsed = SystemClock.elapsedRealtime()
+        }
+        if (pill == null) return
+        trace("pill.refresh.apply") {
+            renderTraffic()
+            writeHeaderText()
+            if (expanded) {
+                renderPanel(lastReport, usageTracker.lockStateManager.isLocked())
+                if (sizeAnimator == null) resizePanelToContent()
+            }
+        }
     }
 
     private fun renderPanel(report: UsageReport?, locked: Boolean) {
@@ -857,10 +1148,10 @@ class InfoPillService : Service() {
         // During the expansion the face is set directly and the panel's own
         // entrance carries it. Only a pose change while the panel is already
         // open crossfades.
-        applyCharacter(face, crossfade = expanded && sizeAnimator == null)
+        trace("pill.face") { applyCharacter(face, crossfade = expanded && sizeAnimator == null) }
 
         lastProgress = model.progress
-        updateProgressBar(model.progress, model.mood)
+        trace("pill.bar") { updateProgressBar(model.progress, model.mood) }
         val hasTotal = model.totalMinutes != null
         panelTotal?.apply {
             text = model.totalMinutes?.let { getString(R.string.stat_minutes, it) }.orEmpty()
@@ -886,16 +1177,34 @@ class InfoPillService : Service() {
             alpha = 0.82f
         }
         val rowKeys = model.rows.map { it.packageName to it.minutes }
-        if (rowKeys != renderedRows || renderedCurrent != watchedPackage) {
-            renderedRows = rowKeys
-            renderedCurrent = watchedPackage
-            panelRows?.apply {
-                removeAllViews()
-                model.rows.forEach { row ->
-                    addView(appRow(row.packageName, row.minutes, row.packageName == watchedPackage))
+        when (PillRowUpdate.action(
+            shownPackages = renderedRows.map { it.first },
+            nextPackages = model.rows.map { it.packageName },
+            shownCurrent = renderedCurrent,
+            nextCurrent = watchedPackage,
+            shownMinutes = renderedRows.map { it.second },
+            nextMinutes = model.rows.map { it.minutes }
+        )) {
+            PillRowUpdate.Action.REBUILD -> trace("pill.rows") {
+                renderedCurrent = watchedPackage
+                val container = panelRows ?: return@trace
+                container.removeAllViews()
+                rowViews = model.rows.map { row ->
+                    appRow(row.packageName, row.minutes, row.packageName == watchedPackage).also {
+                        container.addView(it.view)
+                    }
                 }
             }
+
+            PillRowUpdate.Action.NUMBERS -> trace("pill.rows.update") {
+                model.rows.forEachIndexed { index, row ->
+                    rowViews.getOrNull(index)?.minutes?.text = minutesText(row.minutes)
+                }
+            }
+
+            PillRowUpdate.Action.NOTHING -> Unit
         }
+        renderedRows = rowKeys
         panelAppsLabel?.visibility = if (model.rows.isEmpty()) View.GONE else View.VISIBLE
         panelMore?.apply {
             visibility = if (model.hiddenApps > 0) View.VISIBLE else View.GONE
@@ -908,25 +1217,51 @@ class InfoPillService : Service() {
         if (renderedFace == face) return
         val hadFace = renderedFace != null
         renderedFace = face
-        fun place() {
-            image.setImageResource(AliveStates.faceSpriteFor(face))
-            image.contentDescription = getString(AliveStates.faceDescription(face))
-        }
         if (!crossfade || !hadFace || !animationsAllowed()) {
+            crossfadePlacement = false
             image.animate().cancel()
-            image.alpha = 1f
-            place()
+            placeFace(image, face)
+            // The morph owns this view's alpha. A swap that is not a crossfade
+            // hands it back to whatever the clock says now, never to 1 - which
+            // is how a refresh landing mid-morph used to light the character up
+            // inside a closing pill.
+            image.alpha = currentFrame.characterAlpha
             return
         }
+        // The dip, the swap, the fade back in. A morph that starts mid-dip takes
+        // the swap over in [settleCharacterCrossfade], so this end action only
+        // runs while the crossfade still owns the character.
+        crossfadePlacement = true
         image.animate().cancel()
         image.animate()
             .alpha(0f)
             .setDuration(70L)
             .withEndAction {
-                place()
+                if (!crossfadePlacement) return@withEndAction
+                crossfadePlacement = false
+                placeFace(image, face)
                 image.animate().alpha(1f).setDuration(110L).start()
             }
             .start()
+    }
+
+    private fun placeFace(image: ImageView, face: AliveFace) {
+        image.setImageResource(AliveStates.faceSpriteFor(face))
+        image.contentDescription = getString(AliveStates.faceDescription(face))
+    }
+
+    /**
+     * Called when a morph takes the content in hand: the character's own
+     * animator is retired so it cannot keep animating alpha behind the shell's
+     * clock, and a swap that had not landed yet lands now.
+     */
+    private fun settleCharacterCrossfade() {
+        val image = panelCharacter ?: return
+        val waiting = crossfadePlacement
+        crossfadePlacement = false
+        image.animate().cancel()
+        if (waiting) renderedFace?.let { placeFace(image, it) }
+        image.alpha = currentFrame.characterAlpha
     }
 
     private fun updateProgressBar(progress: Float?, mood: PillMood) {
@@ -970,7 +1305,12 @@ class InfoPillService : Service() {
         PillPose.IDLE -> AliveFace.NORMAL
     }
 
-    private fun appRow(packageName: String, minutes: Long, current: Boolean): View {
+    private data class RowHolder(val view: View, val minutes: TextView)
+
+    private fun minutesText(minutes: Long): String =
+        getString(R.string.stat_minutes, minutes) + " " + getString(R.string.unit_minutes_suffix)
+
+    private fun appRow(packageName: String, minutes: Long, current: Boolean): RowHolder {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -983,7 +1323,11 @@ class InfoPillService : Service() {
             )
         }
         row.addView(
-            smallText(AppLabels.labelFor(this, packageName), 12.5f, if (current) 1f else 0.8f).apply {
+            smallText(
+                trace("pill.label") { AppLabels.labelFor(this, packageName) },
+                12.5f,
+                if (current) 1f else 0.8f
+            ).apply {
                 if (current) setTextColor(colour(R.color.alive_amber_action))
                 maxLines = 1
                 ellipsize = TextUtils.TruncateAt.END
@@ -994,15 +1338,10 @@ class InfoPillService : Service() {
                 )
             }
         )
-        row.addView(
-            smallText(
-                getString(R.string.stat_minutes, minutes) + " " +
-                    getString(R.string.unit_minutes_suffix),
-                12f,
-                0.8f
-            ).apply { setPadding(px(10), 0, 0, 0) }
-        )
-        return row
+        val minutesView = smallText(minutesText(minutes), 12f, 0.8f)
+            .apply { setPadding(px(10), 0, 0, 0) }
+        row.addView(minutesView)
+        return RowHolder(row, minutesView)
     }
 
     private fun resizePanelToContent() {
@@ -1023,6 +1362,10 @@ class InfoPillService : Service() {
         params.height = height
         params.y = y
         window?.let { manager -> runCatching { manager.updateViewLayout(root, params) } }
+        // The corner came along for the ride through the morph; a rotation that
+        // resizes the panel must not leave it at whatever fraction the animation
+        // was interrupted at.
+        applyRadius(1f, currentRadiusPx, px(EXPANDED_RADIUS_DP))
         lastProgress?.let { setProgressFillWidth(it) }
     }
 
@@ -1120,29 +1463,30 @@ class InfoPillService : Service() {
         // The day's report is refreshed at most once a minute, on the same
         // tracker instance so the classification cache survives between reads.
         if (lastReport == null || nowElapsed - lastReportAtElapsed >= REPORT_REFRESH_MILLIS) {
-            lastReport = runCatching {
-                usageTracker.calculateTodayEntertainmentUsage()
-            }.getOrNull()
-            lastReportAtElapsed = nowElapsed
+            // Read on the worker: asking the platform about a day of events
+            // measured 218-499 ms on the phone, longer than a whole morph. Until
+            // the answer lands, the last good report keeps the numbers on screen.
+            requestReport()
         }
 
         val report = lastReport
         renderTraffic()
         // The number is the session's own clock; the lights carry the day's
         // state. The only time the number itself turns crimson is a reached
-        // limit - a recovery day is green, not spent.
-        numberView?.apply {
-            text = Durations.of(this@InfoPillService, sessionMinutes)
+        // limit - a recovery day is green, not spent. The reading is offered on
+        // every tick but written only when no morph owns the window: it is the
+        // one string whose width decides the window's own.
+        headerText.offer(Durations.of(this, sessionMinutes))
+        numberView?.let { number ->
             val limitReached = trafficState.active == TrafficLight.RED && !trafficState.pulse
-            setTextColor(
+            number.setTextColor(
                 ContextCompat.getColor(
-                    this@InfoPillService,
+                    this,
                     if (limitReached) R.color.alive_red_short_mid else R.color.alive_amber_action
                 )
             )
         }
-        applyTimerInkPadding()
-        updateHeaderDescription()
+        writeHeaderText()
 
         // The expanded state re-reads the same report, never a second one. A
         // refresh during the size animation is skipped; the next one lands.
@@ -1283,8 +1627,35 @@ class InfoPillService : Service() {
         private const val TICK_MILLIS = 20_000L
         private const val ARRIVE_DELAY_MILLIS = 800L
 
-        /** One expansion/collapse, shared by the window resize and the content. */
-        private const val EXPAND_MILLIS = 230L
+        /**
+         * The morph's own clock: a slightly longer open than the old 230ms, so
+         * the staggered content has room to settle, and a shorter close, because
+         * leaving should never feel like it is asking permission.
+         */
+        private const val EXPAND_MILLIS = 260L
+        private const val COLLAPSE_MILLIS = 210L
+
+        /**
+         * How long a continuation may be ticked for. It is a ceiling, not a
+         * duration: the spring reports arrival and the run ends there, and this
+         * only decides when the animator stops supplying frames if it never does.
+         */
+        private const val SPRING_MILLIS = 900L
+
+        /**
+         * The rest of an arrival a tap interrupted: about a third of the arrival
+         * itself, so the shell is done presenting itself before the morph has
+         * read a quarter of its own first frame's worth of movement.
+         */
+        private const val ARRIVAL_FINISH_MILLIS = 90L
+
+        /**
+         * The corner's two homes. Compact is the pill it has always been; the
+         * expanded panel keeps its corner softer so the shape reads as one
+         * continuous surface instead of a box that grew inside another box.
+         */
+        private const val COMPACT_RADIUS_DP = 26
+        private const val EXPANDED_RADIUS_DP = 34
 
         /**
          * One light is a 14dp slot holding a 10dp core and a 2dp halo; the

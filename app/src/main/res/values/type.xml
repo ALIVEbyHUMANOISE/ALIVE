@@ -67,6 +67,28 @@
         <item name="android:textSize">28sp</item>
     </style>
 
+    <!-- The Arcade card's chip figure: a ledger number at chip scale. -->
+    <style name="TextAppearance.ALIVE.ScoreValue" parent="TextAppearance.ALIVE.Timer">
+        <item name="android:textSize">28sp</item>
+    </style>
+
+    <!-- The four score labels on the Arcade card. Pixel caps, 12sp: large
+         enough to read on the phone without competing with the figure. -->
+    <style name="TextAppearance.ALIVE.ScoreLabel" parent="TextAppearance.ALIVE.Meta">
+        <item name="android:fontFamily">@font/silkscreen_bold</item>
+        <item name="android:textColor">@color/alive_ink</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <!-- The closed board's word. The open day's figure is 56sp; at 28sp TUTUP
+         read as half a score, so the word takes the hero weight at the largest
+         size the widest locale ("CLOSED") allows on a 320dp card. -->
+    <style name="TextAppearance.ALIVE.ScoreStatus" parent="TextAppearance.ALIVE.Timer">
+        <item name="android:textSize">40sp</item>
+    </style>
+
     <!-- ============ WHAT A SCREEN IS CALLED: SPACE GROTESK ============ -->
 
     <!-- The one sentence a card leads with. -->
@@ -129,6 +151,20 @@
         <item name="android:letterSpacing">0</item>
         <item name="android:lineSpacingExtra">2sp</item>
         <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <!-- The card's context line: the scoreboard's unit and total. Small enough
+         that "MENIT DARI 200" still rides the figure's baseline. -->
+    <style name="TextAppearance.ALIVE.MetaTiny" parent="TextAppearance.ALIVE.Meta">
+        <item name="android:textSize">10sp</item>
+        <item name="android:lineSpacingExtra">1sp</item>
+    </style>
+
+    <!-- The card's support sentence, ticket copy and closed line: one step up
+         from MetaTiny so they read on the phone, not just in the mockup. -->
+    <style name="TextAppearance.ALIVE.MetaSmall" parent="TextAppearance.ALIVE.Meta">
+        <item name="android:textSize">12sp</item>
+        <item name="android:lineSpacingExtra">1sp</item>
     </style>
 
     <!-- The verdict of a failed session, said once, in the heaviest voice the app

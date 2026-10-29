@@ -27,6 +27,12 @@ class LockStateManager(private val context: Context) {
         private const val KEY_DAY_TYPE = "key_day_type"
         private const val KEY_LAST_DAY_FAILED = "key_last_day_failed"
 
+        // Which day the last rollover actually judged, and the streak that day
+        // cost. Kept so a mission that lands late - finished yesterday, claimed
+        // after midnight - can give that day back instead of losing it.
+        private const val KEY_LAST_JUDGED_DAY = "key_last_judged_day"
+        private const val KEY_STREAK_BEFORE_FAIL = "key_streak_before_fail"
+
         // The guard gap: a stretch during one day when the accessibility service
         // that does the closing was off. Keyed by day so it scopes itself, and so
         // no reset has to remember to clear it.
@@ -62,28 +68,86 @@ class LockStateManager(private val context: Context) {
          * compares against it. Two separate date formatters in those two places
          * would drift silently and the chart would look empty to the engine, so
          * both use this one.
+         *
+         * The locale is pinned to US on purpose. The key is an identifier, not
+         * text a person reads: with the device locale, a Thai phone writes the
+         * Buddhist year (2569-10-26) and an Arabic one writes localized digits,
+         * so changing the phone's language renamed every day ALIVE had stored -
+         * the next rollover read a different "yesterday" and judged it failed.
+         * Pinning keeps the calendar Gregorian and the digits ASCII; the
+         * timezone is still the device's, so midnight is still local.
          */
         fun dayKeyOf(timeMillis: Long): String =
-            SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(timeMillis))
+            SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(timeMillis))
 
         /**
          * Mark [dayKey] as a day on which a quest paid out.
          *
          * A companion called from `QuestRepository.claimReward()`, because that is
          * the one place a reward exists and the repository that grants it should not
-         * have to build a second one just to record the fact.
+         * have to build a second one just to record the fact. The caller passes the
+         * day the mission was *lived* (see `QuestDayAttribution`); the default is
+         * only right for callers that genuinely mean "right now".
+         *
+         * If that day is the one the morning's rollover just judged as failed, the
+         * judgement is repaired: a mission finished at 23:50 and claimed after
+         * midnight used to cost the next day, which reads as the app forgetting
+         * something the person actually did.
          */
         @Synchronized
         fun recordQuestCompleted(
             context: Context,
             dayKey: String = dayKeyOf(System.currentTimeMillis())
         ) {
-            context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE).edit()
+            val appPrefs = context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
+            appPrefs.edit()
                 .putString(KEY_QUEST_DONE_DAY, dayKey)
                 .apply()
             // The same moment is the character's: a quest that paid out is a day
             // the person actually did something, which is what the form grows on.
             CharacterGrowthRepository(context).recordQuestDay(dayKey)
+
+            restoreJudgedDay(appPrefs, dayKey)
+        }
+
+        /**
+         * Gives back a day that was judged failed and then earned its quest.
+         *
+         * Deliberately narrow: only the day the most recent rollover judged, only
+         * while that judgement is still today's, and never across an unrepaired
+         * guard gap - the gap rule outranks late evidence, exactly as it outranks
+         * a claim. A quest for any other day changes nothing, so finishing a
+         * mission this afternoon can never unlock a day that was already spent.
+         */
+        private fun restoreJudgedDay(appPrefs: SharedPreferences, questDay: String) {
+            val today = dayKeyOf(System.currentTimeMillis())
+            if (appPrefs.getString(KEY_LAST_TRACKED_DATE, null) != today) return
+            if (appPrefs.getString(KEY_LAST_JUDGED_DAY, null) != questDay) return
+            if (!appPrefs.getBoolean(KEY_LAST_DAY_FAILED, false)) return
+            if (storedDayType(appPrefs) != DayType.ZERO_ENTERTAINMENT_DAY) return
+
+            val gapOpen = appPrefs.getString(KEY_UNGUARDED_DAY, null) == questDay &&
+                !appPrefs.getBoolean(KEY_GUARD_REPAIRED, false)
+            if (gapOpen) return
+
+            val streakBefore = appPrefs.getInt(KEY_STREAK_BEFORE_FAIL, 0)
+            appPrefs.edit()
+                .putString(KEY_DAY_TYPE, DayType.NORMAL_DAY.name)
+                .putBoolean(KEY_IS_LOCKED, false)
+                .putBoolean(KEY_LAST_DAY_FAILED, false)
+                .putInt(KEY_CURRENT_STREAK, streakBefore + 1)
+                .putInt(KEY_STREAK_BEFORE_FAIL, 0)
+                .putInt(KEY_LAST_WARNING_TIER, 0)
+                .apply()
+        }
+
+        private fun storedDayType(appPrefs: SharedPreferences): DayType {
+            val name = appPrefs.getString(KEY_DAY_TYPE, DayType.NORMAL_DAY.name)
+            return try {
+                DayType.valueOf(name ?: DayType.NORMAL_DAY.name)
+            } catch (_: Exception) {
+                DayType.NORMAL_DAY
+            }
         }
     }
 
@@ -93,10 +157,14 @@ class LockStateManager(private val context: Context) {
      * Checks if a new day has arrived, and judges the one that just went.
      *
      * Deterministic and safe even if the app was closed across midnight: the only
-     * evidence consulted is what was written during the day itself.
+     * evidence consulted is what was written during the day itself. It shares
+     * the Time Bank's transaction boundary because a claim prices the day and
+     * writes its claimed minutes as one unit - a rollover may not slip between
+     * those two steps.
      */
-    @Synchronized
-    fun checkAndPerformDailyReset(): Boolean {
+    fun checkAndPerformDailyReset(): Boolean = TimeBankLedger.run { evaluateDailyReset() }
+
+    private fun evaluateDailyReset(): Boolean {
         val today = getTodayDateString()
         val lastDate = prefs.getString(KEY_LAST_TRACKED_DATE, null)
 
@@ -160,6 +228,10 @@ class LockStateManager(private val context: Context) {
                 .putInt(KEY_CURRENT_STREAK, newStreak)
                 .putString(KEY_DAY_TYPE, newDayType.name)
                 .putBoolean(KEY_LAST_DAY_FAILED, dayFailed)
+                // What this judgement was about, and what it cost, so late
+                // evidence for that day can still be honoured today.
+                .putString(KEY_LAST_JUDGED_DAY, lastDate)
+                .putInt(KEY_STREAK_BEFORE_FAIL, if (dayFailed) currentStreak else 0)
                 // Whatever happened, this rollover was lived under the quest rule -
                 // so from here on the next one is judged by it too.
                 .putBoolean(KEY_QUEST_RULE_ANNOUNCED, true)
@@ -258,13 +330,13 @@ class LockStateManager(private val context: Context) {
      * Reads through the stored day, so yesterday's number reads as zero here
      * without anything having cleared it.
      */
-    @Synchronized
-    fun claimedMinutesToday(): Long =
+    fun claimedMinutesToday(): Long = TimeBankLedger.run {
         if (prefs.getString(KEY_CLAIMED_DAY, null) == getTodayDateString()) {
             prefs.getLong(KEY_CLAIMED_MINUTES, 0L)
         } else {
             0L
         }
+    }
 
     /**
      * Adds [minutes] to the claimed total for [dayKey].
@@ -273,18 +345,19 @@ class LockStateManager(private val context: Context) {
      * midnight starts from zero rather than from yesterday's number. The
      * defaulted day exists for tests - production always claims onto today.
      */
-    @Synchronized
     fun addClaimedMinutesToday(minutes: Long, dayKey: String = getTodayDateString()) {
-        if (minutes <= 0L) return
-        val current = if (prefs.getString(KEY_CLAIMED_DAY, null) == dayKey) {
-            prefs.getLong(KEY_CLAIMED_MINUTES, 0L)
-        } else {
-            0L
+        TimeBankLedger.run {
+            if (minutes <= 0L) return@run
+            val current = if (prefs.getString(KEY_CLAIMED_DAY, null) == dayKey) {
+                prefs.getLong(KEY_CLAIMED_MINUTES, 0L)
+            } else {
+                0L
+            }
+            prefs.edit()
+                .putString(KEY_CLAIMED_DAY, dayKey)
+                .putLong(KEY_CLAIMED_MINUTES, current + minutes)
+                .apply()
         }
-        prefs.edit()
-            .putString(KEY_CLAIMED_DAY, dayKey)
-            .putLong(KEY_CLAIMED_MINUTES, current + minutes)
-            .apply()
     }
 
     fun getDailyLimitMinutes(): Long {

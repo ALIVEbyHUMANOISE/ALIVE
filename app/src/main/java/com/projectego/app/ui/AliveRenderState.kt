@@ -18,7 +18,10 @@ enum class AlivePanel {
     FOCUS_SESSION,
 
     /** Today, the last seven days, the month so far. Read-only. */
-    USAGE_CHART
+    USAGE_CHART,
+
+    /** The last seven days of missions that paid out, by name. Read-only. */
+    QUEST_HISTORY
 }
 
 /**

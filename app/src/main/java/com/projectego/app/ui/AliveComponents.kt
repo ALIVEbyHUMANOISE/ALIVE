@@ -119,6 +119,26 @@ class AliveComponents(private val context: Context) {
     fun number(value: CharSequence): TextView =
         text(R.style.TextAppearance_ALIVE_Number, value)
 
+    /** The Arcade score strip's figure: one step under a ledger number. */
+    fun scoreValue(value: CharSequence): TextView =
+        text(R.style.TextAppearance_ALIVE_ScoreValue, value)
+
+    /** The Arcade score strip's label: tiny pixel caps at the scoreboard scale. */
+    fun scoreLabel(value: CharSequence): TextView =
+        text(R.style.TextAppearance_ALIVE_ScoreLabel, value)
+
+    /** The closed board's word, at the hero's weight. */
+    fun scoreStatus(value: CharSequence): TextView =
+        text(R.style.TextAppearance_ALIVE_ScoreStatus, value)
+
+    /** The card's context line: the scoreboard's unit and total. */
+    fun metaTiny(value: CharSequence): TextView =
+        text(R.style.TextAppearance_ALIVE_MetaTiny, value)
+
+    /** The card's support sentence, ticket copy and closed line. */
+    fun metaSmall(value: CharSequence): TextView =
+        text(R.style.TextAppearance_ALIVE_MetaSmall, value)
+
     fun annotation(value: CharSequence): TextView =
         text(R.style.TextAppearance_ALIVE_Annotation, value)
 
@@ -739,18 +759,30 @@ class AliveComponents(private val context: Context) {
      * full allowance is ALIVE's own thing; the caller passes red when the time
      * left is thin, which is the same fact the number already states - the
      * colour never carries it alone.
+     *
+     * [fillWidth] is the narrow Home-only modifier: the ten blocks divide the
+     * width they are given, so a card with room does not end in empty paper.
+     * The count and the fill arithmetic are unchanged; the default keeps every
+     * existing caller on the 16dp blocks it already knows.
      */
     fun timeBar(
         remaining: Long,
         limit: Long,
         segments: Int = 10,
-        @ColorInt fill: Int = palette.forest
-    ): LinearLayout = row().apply {
-        if (limit <= 0) return@apply
-        val filled = ((remaining.toFloat() / limit.toFloat()) * segments)
-            .roundToIntClamped(segments)
+        @ColorInt fill: Int = palette.forest,
+        fillWidth: Boolean = false
+    ): LinearLayout {
+        val bar = row()
+        val filled = if (limit <= 0L) {
+            0
+        } else {
+            ((remaining.toFloat() / limit.toFloat()) * segments)
+                .roundToIntClamped(segments)
+        }
+        if (fillWidth) return FillingTimeBar(segments, filled, fill)
+        if (limit <= 0) return bar
         for (index in 0 until segments) {
-            addView(
+            bar.addView(
                 View(context).apply {
                     layoutParams = LinearLayout.LayoutParams(dimens.stepSize, dimens.stepSize).apply {
                         marginEnd = if (index == segments - 1) 0 else dimens.stepGap
@@ -758,6 +790,66 @@ class AliveComponents(private val context: Context) {
                     background = step(if (index < filled) fill else palette.white)
                 }
             )
+        }
+        return bar
+    }
+
+    /**
+     * The same ten steps, sized from the width the card gives them.
+     *
+     * The step stays square: one block is as tall as it is wide. The measured
+     * width is the full card interior, so the meter ends at the same edge as
+     * the copy above it instead of at a fixed 178dp.
+     */
+    private inner class FillingTimeBar(
+        private val segments: Int,
+        private val filled: Int,
+        @ColorInt private val fill: Int
+    ) : LinearLayout(context) {
+
+        init {
+            orientation = HORIZONTAL
+            layoutParams = LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            for (index in 0 until segments) {
+                addView(
+                    View(context).apply {
+                        background = step(if (index < filled) fill else palette.white)
+                    }
+                )
+            }
+        }
+
+        override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+            val gap = dimens.stepGap
+            val width = if (View.MeasureSpec.getMode(widthMeasureSpec) == View.MeasureSpec.UNSPECIFIED) {
+                dimens.stepSize * segments + gap * (segments - 1)
+            } else {
+                View.MeasureSpec.getSize(widthMeasureSpec)
+            }
+            val available = (width - gap * (segments - 1)).coerceAtLeast(segments)
+            val step = (available / segments).coerceAtLeast(1)
+            for (index in 0 until childCount) {
+                getChildAt(index).measure(
+                    View.MeasureSpec.makeMeasureSpec(step, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(step, View.MeasureSpec.EXACTLY)
+                )
+            }
+            val used = step * segments + gap * (segments - 1)
+            setMeasuredDimension(resolveSize(used, widthMeasureSpec), step)
+        }
+
+        override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
+            if (childCount == 0) return
+            val gap = dimens.stepGap
+            val step = getChildAt(0).measuredWidth
+            var x = 0
+            for (index in 0 until childCount) {
+                getChildAt(index).layout(x, 0, x + step, step)
+                x += step + gap
+            }
         }
     }
 
@@ -980,6 +1072,18 @@ class AliveComponents(private val context: Context) {
     /** Paper fill with an ink edge. */
     fun secondary(value: CharSequence): AppCompatButton =
         button(value, R.drawable.bg_brutal_button_secondary, R.color.text_on_secondary)
+
+    /**
+     * Gold fill with an ink edge: the door to something already earned.
+     *
+     * Deliberately not [primary]. The amber belongs to the one offer a screen is
+     * allowed to make, and this button sits on a screen that already has an
+     * offer on it - the mission to start, or the "I'm done" a running physical
+     * mission is waiting for. Colouring this gold makes it the loudest quiet
+     * thing on the page without answering a question nobody asked twice.
+     */
+    fun rewardButton(value: CharSequence): AppCompatButton =
+        button(value, R.drawable.bg_brutal_button_reward, R.color.text_on_secondary)
 
     /** Flat until touched. */
     fun quiet(value: CharSequence): AppCompatButton =

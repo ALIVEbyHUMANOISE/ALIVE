@@ -3,16 +3,20 @@
 import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.projectego.app.data.FocusSessionManager
 import com.projectego.app.data.LockStateManager
 import com.projectego.app.data.TimeBankRepository
 import com.projectego.app.data.UsageHistoryRepository
 import com.projectego.app.model.AppCategory
+import com.projectego.app.ui.PermissionChecks
 import com.projectego.app.model.DayType
 import com.projectego.app.model.TimeBank
 import com.projectego.app.model.TimeStatus
 import java.util.Calendar
+
+private const val TAG = "UsageTracker"
 
 data class UsageReport(
     val totalEntertainmentMinutes: Long,
@@ -78,12 +82,85 @@ class UsageTracker(private val context: Context) {
         return calendar.timeInMillis
     }
 
-    fun calculateTodayEntertainmentUsage(): UsageReport {
+    /**
+     * The authoritative read, for callers that must never confuse a failure with a
+     * zero day: enforcement and the Time Bank claim.
+     *
+     * Everything that can fail is caught here and turned into an explicit answer -
+     * a missing grant, a query that did not answer, or a report that could not be
+     * built - so the caller decides deliberately instead of inheriting an empty
+     * day. Logs carry the exception type only: no app names, no numbers.
+     */
+    fun readTodayEntertainmentUsage(): UsageRead {
+        val startTime = getTodayStartTimestamp()
+        val endTime = System.currentTimeMillis()
+        val read = readWindow(startTime, endTime)
+
+        // The query can straddle midnight - endTime is captured before the
+        // platform walks the log. If the day changed while it ran, that answer
+        // describes yesterday: the report was built without touching today's
+        // latch, and the question is asked once more for the day the caller is
+        // actually enforcing.
+        if (read is UsageRead.Success &&
+            LockStateManager.dayKeyOf(startTime) != LockStateManager.dayKeyOf(System.currentTimeMillis())
+        ) {
+            return readWindow(getTodayStartTimestamp(), System.currentTimeMillis())
+        }
+        return read
+    }
+
+    private fun readWindow(startTime: Long, endTime: Long): UsageRead =
+        UsageReadGuard.read(
+            permissionGranted = PermissionChecks.hasUsageAccess(context),
+            query = { todaysSpansOrNull(startTime, endTime) },
+            build = { spans -> computeReport(startTime, endTime, spans, recordHistory = true) },
+            log = { message, error -> Log.w(TAG, message, error) }
+        )
+
+    /**
+     * The display read. Kept for the surface that must draw something even when
+     * the source cannot answer (the dev panel), and unchanged in what it draws:
+     * an unavailable read still produces the same empty day it always did.
+     *
+     * What it does not do is decide. That empty day is a stand-in, not evidence,
+     * so it may neither set nor clear the persisted lock; the latch is left to
+     * reads that actually saw the day. Enforcement never calls this - it calls
+     * [readTodayEntertainmentUsage] and treats an unavailable answer as
+     * unavailable.
+     */
+    fun calculateTodayEntertainmentUsage(): UsageReport =
+        when (val read = readTodayEntertainmentUsage()) {
+            is UsageRead.Success -> read.report
+            else -> computeReport(
+                startTime = getTodayStartTimestamp(),
+                endTime = System.currentTimeMillis(),
+                spans = emptyList(),
+                recordHistory = false,
+                // This empty day is a stand-in for an answer that never came.
+                // Drawing it is fine; letting it move the lock would make a
+                // failed read look like proof that the day is unspent.
+                mutatesLock = false
+            )
+        }
+
+    private fun computeReport(
+        startTime: Long,
+        endTime: Long,
+        spans: List<Foreground.Span>,
+        recordHistory: Boolean,
+        mutatesLock: Boolean = true
+    ): UsageReport {
         // Ensure day rollover is checked and evaluated
         lockStateManager.checkAndPerformDailyReset()
 
-        val startTime = getTodayStartTimestamp()
-        val endTime = System.currentTimeMillis()
+        // The window this report describes and the day it is applied to differ
+        // only when the query crossed midnight. The rollover above has already
+        // judged the new day; yesterday's minutes may not decide it.
+        val windowIsToday =
+            LockStateManager.dayKeyOf(startTime) == LockStateManager.dayKeyOf(System.currentTimeMillis())
+        // A display stand-in and an expired window may draw numbers, never move
+        // the latch - in either direction.
+        val mayDecide = mutatesLock && windowIsToday
 
         val details = mutableListOf<Pair<String, Long>>()
         val unblockedDetails = mutableListOf<Pair<String, Long>>()
@@ -100,7 +177,6 @@ class UsageTracker(private val context: Context) {
         // have no such opinion: they are a list of what came to the front and
         // when, and today is the part of that which lies after midnight.
         val windows = focusWindows()
-        val spans = todaysSpans(startTime, endTime)
 
         val entertainment = spans.filter { categoryOf(it.id) == AppCategory.ENTERTAINMENT }
 
@@ -155,14 +231,22 @@ class UsageTracker(private val context: Context) {
         if (dayType == DayType.ZERO_ENTERTAINMENT_DAY) {
             // In Recovery / Zero-time day, entertainment is strictly 0 min base allowance.
             isExceeded = true
-            lockStateManager.setLocked(true)
+            // The rollover already latched a zero day; a display stand-in for a
+            // failed read has no business writing it again.
+            if (mayDecide) lockStateManager.setLocked(true)
             tier = 5
             status = TimeStatus.ZERO_ENTERTAINMENT_DAY
         } else {
-            isExceeded = totalMinutes >= limitMinutes
+            isExceeded = UsageSourcePolicy.countsAsExceeded(
+                totalMinutes = totalMinutes,
+                limitMinutes = limitMinutes,
+                windowIsToday = windowIsToday
+            )
 
-            if (isExceeded) {
-                lockStateManager.setLocked(true)
+            when (UsageSourcePolicy.latchAction(isExceeded, lockStateManager.isLocked(), mayDecide)) {
+                UsageSourcePolicy.Latch.LOCK -> lockStateManager.setLocked(true)
+                UsageSourcePolicy.Latch.CLEAR -> lockStateManager.setLocked(false)
+                UsageSourcePolicy.Latch.LEAVE -> Unit
             }
 
             tier = if (lockStateManager.isDevTestModeEnabled()) {
@@ -197,14 +281,16 @@ class UsageTracker(private val context: Context) {
         // from the window that was actually queried rather than a fresh clock
         // read: if the query straddled midnight, a new reading would stamp
         // today with yesterday's number.
-        runCatching {
-            usageHistory.recordDay(
-                LockStateManager.dayKeyOf(startTime),
-                totalMillis,
-                limitMinutes,
-                details.toMap(),
-                screenMillis
-            )
+        if (recordHistory) {
+            runCatching {
+                usageHistory.recordDay(
+                    LockStateManager.dayKeyOf(startTime),
+                    totalMillis,
+                    limitMinutes,
+                    details.toMap(),
+                    screenMillis
+                )
+            }
         }
 
         return UsageReport(
@@ -268,12 +354,11 @@ class UsageTracker(private val context: Context) {
      * This is the day total's helper. The hourly chart reads its own window from
      * midnight, because the extra hours cost it time and change none of its bars.
      */
-    private fun todaysSpans(dayStart: Long, now: Long): List<Foreground.Span> =
-        Foreground.clip(
-            Foreground.spans(readEvents(dayStart - SESSION_LOOKBACK_MILLIS, now) { true }, now),
-            dayStart,
-            now
-        )
+    private fun todaysSpansOrNull(dayStart: Long, now: Long): List<Foreground.Span>? {
+        val events = readEventsOrNull(dayStart - SESSION_LOOKBACK_MILLIS, now) { true }
+            ?: return null
+        return Foreground.clip(Foreground.spans(events, now), dayStart, now)
+    }
 
     /**
      * Today's whole screen, hour by hour: what the allowance spent, the tools it
@@ -371,11 +456,23 @@ class UsageTracker(private val context: Context) {
      * Screen-off and keyguard events always pass: they close sessions, and the
      * session they close belongs to whoever the event names.
      */
-    private fun readEvents(from: Long, to: Long, keep: (String) -> Boolean): List<HourlyUsage.Event> {
+    private fun readEvents(from: Long, to: Long, keep: (String) -> Boolean): List<HourlyUsage.Event> =
+        readEventsOrNull(from, to, keep) ?: emptyList()
+
+    /**
+     * The same log, but null when no answer came back: no manager, or a query that
+     * returned nothing at all. A caller that enforces must be able to tell that
+     * apart from a day with no events.
+     */
+    private fun readEventsOrNull(
+        from: Long,
+        to: Long,
+        keep: (String) -> Boolean
+    ): List<HourlyUsage.Event>? {
         val usageStatsManager =
             context.getSystemService(AppCompatActivity.USAGE_STATS_SERVICE) as? UsageStatsManager
-                ?: return emptyList()
-        val stream = usageStatsManager.queryEvents(from, to) ?: return emptyList()
+                ?: return null
+        val stream = usageStatsManager.queryEvents(from, to) ?: return null
 
         val events = mutableListOf<HourlyUsage.Event>()
         val kept = HashMap<String, Boolean>()

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tactile reward action: the gold pale face the reward chips sit on, ink
+     border, same hard shadow. It exists so a door to something already earned
+     can be coloured without borrowing the amber, which belongs to the one offer
+     a screen is allowed to make. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:state_pressed="true">
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/alive_ink" />
+                    <corners android:radius="@dimen/radius_tile" />
+                </shape>
+            </item>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/alive_gold_reward_pale" />
+                    <stroke
+                        android:width="@dimen/border_bold"
+                        android:color="@color/alive_ink" />
+                    <corners android:radius="@dimen/radius_tile" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+
+    <item android:state_enabled="false">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/alive_white" />
+            <stroke
+                android:width="@dimen/border_hairline"
+                android:color="@color/alive_ink_disabled" />
+            <corners android:radius="@dimen/radius_tile" />
+        </shape>
+    </item>
+
+    <item>
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/alive_ink" />
+                    <corners android:radius="@dimen/radius_tile" />
+                </shape>
+            </item>
+            <item
+                android:right="@dimen/shadow_offset"
+                android:bottom="@dimen/shadow_offset">
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/alive_gold_reward_pale" />
+                    <stroke
+                        android:width="@dimen/border_bold"
+                        android:color="@color/alive_ink" />
+                    <corners android:radius="@dimen/radius_tile" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+</selector>

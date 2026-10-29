@@ -3,6 +3,7 @@
 import android.content.Context
 import android.content.SharedPreferences
 import com.projectego.app.domain.CustomQuest
+import com.projectego.app.domain.QuestDayAttribution
 import com.projectego.app.model.Quest
 import com.projectego.app.model.QuestAttempt
 import com.projectego.app.model.QuestAttemptState
@@ -316,6 +317,21 @@ class QuestRepository(
             catalog().find { it.id == attempt.questId }?.rewardMinutes
         }
 
+    /**
+     * The words a mission is called right now, for the log's snapshot.
+     *
+     * A mission whose words were deleted while its attempt was still in flight
+     * has no board entry left, and the record still has to say something true:
+     * it says "a mission of your own" rather than a stale or an invented name.
+     */
+    private fun titleOf(questId: String): String =
+        getAllQuests().find { it.id == questId }?.title
+            ?: if (questId == CustomQuest.ID) {
+                context.getString(R.string.quest_custom_invite_title)
+            } else {
+                questId
+            }
+
     // ============================================================
     // Legacy Phase 2.1 quest board (AVAILABLE/ACTIVE/COMPLETED).
     // Unchanged in Phase 2.3.2 - still drives MainActivity's existing
@@ -604,18 +620,30 @@ class QuestRepository(
         completedIds.add(current.questId)
         prefs.edit().putStringSet(KEY_COMPLETED_QUEST_IDS, completedIds).apply()
 
+        // The day this counts for is the day the mission was lived, not the day
+        // the payout ran: a window that ended at 23:50 and settled itself after
+        // midnight belongs to the evening before, and finishing it must not cost
+        // the person their next day to a clock boundary.
+        val landedOn = QuestDayAttribution.dayKeyOf(current)
+
         // A kept day is decided by whether anything was earned on it, so this is
         // the one moment that fact gets written. apply() is enough here: a lost
         // marker can cost a day, it can never grant one.
-        LockStateManager.recordQuestCompleted(context)
+        LockStateManager.recordQuestCompleted(context, landedOn)
 
-        // The seven-day log counts the same event, at the same instant, through
-        // the same clock this repository was built with - so a payout that
-        // belongs to yesterday is filed under yesterday even when the rollover
-        // that noticed it runs this morning.
+        // The seven-day log counts the same event on the same day, so the history
+        // and the judgement can never disagree about which night it was.
+        //
+        // The title is read now and kept, not looked up later: the person's own
+        // mission can be rewritten or deleted before the log is read again, and
+        // the record has to keep saying what was actually finished.
         history.recordCompletion(
-            dayKey = LockStateManager.dayKeyOf(clock()),
-            minutes = reward
+            dayKey = landedOn,
+            attemptId = current.attemptId,
+            questId = current.questId,
+            title = titleOf(current.questId),
+            minutes = reward,
+            completedAt = clock()
         )
 
         return reward

@@ -8,7 +8,8 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import com.projectego.app.MainActivity
 import com.projectego.app.R
-import com.projectego.app.domain.UsageTracker
+import com.projectego.app.data.LockStateManager
+import com.projectego.app.domain.LockSnapshot
 import com.projectego.app.model.DayType
 
 /**
@@ -41,8 +42,15 @@ class LockActivity : AppCompatActivity() {
 
         val ui = AliveComponents(this)
 
-        // This screen performs the same single read the previous revision did.
-        val report = UsageTracker(this).calculateTodayEntertainmentUsage()
+        // The guard computed the day's report to decide this lock and handed over
+        // the two figures this screen prints; the rest is prefs. Asking UsageStats
+        // again inside onCreate cost 353-785 ms of this screen's startup on the
+        // phone, for numbers that had just been computed one frame earlier.
+        val lockState = LockStateManager(this)
+        val numbers = LockSnapshot.of(
+            usedMinutes = intent.getLongExtra("EXTRA_USED_MINUTES", LockSnapshot.MISSING),
+            limitMinutes = intent.getLongExtra("EXTRA_LIMIT_MINUTES", LockSnapshot.MISSING)
+        )
 
         val lockReason = intent.getStringExtra("EXTRA_LOCK_REASON") ?: "ENTERTAINMENT_EXCEEDED"
         val blockedPkg = intent.getStringExtra("EXTRA_BLOCKED_PACKAGE")
@@ -50,7 +58,7 @@ class LockActivity : AppCompatActivity() {
         val focusActivityName = intent.getStringExtra("EXTRA_FOCUS_ACTIVITY") ?: getString(R.string.focus_heading)
 
         val isFocusSession = lockReason == "FOCUS_SESSION"
-        val isRecoveryDay = report.dayType == DayType.ZERO_ENTERTAINMENT_DAY
+        val isRecoveryDay = lockState.getDayType() == DayType.ZERO_ENTERTAINMENT_DAY
 
         val page = ui.stack(ui.dimens.cardGap).apply {
             setPadding(
@@ -106,10 +114,16 @@ class LockActivity : AppCompatActivity() {
             notice.addView(ui.note(getString(R.string.lock_zero_support)))
         } else {
             notice.addView(ui.body(getString(R.string.lock_over_body)))
-            notice.addView(ui.vgap(ui.dimens.lineGap))
-            notice.addView(ui.note(getString(R.string.lock_allowance_line, report.limitMinutes)))
-            notice.addView(ui.vgap(ui.dimens.pairGap))
-            notice.addView(ui.note(getString(R.string.lock_used_line, report.totalEntertainmentMinutes)))
+            val used = numbers.usedMinutes
+            val limit = numbers.limitMinutes
+            if (used != null && limit != null) {
+                notice.addView(ui.vgap(ui.dimens.lineGap))
+                notice.addView(ui.note(getString(R.string.lock_allowance_line, limit)))
+                notice.addView(ui.vgap(ui.dimens.pairGap))
+                notice.addView(ui.note(getString(R.string.lock_used_line, used)))
+            }
+            // With no numbers to print, the sentence is the whole story. A zero
+            // would be a lie and a full allowance would read as a bug.
         }
 
         notice.addView(ui.vgap(ui.dimens.groupGap))
@@ -122,7 +136,7 @@ class LockActivity : AppCompatActivity() {
             )
         )
         notice.addView(ui.vgap(ui.dimens.pairGap))
-        notice.addView(ui.note(getString(R.string.lock_days_row, report.currentStreak)))
+        notice.addView(ui.note(getString(R.string.lock_days_row, lockState.getCurrentStreak())))
         notice.addView(ui.vgap(ui.dimens.pairGap))
         notice.addView(ui.note(getString(R.string.lock_essential)))
         page.addView(notice)

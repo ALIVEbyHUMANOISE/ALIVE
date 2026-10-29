@@ -151,7 +151,7 @@ object AccessibilityWatch {
             .build()
     }
 
-    private fun ensureChannel(context: Context) {
+    internal fun ensureChannel(context: Context) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.createNotificationChannel(
             NotificationChannel(
