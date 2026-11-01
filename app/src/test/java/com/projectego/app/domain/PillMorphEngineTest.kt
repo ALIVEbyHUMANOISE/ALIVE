@@ -424,7 +424,7 @@ class PillMorphEngineTest {
     }
 
     @Test
-    fun `a launch passes its target by a few percent and peaks around the middle`() {
+    fun `a heavy launch has weight without the old rebound`() {
         val engine = PillMorphEngine.launchRun(LAUNCH_CAP_MILLIS)
         var peak = 0f
         var peakAt = 0L
@@ -437,9 +437,9 @@ class PillMorphEngineTest {
             }
             t += 2L
         }
-        assertTrue("peak was $peak", peak in 1.06f..1.11f)
+        assertTrue("peak was $peak", peak in 1.005f..1.03f)
         val at = peakAt.toFloat() / LAUNCH_CAP_MILLIS
-        assertTrue("peak at ${at * 100}% of the cap", at in 0.30f..0.60f)
+        assertTrue("peak at ${at * 100}% of the cap", at in 0.45f..0.72f)
     }
 
     @Test

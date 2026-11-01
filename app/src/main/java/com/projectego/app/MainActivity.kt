@@ -40,12 +40,14 @@ import com.projectego.app.data.NightContractRepository
 import com.projectego.app.data.QuestEvidenceRepository
 import com.projectego.app.data.QuestHistoryRepository
 import com.projectego.app.data.QuestRepository
+import com.projectego.app.data.ReminderSettings
 import com.projectego.app.data.TimeBankRepository
 import com.projectego.app.data.UsageHistoryRepository
 import com.projectego.app.data.WelcomeGate
 import com.projectego.app.domain.AndroidPhysicalQuestEvidenceProvider
 import com.projectego.app.domain.CharacterGrowth
 import com.projectego.app.domain.CustomQuest
+import com.projectego.app.domain.DrinkReminderPolicy
 import com.projectego.app.domain.EntertainmentClaimCoordinator
 import com.projectego.app.domain.EntertainmentClaimPolicy
 import com.projectego.app.domain.FocusAppPolicy
@@ -69,6 +71,8 @@ import com.projectego.app.model.QuestAttempt
 import com.projectego.app.model.QuestAttemptState
 import com.projectego.app.model.QuestHistoryDay
 import com.projectego.app.service.AccessibilityWatch
+import com.projectego.app.service.DrinkReminderWatch
+import com.projectego.app.service.InfoPillService
 import com.projectego.app.service.PromiseWatch
 import com.projectego.app.service.QuestDeadlineWatch
 import com.projectego.app.service.QuestWatch
@@ -77,6 +81,8 @@ import com.projectego.app.model.UsageDay
 import com.projectego.app.model.VerificationMethod
 import com.projectego.app.ui.AliveComponents
 import com.projectego.app.ui.AliveFace
+import com.projectego.app.data.PillSettings
+import com.projectego.app.domain.PillAccent
 import com.projectego.app.ui.AliveNavBar
 import com.projectego.app.ui.AlivePanel
 import com.projectego.app.ui.AliveRenderState
@@ -362,10 +368,17 @@ class MainActivity : AppCompatActivity() {
             openNightContractSheet()
         }
 
+        // The island's water page opens the reminders' page, not Home.
+        if (intent?.getBooleanExtra(InfoPillService.EXTRA_OPEN_REMINDERS, false) == true) {
+            intent?.removeExtra(InfoPillService.EXTRA_OPEN_REMINDERS)
+            openRemindersPage()
+        }
+
         // Re-armed on every visit rather than at boot: a phone that runs ALIVE
         // when the person looks at it keeps the nine o'clock appointment, and a
         // phone that never opens it has nobody to remind.
         PromiseWatch.arm(this)
+        DrinkReminderWatch.arm(this)
         QuestWatch.arm(this)
         QuestDeadlineWatch.arm(this)
     }
@@ -435,6 +448,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun closeOverlay(restoreNav: Boolean = true) {
         if (!state.isPanelOpen && overlayContainer.visibility == View.GONE) return
+        // The reminders page edits the card that sits behind it; closing the
+        // page must show the state the page just changed, not the state it was
+        // opened with.
+        val closedReminders = state.panel == AlivePanel.REMINDERS
         state.closePanel()
         overlayContainer.removeAllViews()
         overlayContainer.visibility = View.GONE
@@ -443,6 +460,7 @@ class MainActivity : AppCompatActivity() {
         // its own selection is already in flight, and two hands on the wheel
         // was how the circle ended up parked on the wrong key.
         if (restoreNav) navBar.select(AliveNavBar.Index.indexForTab(currentTabIndex))
+        if (closedReminders && currentTabIndex == 2) renderProfile()
     }
 
     /**
@@ -3625,6 +3643,8 @@ class MainActivity : AppCompatActivity() {
 
         renderProfilePermissions()
         renderProfileLanguage()
+        renderProfilePillLight()
+        renderProfileReminders()
         renderProfileHistory()
 
         profileContainer.addView(ui.vgap(ui.dimens.groupGap))
@@ -3910,6 +3930,331 @@ class MainActivity : AppCompatActivity() {
 
         profileContainer.addView(ui.vgap(ui.dimens.groupGap))
         profileContainer.addView(card)
+    }
+
+    /**
+     * The island's light, chosen where the rest of the app's settings live.
+     *
+     * It is deliberately not a control inside the pill: the pill is a status
+     * surface, and a settings toggle on it would compete with the timer and the
+     * ring. The choice is a preference; the pill reads it when it is built, so
+     * the next time it appears it wears the chosen colour.
+     */
+    private fun renderProfilePillLight() {
+        val card = ui.bentoCard(getString(R.string.profile_pill_light_heading))
+        val group = RadioGroup(this).apply { orientation = RadioGroup.HORIZONTAL }
+        val current = PillSettings.accent(this)
+
+        PillAccent.entries.forEachIndexed { index, accent ->
+            group.addView(
+                ui.tileOption(getString(accent.labelRes()), 0, ui.palette.workPale).apply {
+                    id = View.generateViewId()
+                    gravity = Gravity.CENTER
+                    isChecked = accent == current
+                    layoutParams = RadioGroup.LayoutParams(
+                        0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f
+                    ).apply {
+                        if (index > 0) marginStart = ui.dimens.pairGap
+                    }
+                    setOnClickListener { PillSettings.setAccent(this@MainActivity, accent) }
+                }
+            )
+        }
+        card.addView(group)
+        card.addView(ui.vgap(ui.dimens.lineGap))
+        card.addView(ui.note(getString(R.string.profile_pill_light_support)))
+
+        profileContainer.addView(ui.vgap(ui.dimens.groupGap))
+        profileContainer.addView(card)
+    }
+
+    private fun PillAccent.labelRes(): Int =
+        if (this == PillAccent.PINK) R.string.pill_accent_pink else R.string.pill_accent_blue
+
+    /**
+     * The reminders' own page, reached from here rather than from the notch.
+     *
+     * The island can raise itself for a reminder, but it is not where a reminder
+     * is configured: the same rule as the pill's light. The card's one sentence
+     * is the current state, so the page does not have to be opened to know
+     * whether either reminder is on.
+     */
+    private fun renderProfileReminders() {
+        val waterOn = ReminderSettings.waterEnabled(this)
+        val promiseOn = ReminderSettings.promiseEnabled(this)
+        val waterLine = if (waterOn) {
+            getString(
+                R.string.profile_reminders_water_on,
+                ReminderSettings.intervalMinutes(this),
+                ReminderSettings.startHour(this),
+                ReminderSettings.endHour(this)
+            )
+        } else {
+            getString(R.string.profile_reminders_water_off)
+        }
+        val promiseLine = getString(
+            if (promiseOn) R.string.profile_reminders_promise_on
+            else R.string.profile_reminders_promise_off
+        )
+
+        val card = ui.bentoCard(getString(R.string.profile_reminders_heading))
+        card.addView(ui.note("$waterLine · $promiseLine"))
+        card.addView(ui.vgap(ui.dimens.lineGap))
+        card.addView(
+            ui.secondary(getString(R.string.profile_reminders_open)).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                setOnClickListener { openRemindersPage() }
+            }
+        )
+
+        profileContainer.addView(ui.vgap(ui.dimens.groupGap))
+        profileContainer.addView(card)
+    }
+
+    private fun openRemindersPage() {
+        state.panel = AlivePanel.REMINDERS
+        val (scroll, column) = panel()
+        column.addView(panelHeader(getString(R.string.reminders_heading)))
+        column.addView(ui.annotation(getString(R.string.reminders_subhead)))
+        column.addView(ui.vgap(ui.dimens.lineGap))
+        column.addView(ui.accents(seed = 5))
+
+        val waterCard = ui.bentoCard(getString(R.string.reminders_water_heading))
+        val waterBody = ui.column()
+        waterCard.addView(waterBody)
+        renderWaterReminderBody(waterBody)
+
+        val promiseCard = ui.bentoCard(getString(R.string.reminders_promise_heading))
+        val promiseBody = ui.column()
+        promiseCard.addView(promiseBody)
+        renderPromiseReminderBody(promiseBody)
+
+        column.addView(ui.vgap(ui.dimens.groupGap))
+        column.addView(waterCard)
+        column.addView(ui.vgap(ui.dimens.cardGap))
+        column.addView(promiseCard)
+        column.addView(ui.vgap(ui.dimens.cardGap))
+        column.addView(ui.note(getString(R.string.reminders_note)))
+        openOverlay(scroll)
+    }
+
+    /**
+     * One reminder's settings, rebuilt in place when a choice changes.
+     *
+     * Every control is a tile rather than a switch: ALIVE already reads choices
+     * this way, and a switch packed between two labels is the one control this
+     * app does not otherwise own. The button at the bottom is the switch - its
+     * label always names the state it will produce.
+     */
+    private fun renderWaterReminderBody(body: LinearLayout) {
+        body.removeAllViews()
+        val enabled = ReminderSettings.waterEnabled(this)
+        val now = System.currentTimeMillis()
+        val interval = ReminderSettings.intervalMinutes(this)
+        val startHour = ReminderSettings.startHour(this)
+        val endHour = ReminderSettings.endHour(this)
+
+        body.addView(
+            ui.note(
+                getString(
+                    if (enabled) R.string.reminders_water_status_on
+                    else R.string.reminders_water_status_off
+                )
+            )
+        )
+        if (enabled) {
+            val due = ReminderSettings.nextWaterDue(this, now)
+            if (due > 0L) {
+                body.addView(ui.vgap(ui.dimens.lineGap))
+                body.addView(
+                    ui.annotation(getString(R.string.reminders_water_next, clockOf(due)))
+                )
+            }
+        }
+
+        body.addView(ui.vgap(ui.dimens.groupGap))
+        body.addView(ui.annotation(getString(R.string.reminders_water_interval)))
+        body.addView(ui.vgap(ui.dimens.lineGap))
+        val intervalGroup = RadioGroup(this).apply { orientation = RadioGroup.HORIZONTAL }
+        val intervalTiles = DrinkReminderPolicy.INTERVAL_CHOICES.mapIndexed { index, minutes ->
+            ui.tileOption(
+                getString(R.string.reminders_minutes, minutes),
+                0,
+                ui.palette.workPale
+            ).apply {
+                id = View.generateViewId()
+                gravity = Gravity.CENTER
+                isChecked = minutes == interval
+                // Four answers share one row; the component's usual side air
+                // would leave less room than the longest label needs and wrap
+                // "120 m" onto two lines.
+                setPadding(
+                    ui.dimens.s,
+                    ui.dimens.m,
+                    ui.dimens.s,
+                    ui.dimens.m + ui.dimens.shadowMinor
+                )
+                layoutParams = RadioGroup.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    1f
+                ).apply {
+                    if (index > 0) marginStart = ui.dimens.pairGap
+                }
+            }.also { intervalGroup.addView(it) }
+        }
+        intervalGroup.setOnCheckedChangeListener { _, checkedId ->
+            val chosen = intervalTiles.indexOfFirst { it.id == checkedId }
+            if (chosen < 0) return@setOnCheckedChangeListener
+            ReminderSettings.setWaterSchedule(
+                this,
+                DrinkReminderPolicy.INTERVAL_CHOICES[chosen],
+                ReminderSettings.startHour(this),
+                ReminderSettings.endHour(this)
+            )
+            DrinkReminderWatch.arm(this)
+            renderWaterReminderBody(body)
+        }
+        body.addView(intervalGroup)
+
+        body.addView(ui.vgap(ui.dimens.groupGap))
+        body.addView(ui.annotation(getString(R.string.reminders_water_hours)))
+        body.addView(ui.vgap(ui.dimens.lineGap))
+        val hoursGroup = RadioGroup(this).apply { orientation = RadioGroup.HORIZONTAL }
+        val hoursTiles = DrinkReminderPolicy.WINDOW_CHOICES.mapIndexed { index, (start, end) ->
+            ui.tileOption(
+                getString(R.string.reminders_hours, start, end),
+                0,
+                ui.palette.softForest
+            ).apply {
+                id = View.generateViewId()
+                gravity = Gravity.CENTER
+                isChecked = start == startHour && end == endHour
+                layoutParams = RadioGroup.LayoutParams(
+                    0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    1f
+                ).apply {
+                    if (index > 0) marginStart = ui.dimens.pairGap
+                }
+            }.also { hoursGroup.addView(it) }
+        }
+        hoursGroup.setOnCheckedChangeListener { _, checkedId ->
+            val chosen = hoursTiles.indexOfFirst { it.id == checkedId }
+            if (chosen < 0) return@setOnCheckedChangeListener
+            val (start, end) = DrinkReminderPolicy.WINDOW_CHOICES[chosen]
+            ReminderSettings.setWaterSchedule(
+                this,
+                ReminderSettings.intervalMinutes(this),
+                start,
+                end
+            )
+            DrinkReminderWatch.arm(this)
+            renderWaterReminderBody(body)
+        }
+        body.addView(hoursGroup)
+
+        body.addView(ui.vgap(ui.dimens.groupGap))
+        val toggle = if (enabled) {
+            ui.secondary(getString(R.string.reminders_water_disable))
+        } else {
+            ui.primary(getString(R.string.reminders_water_enable))
+        }
+        toggle.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        toggle.setOnClickListener {
+            if (enabled) {
+                ReminderSettings.disableWater(this)
+                DrinkReminderWatch.cancel(this)
+            } else {
+                ReminderSettings.enableWater(this, System.currentTimeMillis())
+                DrinkReminderWatch.arm(this)
+            }
+            renderWaterReminderBody(body)
+        }
+        body.addView(toggle)
+
+        body.addView(ui.vgap(ui.dimens.lineGap))
+        body.addView(
+            ui.quiet(getString(R.string.reminders_water_preview)).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                setOnClickListener {
+                    // The rehearsal raises the island and the note exactly as
+                    // the alarm will; answering it still counts as a drink.
+                    DrinkReminderWatch.preview(this@MainActivity)
+                }
+            }
+        )
+        body.addView(ui.vgap(ui.dimens.lineGap))
+        body.addView(ui.note(getString(R.string.reminders_water_note)))
+    }
+
+    private fun renderPromiseReminderBody(body: LinearLayout) {
+        body.removeAllViews()
+        val enabled = ReminderSettings.promiseEnabled(this)
+        body.addView(
+            ui.note(
+                getString(
+                    if (enabled) R.string.reminders_promise_status_on
+                    else R.string.reminders_promise_status_off
+                )
+            )
+        )
+        body.addView(ui.vgap(ui.dimens.groupGap))
+
+        val toggle = ui.secondary(
+            getString(
+                if (enabled) R.string.reminders_promise_disable
+                else R.string.reminders_promise_enable
+            )
+        )
+        toggle.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        toggle.setOnClickListener {
+            ReminderSettings.setPromiseEnabled(this, !enabled)
+            if (!enabled) PromiseWatch.arm(this) else PromiseWatch.cancel(this)
+            renderPromiseReminderBody(body)
+        }
+        body.addView(toggle)
+
+        body.addView(ui.vgap(ui.dimens.lineGap))
+        body.addView(
+            ui.quiet(getString(R.string.reminders_promise_open)).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                setOnClickListener {
+                    closeOverlay(restoreNav = false)
+                    openNightContractSheet()
+                    // The sheet is a panel too; keeping the flag set means Back
+                    // closes it instead of leaving the app.
+                    state.panel = AlivePanel.REMINDERS
+                }
+            }
+        )
+        body.addView(ui.vgap(ui.dimens.groupGap))
+        body.addView(ui.note(getString(R.string.reminders_promise_note)))
+    }
+
+    private fun clockOf(millis: Long): String {
+        val calendar = Calendar.getInstance().apply { timeInMillis = millis }
+        return String.format(
+            Locale.getDefault(),
+            "%02d:%02d",
+            calendar.get(Calendar.HOUR_OF_DAY),
+            calendar.get(Calendar.MINUTE)
+        )
     }
 
     private fun renderProfilePermissions() {

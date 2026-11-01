@@ -138,6 +138,11 @@
             android:name=".service.QuestWatchReceiver"
             android:exported="false" />
 
+        <!-- The water reminder's alarm, and the two buttons on its note. -->
+        <receiver
+            android:name=".service.DrinkReminderReceiver"
+            android:exported="false" />
+
         <!-- The mission that closed its own window ten minutes after its time was
              up. Its only sender is this app's own alarm. -->
         <receiver

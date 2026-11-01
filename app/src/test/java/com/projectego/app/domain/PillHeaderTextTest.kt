@@ -95,6 +95,20 @@ class PillHeaderTextTest {
     }
 
     @Test
+    fun `the pending reading can be read without consuming it`() {
+        text.offer("10")
+        assertEquals("10", text.pending())
+        assertEquals("10", text.flush(morphing = false))
+        assertEquals("10", text.pending())
+        // A reading that arrives mid-morph is pending until the boundary, and a
+        // morph that interrupts the roll must be able to snap to it.
+        text.offer("11")
+        assertNull(text.flush(morphing = true))
+        assertEquals("11", text.pending())
+        assertEquals("11", text.flush(morphing = false))
+    }
+
+    @Test
     fun `teardown leaves nothing waiting`() {
         text.offer("7")
         text.clear()

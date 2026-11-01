@@ -1,6 +1,7 @@
 package com.projectego.app.data
 
 import android.content.Context
+import com.projectego.app.domain.PillAccent
 
 /**
  * Whether the floating pill is on, remembered.
@@ -18,6 +19,7 @@ object PillSettings {
 
     private const val PREFS_FILE = "project_ego_pill"
     private const val KEY_ENABLED = "key_enabled"
+    private const val KEY_ACCENT = "key_accent"
 
     fun isEnabled(context: Context): Boolean =
         context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
@@ -27,6 +29,20 @@ object PillSettings {
         context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
             .edit()
             .putBoolean(KEY_ENABLED, enabled)
+            .apply()
+    }
+
+    /** Which palette the island wears; blue until the person picks otherwise. */
+    fun accent(context: Context): PillAccent =
+        PillAccent.of(
+            context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
+                .getString(KEY_ACCENT, null)
+        )
+
+    fun setAccent(context: Context, accent: PillAccent) {
+        context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_ACCENT, accent.name)
             .apply()
     }
 }

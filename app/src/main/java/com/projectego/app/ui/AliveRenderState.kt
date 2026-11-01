@@ -21,7 +21,10 @@ enum class AlivePanel {
     USAGE_CHART,
 
     /** The last seven days of missions that paid out, by name. Read-only. */
-    QUEST_HISTORY
+    QUEST_HISTORY,
+
+    /** Water and tomorrow's promise: when they speak, and whether they may. */
+    REMINDERS
 }
 
 /**

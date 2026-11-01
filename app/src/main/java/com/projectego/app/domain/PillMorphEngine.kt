@@ -245,12 +245,13 @@ class PillMorphEngine private constructor(
          * its target by a few percent before settling, and [maxFraction] lets that
          * overshoot reach the window instead of being clamped into a hold.
          *
-         * Rate and damping are chosen so the peak lands around 270 ms - past the
-         * target by ~8% - with a second, smaller rebound before it rests at ~700 ms:
-         * the weight of a spring, and enough jelly in the landing to be felt.
+         * The heavier launch: the peak lands around 440 ms, just ~1.5% past the
+         * target, so the shell has weight without the old rebound. It rests
+         * inside the same 740 ms cap. The owner asked for the heavier open; the
+         * earlier 15/0.62 spring is deliberately no longer the contract.
          */
-        const val LAUNCH_RATE_PER_SECOND = 15f
-        const val LAUNCH_DAMPING = 0.62f
+        const val LAUNCH_RATE_PER_SECOND = 12f
+        const val LAUNCH_DAMPING = 0.8f
 
         fun launchRun(
             durationMillis: Long,

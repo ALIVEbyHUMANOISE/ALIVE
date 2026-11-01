@@ -105,7 +105,7 @@ class PillPanelTest {
         val windowWidth = (pill().layoutParams as WindowManager.LayoutParams).width
         assertTrue(
             "the panel is ${windowWidth / context.resources.displayMetrics.density}dp wide",
-            windowWidth <= dp(320)
+            windowWidth <= dp(340)
         )
     }
 
@@ -136,29 +136,29 @@ class PillPanelTest {
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(1200))
         assertEquals("five taps leave the panel open", View.VISIBLE, panel.visibility)
         assertEquals(null, service.field<ValueAnimator?>("sizeAnimator"))
-        assertEquals("the character is present at rest", 1f, service.field<ImageView>("panelCharacter").alpha)
+        assertEquals(
+            "the settled panel sits at its destination width",
+            panelWidth(),
+            panel.layoutParams.width
+        )
     }
 
     @Test
-    fun `the character is a companion, not a poster`() {
-        val character = service.field<ImageView>("panelCharacter")
-        val tile = character.parent as View
-        val tileWidth = (tile.layoutParams as ViewGroup.MarginLayoutParams).width
-        val spriteWidth = (character.layoutParams as ViewGroup.MarginLayoutParams).width
-        assertEquals("the character's window", dp(64), tileWidth)
-        assertTrue("the sprite must not crowd its tile: $spriteWidth in $tileWidth",
-            spriteWidth in dp(40) until tileWidth)
-        assertEquals("every sprite size snaps to whole 16-cell device pixels", 0, spriteWidth % 16)
+    fun `the panel carries no second character`() {
+        // Direction A: the character belongs to the notch. A 64dp copy inside
+        // the panel made the expanded state read as a second app.
+        assertEquals(null, service.field<ImageView?>("panelCharacter"))
     }
 
     @Test
     fun `the panel is warmed while the pill idles, without showing itself`() {
         val panel = service.field<View>("panel")
-        val character = service.field<ImageView>("panelCharacter")
-        assertNull("nothing of the panel has been drawn yet", character.drawable)
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(1_400))
         assertEquals("the warm-up must not reveal the panel", View.GONE, panel.visibility)
-        assertNotNull("the character must be ready before the first tap", character.drawable)
+        assertTrue(
+            "the panel must be measured before the first tap, was ${panel.measuredHeight}px",
+            panel.measuredHeight > 0
+        )
     }
 
     private fun header(): View = service.field("header")

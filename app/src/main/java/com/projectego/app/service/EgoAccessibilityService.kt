@@ -144,9 +144,26 @@ class EgoAccessibilityService : AccessibilityService() {
         // the switch was off the one event that could take a live pill away -
         // the person leaving the app - was also the event that returned early,
         // so the pill sat on the home screen until the process died.
-        val wanted =
-            AppClassifier.categorize(this, packageName) == AppCategory.ENTERTAINMENT &&
-                PillSettings.isEnabled(this)
+        val focusActive = runCatching {
+            focusSessionManager.getFocusSession()?.isActive == true
+        }.getOrDefault(false)
+        // A focus session makes the pill a companion rather than a watchdog:
+        // its countdown belongs over the app the person chose to work in, not
+        // only over entertainment.
+        val wanted = PillSettings.isEnabled(this) &&
+            (focusActive ||
+                AppClassifier.categorize(this, packageName) == AppCategory.ENTERTAINMENT)
+        if (wanted) lastEntertainment = packageName
+        // The person waved the island away: it stays away for its full window
+        // even though the app in front has not changed.
+        if (wanted && isPillHidden()) return
+        // A reminder owns the pill for its own short life. It has no app to
+        // follow and no grace to spend, so none of the switch logic below
+        // applies; leaving it alone is what keeps the drink buttons on screen.
+        if (InfoPillService.isReminderShowing) {
+            cancelPillStop()
+            return
+        }
         val watching = InfoPillService.watching
 
         // A window change is evidence of a window, not of a switch. When the
@@ -186,8 +203,7 @@ class EgoAccessibilityService : AccessibilityService() {
         }
     }
 
-    private fun schedulePillStop() {
-        // Measured from the first confirmed leave, not the last window: moving
+    private fun schedulePillStop() {        // Measured from the first confirmed leave, not the last window: moving
         // between non-entertainment apps must not extend the grace.
         if (pillStopScheduled) return
         pillStopScheduled = true
@@ -514,5 +530,52 @@ class EgoAccessibilityService : AccessibilityService() {
 
     override fun onInterrupt() {
         stopEnforcementTick()
+    }
+
+    companion object {
+
+        /** How long a swipe-up keeps the island out of the way. */
+        const val PILL_HIDDEN_MILLIS = 30_000L
+
+        @Volatile
+        private var hiddenUntil = 0L
+
+        /** The last app the pill was allowed to describe, for the restore. */
+        @Volatile
+        private var lastEntertainment: String? = null
+
+        private val restoreHandler by lazy { Handler(Looper.getMainLooper()) }
+        private var restore: Runnable? = null
+
+        /** True while a swipe-up still owns the screen: no event may raise it. */
+        fun isPillHidden(): Boolean = SystemClock.elapsedRealtime() < hiddenUntil
+
+        /**
+         * The person waved the island away.
+         *
+         * It stays away for [millis] whatever windows come and go - a window
+         * change is not a request - and then comes back on its own, but only if
+         * the app it was describing is still the one in front. Pressing the tile
+         * before then is not suppressed: that is an explicit ask.
+         */
+        fun hidePillFor(context: Context, millis: Long = PILL_HIDDEN_MILLIS) {
+            hiddenUntil = SystemClock.elapsedRealtime() + millis
+            val app = context.applicationContext
+            restore?.let { restoreHandler.removeCallbacks(it) }
+            val runnable = Runnable {
+                hiddenUntil = 0L
+                restore = null
+                lastEntertainment?.let { InfoPillService.start(app, it) }
+            }
+            restore = runnable
+            restoreHandler.postDelayed(runnable, millis)
+        }
+
+        /** Used when the person raises the pill by hand. */
+        fun clearPillHidden() {
+            hiddenUntil = 0L
+            restore?.let { restoreHandler.removeCallbacks(it) }
+            restore = null
+        }
     }
 }

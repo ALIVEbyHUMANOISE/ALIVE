@@ -38,6 +38,15 @@ class PillHeaderText {
         return next
     }
 
+    /**
+     * The newest reading, written or not.
+     *
+     * A morph that interrupts the digit roll needs the answer the roll was
+     * carrying; [flush] has already consumed it by then, so it must be readable
+     * without being handed out a second time.
+     */
+    fun pending(): String? = latest
+
     /** Teardown: nothing may be left waiting for a window that is gone. */
     fun clear() {
         latest = null

@@ -12,6 +12,7 @@ import androidx.core.app.NotificationManagerCompat
 import com.projectego.app.MainActivity
 import com.projectego.app.R
 import com.projectego.app.data.NightContractRepository
+import com.projectego.app.data.ReminderSettings
 import com.projectego.app.domain.NightContract
 import java.util.Calendar
 
@@ -39,6 +40,10 @@ object PromiseWatch {
 
     fun arm(context: Context) {
         val alarm = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        if (!ReminderSettings.promiseEnabled(context)) {
+            alarm.cancel(alarmIntent(context))
+            return
+        }
         alarm.setInexactRepeating(
             AlarmManager.RTC,
             nextNine(),
@@ -50,6 +55,11 @@ object PromiseWatch {
     fun cancel(context: Context) {
         val alarm = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarm.cancel(alarmIntent(context))
+        clear(context)
+    }
+
+    /** Takes today's note down without touching the alarm for tomorrow. */
+    fun clear(context: Context) {
         NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
     }
 
@@ -116,10 +126,16 @@ object PromiseWatch {
 /** Decides at nine whether there is anything to say at all. */
 class PromiseWatchReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
+        if (!ReminderSettings.promiseEnabled(context)) return
         val writtenTonight = NightContractRepository(context).stored()?.nightKey ==
             NightContract.nightKeyOf(System.currentTimeMillis())
         if (writtenTonight) return
-        if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return
-        PromiseWatch.post(context)
+        if (NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+            PromiseWatch.post(context)
+        }
+        // The island is the reminder the person actually looks at; the note is
+        // the fallback for a phone that will not let a background service raise
+        // a window right now.
+        InfoPillService.startForReminder(context, ReminderKind.PROMISE)
     }
 }

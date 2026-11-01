@@ -26,5 +26,6 @@ class BootReceiver : BroadcastReceiver() {
         runCatching { PromiseWatch.arm(context) }
         runCatching { QuestWatch.arm(context) }
         runCatching { QuestDeadlineWatch.arm(context) }
+        runCatching { DrinkReminderWatch.arm(context) }
     }
 }
