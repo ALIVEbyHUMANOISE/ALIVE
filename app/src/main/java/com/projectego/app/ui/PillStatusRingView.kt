@@ -128,7 +128,8 @@ class PillStatusRingView(context: Context) : View(context) {
         ringPaint.color = ColorUtils.setAlphaComponent(shownColor, TRACK_ALPHA)
         canvas.drawCircle(cx, cy, radius, ringPaint)
 
-        // The fill: how much of the allowance is gone, from twelve o'clock.
+        // The fill: how much of the allowance is left, from twelve o'clock,
+        // drying away as the day is spent.
         if (progress > 0f) {
             ringPaint.color = shownColor
             arc.set(cx - radius, cy - radius, cx + radius, cy + radius)

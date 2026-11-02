@@ -11,8 +11,14 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
 import com.projectego.app.R
+import com.projectego.app.data.LockStateManager
 import com.projectego.app.data.PillSettings
 import com.projectego.app.domain.PillAccent
+import com.projectego.app.domain.PillTheme
+import com.projectego.app.domain.UsageReport
+import com.projectego.app.model.DayType
+import com.projectego.app.model.TimeBank
+import com.projectego.app.model.TimeStatus
 import com.projectego.app.ui.PillEyesView
 import com.projectego.app.ui.PillStatusRingView
 import com.projectego.app.ui.PillWaveformView
@@ -519,6 +525,114 @@ class PillStatusRingTest {
         // playing it must not animate or even show.
         assertEquals("no audio, no waveform", 0f, wave.alpha, 0f)
     }
+
+    // ---------- the arc's direction ----------
+
+    /**
+     * The ring is a tank, not a meter: it starts full and drains as the day's
+     * allowance is used. Every case below drives the real report through
+     * `renderTraffic()` and reads what the service wrote to the view - never
+     * `progress` itself, which would only echo the assertion back.
+     */
+    @Test
+    fun `a day barely touched leaves the ring almost full`() {
+        val remaining = arc(5L, 60L)
+        assertEquals("5 of 60 minutes spent leaves 55/60 of the arc", 0.917f, remaining, 0.01f)
+        assertNotEquals(
+            "the arc counts what is left, not what is spent - 5/60 is the spent figure",
+            0.083f, remaining, 0.01f
+        )
+    }
+
+    @Test
+    fun `a half spent day leaves the ring at half`() {
+        // Direction-neutral by construction, kept as the midpoint the two other
+        // cases are measured against.
+        assertEquals(0.5f, arc(30L, 60L), 0.01f)
+    }
+
+    @Test
+    fun `a spent allowance leaves an empty ring`() {
+        assertEquals("nothing left means no arc", 0f, arc(60L, 60L), 0f)
+    }
+
+    @Test
+    fun `going over the limit empties the ring instead of running it backwards`() {
+        // The view clamps to 0..1 on its own, so this asserts the empty arc the
+        // service must hand it; a negative arc is the source's business and is
+        // what the coerceIn in ringProgress() is for.
+        assertEquals(0f, arc(90L, 60L), 0f)
+    }
+
+    @Test
+    fun `a day with no allowance reads as empty`() {
+        assertEquals(
+            "a zero-limit day has nothing to drain - a full ring would promise a " +
+                "budget the day never had",
+            0f,
+            arc(0L, 0L),
+            0f
+        )
+    }
+
+    @Test
+    fun `an unreadable day is full until the guard says it is spent`() {
+        LockStateManager(service).setLocked(false)
+        assertEquals("a day nobody measured still has its whole arc", 1f, arcNoReport(), 0f)
+        assertEquals(
+            "and it wears the unknown hue, not a status colour",
+            PillTheme.RING_UNKNOWN_COLOR,
+            service.field<PillStatusRingView>("statusRing").spec.color
+        )
+
+        LockStateManager(service).setLocked(true)
+        assertEquals(
+            "the guard knows the day is over even while the report cannot be read",
+            0f,
+            arcNoReport(),
+            0f
+        )
+    }
+
+    /** Drives one day through the service and returns the arc the ring was given. */
+    private fun arc(totalMinutes: Long, limitMinutes: Long): Float {
+        setField("lastReport", report(totalMinutes, limitMinutes))
+        renderTraffic()
+        return service.field<PillStatusRingView>("statusRing").progress
+    }
+
+    private fun arcNoReport(): Float {
+        setField("lastReport", null)
+        renderTraffic()
+        return service.field<PillStatusRingView>("statusRing").progress
+    }
+
+    private fun renderTraffic() {
+        service.javaClass.getDeclaredMethod("renderTraffic")
+            .apply { isAccessible = true }
+            .invoke(service)
+    }
+
+    private fun setField(name: String, value: Any?) {
+        service.javaClass.getDeclaredField(name).apply { isAccessible = true }.set(service, value)
+    }
+
+    private fun report(totalMinutes: Long, limitMinutes: Long) = UsageReport(
+        totalEntertainmentMinutes = totalMinutes,
+        totalEntertainmentMillis = totalMinutes * 60_000L,
+        unblockedMinutes = 0L,
+        totalScreenMinutes = totalMinutes,
+        limitMinutes = limitMinutes,
+        isLimitExceeded = totalMinutes > limitMinutes,
+        remainingMinutes = (limitMinutes - totalMinutes).coerceAtLeast(0L),
+        criticalZoneTier = 0,
+        timeStatus = TimeStatus.ACTIVE,
+        dayType = DayType.NORMAL_DAY,
+        currentStreak = 0,
+        timeBank = TimeBank(earnedMinutes = 0L, spentMinutes = 0L),
+        entertainmentAppDetails = listOf("com.google.android.youtube" to totalMinutes),
+        unblockedAppDetails = emptyList()
+    )
 
     /**
      * The centre of everything the row actually holds: `leftGroup.left` to

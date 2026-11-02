@@ -2998,17 +2998,15 @@ class InfoPillService : Service() {
      * everything else is a steady alpha.
      */
     private fun renderTraffic() {
-        val state = PillTrafficPolicy.from(
-            lastReport,
-            usageTracker.lockStateManager.isLocked()
-        )
+        val locked = usageTracker.lockStateManager.isLocked()
+        val state = PillTrafficPolicy.from(lastReport, locked)
         trafficState = state
         val motion = animationsAllowed()
         // One ring carries what three lights did: the colour is status, the
         // pulse is motion, and reduced motion swaps the pulse for a static ring.
         val ring = PillStatusRingPolicy.of(state, motion)
         statusRing?.spec = ring
-        statusRing?.progress = ringProgress(lastReport)
+        statusRing?.progress = ringProgress(lastReport, locked)
         // The ink follows the state, not the tick: a report that lands between
         // ticks used to leave the number in the previous state's colour for up
         // to twenty seconds.
@@ -3023,16 +3021,19 @@ class InfoPillService : Service() {
     }
 
     /**
-     * How much of the day's allowance is already spent, for the ring's arc.
+     * How much of the day's allowance is still there, for the ring's arc: the
+     * ring opens full and dries out as the day is spent, so what is left is what
+     * is drawn.
      *
-     * A report that cannot be read answers 1 - a full ring - because an empty
-     * arc would claim a day nobody measured, which is the same lie the guard
-     * refuses to tell with the numbers.
+     * A day with no allowance answers 0 - an empty ring, because there is nothing
+     * left to spend. A day nobody measured answers full only while the guard is
+     * open: a locked day with no report has already spent itself, and a full ring
+     * would deny that. The unknown hue, not the arc, is what says unmeasured.
      */
-    private fun ringProgress(report: UsageReport?): Float {
-        val limit = report?.limitMinutes ?: return 1f
-        if (limit <= 0L) return 1f
-        return (report.totalEntertainmentMinutes.toFloat() / limit.toFloat()).coerceIn(0f, 1f)
+    private fun ringProgress(report: UsageReport?, locked: Boolean): Float {
+        val limit = report?.limitMinutes ?: return if (locked) 0f else 1f
+        if (limit <= 0L) return 0f
+        return (1f - report.totalEntertainmentMinutes.toFloat() / limit.toFloat()).coerceIn(0f, 1f)
     }
 
     private fun startTrafficPulse() {
