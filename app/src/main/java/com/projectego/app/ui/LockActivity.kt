@@ -40,6 +40,22 @@ class LockActivity : AppCompatActivity() {
             }
         })
 
+        render()
+    }
+
+    /**
+     * The lock screen is singleTask, so a second lock does not reach onCreate: it
+     * arrives here, on the instance already showing, and without this the screen
+     * kept printing the first app's name over the second app. A lock that names
+     * somewhere the person already left is a lock that describes the wrong thing.
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        render()
+    }
+
+    private fun render() {
         val ui = AliveComponents(this)
 
         // The guard computed the day's report to decide this lock and handed over

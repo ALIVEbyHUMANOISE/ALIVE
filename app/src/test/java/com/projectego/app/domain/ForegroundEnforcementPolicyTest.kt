@@ -42,8 +42,17 @@ class ForegroundEnforcementPolicyTest {
         zeroDay = zeroDay
     )
 
-    private fun decide(s: State, now: Long = 10 * tick, lastReport: Long = now) =
-        ForegroundEnforcementPolicy.decide(s, nowMillis = now, lastReportAtMillis = lastReport)
+    private fun decide(
+        s: State,
+        now: Long = 10 * tick,
+        lastReport: Long = now,
+        lastLaunch: Long = 0L
+    ) = ForegroundEnforcementPolicy.decide(
+        s,
+        nowMillis = now,
+        lastReportAtMillis = lastReport,
+        lastLockLaunchAtMillis = lastLaunch
+    )
 
     @Test
     fun `no tracked package means nothing to do and nothing to keep`() {
@@ -132,5 +141,75 @@ class ForegroundEnforcementPolicyTest {
             lastReport = 0L
         )
         assertEquals("focus decides before category, and locks", Action.FOCUS_LOCK, result.action)
+    }
+
+    @Test
+    fun `a lock that was just launched is not issued again on the next tick`() {
+        val now = 100 * tick
+        val result = decide(state(locked = true), now = now, lastLaunch = now - tick)
+
+        assertEquals(
+            "the tick keeps running so a trimmed lock can be retried, but not by relaunching every 5 s",
+            Action.IDLE,
+            result.action
+        )
+        assertTrue("the guard is still watching while it waits", result.keepTicking)
+    }
+
+    @Test
+    fun `the lock is retried once the retry window has passed`() {
+        val now = 100 * tick
+        val due = decide(
+            state(locked = true),
+            now = now,
+            lastLaunch = now - ForegroundEnforcementPolicy.LOCK_RETRY_MILLIS
+        )
+        assertEquals("a lock that never came to the front gets another attempt", Action.LOCK_NOW, due.action)
+    }
+
+    @Test
+    fun `a focus lock obeys the same retry window`() {
+        val now = 100 * tick
+        val busy = decide(
+            state(focusActive = true, focusAllows = false),
+            now = now,
+            lastLaunch = now - tick
+        )
+        assertEquals(Action.IDLE, busy.action)
+        assertTrue(busy.keepTicking)
+
+        val due = decide(
+            state(focusActive = true, focusAllows = false),
+            now = now,
+            lastLaunch = now - ForegroundEnforcementPolicy.LOCK_RETRY_MILLIS
+        )
+        assertEquals(Action.FOCUS_LOCK, due.action)
+    }
+
+    @Test
+    fun `the retry window belongs to the app that was locked, not to the process`() {
+        val now = 100 * tick
+        val justLocked = now - tick
+
+        assertEquals(
+            "the same app keeps its window",
+            justLocked,
+            ForegroundEnforcementPolicy.retryAnchorFor("com.a", "com.a", justLocked)
+        )
+        assertEquals(
+            "another app is a fresh sitting and must not inherit the wait",
+            Long.MIN_VALUE,
+            ForegroundEnforcementPolicy.retryAnchorFor("com.b", "com.a", justLocked)
+        )
+        assertEquals(
+            "nothing locked yet means no wait at all",
+            Long.MIN_VALUE,
+            ForegroundEnforcementPolicy.retryAnchorFor("com.a", null, justLocked)
+        )
+        assertEquals(
+            "an unknown foreground cannot inherit a window",
+            Long.MIN_VALUE,
+            ForegroundEnforcementPolicy.retryAnchorFor(null, "com.a", justLocked)
+        )
     }
 }

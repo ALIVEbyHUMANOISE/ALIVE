@@ -53,6 +53,16 @@ class EgoAccessibilityService : AccessibilityService() {
     private lateinit var questVerificationCoordinator: QuestVerificationCoordinator
 
     private var lastInterceptionTime = 0L
+
+    /**
+     * When the lock was last actually launched, for the policy's retry window.
+     * Set at the moment a lock intent is handed over - not when the tick runs -
+     * so a tick that decided IDLE never counts as an attempt. The package it was
+     * for travels with it: a wait that outlived a switch would hand the second
+     * blocked app the first one's quiet seconds.
+     */
+    private var lastLockLaunchAt = Long.MIN_VALUE
+    private var lastLockedPackage: String? = null
     private var lastForegroundPackage: String? = null
 
     private val graceHandler = Handler(Looper.getMainLooper())
@@ -79,26 +89,36 @@ class EgoAccessibilityService : AccessibilityService() {
                 ForegroundEnforcementPolicy.decide(
                     state = foregroundState(packageName),
                     nowMillis = SystemClock.elapsedRealtime(),
-                    lastReportAtMillis = lastPeriodicReportAt
+                    lastReportAtMillis = lastPeriodicReportAt,
+                    lastLockLaunchAtMillis = ForegroundEnforcementPolicy.retryAnchorFor(
+                        packageName = packageName,
+                        lastLockedPackage = lastLockedPackage,
+                        lastLockLaunchAtMillis = lastLockLaunchAt
+                    )
                 )
             }.getOrElse {
                 // A failed state read must not end the guard; try again next tick.
                 ForegroundEnforcementPolicy.Tick(ForegroundEnforcementPolicy.Action.IDLE, true)
             }
 
-            val launched = runCatching {
+            runCatching {
                 when (tick.action) {
-                    ForegroundEnforcementPolicy.Action.IDLE -> false
+                    ForegroundEnforcementPolicy.Action.IDLE -> Unit
                     ForegroundEnforcementPolicy.Action.LOCK_NOW ->
-                        packageName != null && enforceNormalLock(packageName, usageReport = null)
+                        if (packageName != null) enforceNormalLock(packageName, usageReport = null)
                     ForegroundEnforcementPolicy.Action.FOCUS_LOCK ->
-                        packageName != null && enforceFocusLock(packageName, currentFocusName())
+                        if (packageName != null) enforceFocusLock(packageName, currentFocusName())
                     ForegroundEnforcementPolicy.Action.EVALUATE_REPORT ->
-                        packageName != null && evaluateReport(packageName)
+                        if (packageName != null) evaluateReport(packageName)
                 }
-            }.getOrDefault(false)
+            }
 
-            if (launched || !tick.keepTicking) {
+            // A launch is not proof that the lock covered the app: startActivity
+            // returns as soon as the intent is handed over, and a trimmed lock
+            // left the person unguarded for the rest of the sitting. So the tick
+            // keeps asking - and the policy, not this loop, decides when a retry
+            // is due ([ForegroundEnforcementPolicy.LOCK_RETRY_MILLIS]).
+            if (!tick.keepTicking) {
                 stopEnforcementTick()
             } else {
                 graceHandler.postDelayed(this, ForegroundEnforcementPolicy.TICK_MILLIS)
@@ -225,11 +245,37 @@ class EgoAccessibilityService : AccessibilityService() {
      * The service just (re)connected: whatever was in front before the rebind is
      * no longer known, so tracking starts empty and the next window event starts
      * it again. A tick from the previous life is cancelled here.
+     *
+     * But the sitting continues: sitting in a blocked app across a process death
+     * used to be unguarded until the person switched apps. The tick is re-armed
+     * against the last package this service decided on, and re-reads it through
+     * [foregroundState] - which asks the persisted lock and the classifier, never
+     * the usage log. If that state cannot say the app is blockable the policy
+     * answers IDLE with `keepTicking = false`, so a stale name costs one tick and
+     * never a launch.
      */
     override fun onServiceConnected() {
         super.onServiceConnected()
-        stopEnforcementTick()
+        // Cancel the timer only: stopping outright forgets the package, and the
+        // package is the one thing worth keeping across a rebind.
+        val wasInFront = trackedForeground
+        cancelTick()
         lastForegroundPackage = null
+        reArmEnforcement(wasInFront)
+    }
+
+    /**
+     * Starts the tick again for the app that was in front, if any.
+     *
+     * Reads the package from the last event and nothing else: this runs in a
+     * lifecycle callback with no window information of its own, and guessing a
+     * package is how a guard ends up locking the launcher.
+     */
+    private fun reArmEnforcement(packageName: String?) {
+        if (packageName == null || AppClassifier.isTransientWindow(packageName)) return
+        trackedForeground = packageName
+        lastPeriodicReportAt = 0L
+        startEnforcementTick()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -279,8 +325,11 @@ class EgoAccessibilityService : AccessibilityService() {
             )
 
             if (!allowed) {
+                // Same rule as the tick: a launch is not proof of coverage, so the
+                // guard keeps the package and the policy decides when a retry is
+                // due. Stopping here used to forget the package the lock was for.
                 enforceFocusLock(packageName, activeFocusSession.activityType.displayName)
-                stopEnforcementTick()
+                startEnforcementTick()
                 return
             }
             // Allowed for now - but the session can end while this app stays
@@ -372,12 +421,34 @@ class EgoAccessibilityService : AccessibilityService() {
         startActivity(alertIntent)
     }
 
+    /**
+     * Whether a lock was launched too recently to launch again.
+     *
+     * Checked by the launches themselves, not only by the tick: window-state
+     * events arrive far more often than the 5 s tick, and in-app navigation
+     * raises them. A guard on one path only would leave the other unbounded.
+     */
+    private fun lockRetryBusy(packageName: String): Boolean {
+        val anchor = ForegroundEnforcementPolicy.retryAnchorFor(
+            packageName = packageName,
+            lastLockedPackage = lastLockedPackage,
+            lastLockLaunchAtMillis = lastLockLaunchAt
+        )
+        return anchor != Long.MIN_VALUE &&
+            SystemClock.elapsedRealtime() - anchor < ForegroundEnforcementPolicy.LOCK_RETRY_MILLIS
+    }
+
     private fun enforceFocusLock(blockedPackage: String, activityName: String): Boolean {
         val now = SystemClock.elapsedRealtime()
         if (now - lastInterceptionTime < 500) {
             return false
         }
+        if (lockRetryBusy(blockedPackage)) {
+            return false
+        }
         lastInterceptionTime = now
+        lastLockLaunchAt = now
+        lastLockedPackage = blockedPackage
 
         questVerificationCoordinator.onViolationConfirmed()
 
@@ -402,7 +473,12 @@ class EgoAccessibilityService : AccessibilityService() {
         if (now - lastInterceptionTime < 500) {
             return false
         }
+        if (lockRetryBusy(blockedPackage)) {
+            return false
+        }
         lastInterceptionTime = now
+        lastLockLaunchAt = now
+        lastLockedPackage = blockedPackage
 
         // SEC-07 experiment: no GLOBAL_ACTION_HOME before the lock. On the test
         // device the home transition raced the lock start and the lock task was
@@ -439,8 +515,12 @@ class EgoAccessibilityService : AccessibilityService() {
         graceHandler.postDelayed(enforcementTick, ForegroundEnforcementPolicy.TICK_MILLIS)
     }
 
-    private fun stopEnforcementTick() {
+    private fun cancelTick() {
         graceHandler.removeCallbacks(enforcementTick)
+    }
+
+    private fun stopEnforcementTick() {
+        cancelTick()
         trackedForeground = null
         lastPeriodicReportAt = 0L
     }
@@ -523,13 +603,16 @@ class EgoAccessibilityService : AccessibilityService() {
      * looks again in a moment, and the repeating alarm takes it from there.
      */
     override fun onUnbind(intent: Intent?): Boolean {
-        stopEnforcementTick()
+        // Cancel the timer only. Stopping outright would clear the package, and
+        // onServiceConnected - which runs right after on a rebind - would find
+        // nothing to re-arm, so the rest of the sitting stayed unguarded.
+        cancelTick()
         AccessibilityWatch.verifySoon(this)
         return super.onUnbind(intent)
     }
 
     override fun onInterrupt() {
-        stopEnforcementTick()
+        cancelTick()
     }
 
     companion object {
