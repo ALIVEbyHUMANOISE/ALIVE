@@ -452,9 +452,10 @@ class EgoAccessibilityService : AccessibilityService() {
 
         questVerificationCoordinator.onViolationConfirmed()
 
-        // SEC-07 experiment: no GLOBAL_ACTION_HOME before the lock, matching the
-        // normal-lock path that now holds on this device. The lock activity is
-        // what must cover the blocked app.
+        // No GLOBAL_ACTION_HOME before the lock, on either path. Pressing home
+        // first made the home transition race the lock start, and the lock task
+        // was trimmed before it ever showed: three attempts, three failures.
+        // The lock activity is what must cover the blocked app.
 
         val lockIntent = Intent(this, LockActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or
@@ -480,11 +481,10 @@ class EgoAccessibilityService : AccessibilityService() {
         lastLockLaunchAt = now
         lastLockedPackage = blockedPackage
 
-        // SEC-07 experiment: no GLOBAL_ACTION_HOME before the lock. On the test
-        // device the home transition raced the lock start and the lock task was
-        // trimmed before it ever showed. The lock activity is what must cover
-        // the blocked app; this build tests whether pressing home first is what
-        // prevents it from doing so.
+        // No GLOBAL_ACTION_HOME before the lock. Pressing home first raced the
+        // lock start on this device and the lock task was trimmed before it ever
+        // showed - the person was bounced to Home with no screen explaining why.
+        // The lock activity is what must cover the blocked app.
 
         val lockIntent = Intent(this, LockActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or
